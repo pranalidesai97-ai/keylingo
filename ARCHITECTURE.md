@@ -1,279 +1,153 @@
 # KeyLingo — Architecture
 
-Companion to PROJECT_STATE.md. Covers structure and data flow only;
-status/verification lives in PROJECT_STATE.md and DEBUG_STATE.md.
+Structure and data flow of the code as it exists now. Status lives in
+PROJECT_STATE.md / FEATURE_IMPLEMENTATION_STATUS.md.
 
----
-
-## Layering
+## 1. Layers
 
 ```
-domain  (pure Kotlin: models, repository interfaces, use cases)
-   ^
-data    (Room, DataStore, SentenceAnalyzer, LearningModePolicy,
-         PhraseMatcher, concrete provider/rules implementations)
-   ^
-presentation (keyboard/ IME + ViewModel + Compose UI, settings/, ui/)
+presentation   keyboard/ (IME service, KeyboardViewModel, TextContext, InputFieldPolicy, Compose UI)
+               settings/, ui/ (companion app)
+      │ calls use cases / interfaces only
+domain         model/, repository/ (interfaces), usecase/   — pure Kotlin, no Android imports
+      ▲ implemented by
+data           bundled/   in-memory, read-only language data (assets)
+               lexicon/   Lexicon + TypoDistance
+               language/  EnglishMorphology, TypingLanguageDetector, spanish/ (conjugator, morphology, text)
+               translation/ EnglishToSpanishTranslator, SpanishToEnglishGlosser
+               dictionary/ BundledDictionary
+               hint/      LearningAssistant (HintProvider), LearningModePolicy
+               learning/  Room: personal vocabulary      ┐ user data, never destructive
+               context/   Room: personal bigrams/trigrams ┘
+               settings/  DataStore preferences
 ```
 
-`domain` never imports `data`. Two vertical feature slices share this
-layering without sharing implementation:
+**Two kinds of data, never mixed:**
+- *Bundled* (read-only, shipped in `assets/`, parsed once into memory by
+  `BundledLanguageDataSource`): English lexicon, EN→ES dictionary, idioms,
+  cold-start next-word tables.
+- *Personal* (Room, on device only): learned words (`keylingo_learning.db`)
+  and word sequences (`keylingo_context.db`). Cleared from Settings.
 
-- **Spanish hint pipeline**: `data/dictionary/`, `data/hint/`,
-  `data/language/`.
-- **English autocomplete pipeline**: `data/autocomplete/`.
+Previously the bundled data was copied into two Room "cache" databases by
+seeders; that caused a cold-start race and could not support typo search.
+They were replaced by in-memory structures; the old cache files are deleted
+on startup by `KeyLingoApplication` (user databases are untouched).
 
-They converge only at `KeyboardViewModel` (calls both use cases
-independently, merges output into one state object) and `HintBar`
-(renders both as separate rows).
+## 2. Dependency injection (Hilt, all `SingletonComponent`)
 
----
-
-## Module responsibilities
-
-| Package | Responsibility |
+| Module | Binds / provides |
 |---|---|
-| `domain/model` | Pure data classes/enums: `DictionaryEntry`, `HintWord`, `PhraseChunk`, `AutocompleteSuggestion`, `LearningMode`, `GrammaticalForm`, `CefrLevel`, `PartOfSpeech`. |
-| `domain/repository` | Interfaces: `DictionaryProvider`, `PhraseChunkProvider`, `HintProvider`, `AutocompleteProvider`, `LanguagePack`, `SourceLanguageRules`. |
-| `domain/usecase` | `GenerateHintsUseCase`, `GenerateAutocompleteSuggestionsUseCase` — the only entry points the presentation layer calls into either pipeline. |
-| `data/dictionary` | Room entities/DAOs/database/seeders for the dictionary and phrase-chunk tables; `RoomDictionaryProvider`, `RoomPhraseChunkProvider`. |
-| `data/autocomplete` | Room entity/DAO/database/seeder for the autocomplete word list; `RoomAutocompleteProvider`. Fully independent storage from `data/dictionary`. |
-| `data/hint` | `SentenceAnalyzer`, `LearningModePolicy`, `PhraseMatcher`, `DefaultHintProvider` — all the actual hint-generation logic, Android-free and unit-testable. |
-| `data/language` | `SpanishLanguagePack` (language being taught), `EnglishSourceLanguageRules` (how the typed language is analyzed). |
-| `data/settings` | `SettingsDataStore`, `KeyLingoSettings`, option enums (`DarkModeOption`, `HintSizeOption`). |
-| `di` | Hilt modules — see graph below. |
-| `keyboard` | `KeyLingoInputMethodService` (the IME), `KeyboardViewModel`, `KeyboardTextConnection` (interface seam), `KeyboardLayoutProvider`, `KeyAction`. |
-| `keyboard/ui` | `KeyboardScreen`, `HintBar`, `KeyboardKey` (Compose). |
-| `settings`, `settings/ui` | Companion-app Settings screen + its own `SettingsViewModel` (real `@HiltViewModel`, unlike `KeyboardViewModel`). |
-| `ui/onboarding`, `ui/theme` | Companion-app onboarding flow and Compose theme. |
+| `AppModule` | `BundledDataSupplier`→`BundledLanguageDataSource`, `AutocompleteProvider`→`BundledAutocompleteProvider`, `HintProvider`→`LearningAssistant`, `LanguageDetector`→`BundledLanguageDetector`, `LanguagePack`→`SpanishLanguagePack` |
+| `LearningModule` / `LearningBindsModule` | `LearningDatabase`, `LearnedWordDao`, `LearnedVocabularyProvider`→`RoomLearnedVocabularyProvider` |
+| `ContextModule` / `ContextBindsModule` | `ContextDatabase` (+ migrations), `BigramDao`, `ContextPredictionProvider`→`RoomContextPredictionProvider` |
+| `AppDispatchers` (@Inject) | `compute = Default`, `io = IO`; tests inject inline dispatchers |
 
----
+`KeyLingoInputMethodService` is `@AndroidEntryPoint`; it constructs
+`KeyboardViewModel` itself (an IME has no `ViewModelStoreOwner`) and owns its
+`CoroutineScope` (`SupervisorJob + Main.immediate + CoroutineExceptionHandler`).
 
-## Dependency Injection graph
-
-All modules `@InstallIn(SingletonComponent::class)`.
+## 3. Keyboard runtime flow
 
 ```
-AppModule (abstract class, @Binds)
-  DictionaryProvider    -> RoomDictionaryProvider
-  PhraseChunkProvider   -> RoomPhraseChunkProvider
-  HintProvider          -> DefaultHintProvider
-  LanguagePack          -> SpanishLanguagePack
-  SourceLanguageRules   -> EnglishSourceLanguageRules
-
-DatabaseModule (object, @Provides)
-  DictionaryDatabase, DictionaryDao, PhraseChunkDao,
-  DictionarySeeder, PhraseChunkSeeder
-
-AutocompleteModule (object, @Provides)
-  AutocompleteDatabase, EnglishWordDao, EnglishWordSeeder
-
-AutocompleteBindsModule (abstract class, @Binds)
-  AutocompleteProvider  -> RoomAutocompleteProvider
+key press ─► KeyboardKey (Compose gesture: tap / long-press accents / backspace repeat, haptic)
+          ─► KeyboardViewModel.onKeyAction
+               ├─ edits via KeyboardTextConnection (commit / delete grapheme / batch edits)
+               ├─ word boundary? → autocorrect (if pending + still valid) → learning (if policy allows)
+               ├─ updateAutoShift()
+               └─ scheduleRefresh():  suggestions after 20 ms, learning row after 220 ms (debounced, cancelled on next key)
+refreshSuggestions:  TextContext(textBeforeCursor(240), textAfterCursor(4))
+                     → LanguageDetector.detect(current sentence)
+                     → GenerateAutocompleteSuggestionsUseCase(SuggestionRequest)
+refreshHints:        current (or just-finished) sentence → GenerateHintsUseCase → LearningAssistant
 ```
 
-Why four modules, not two: `@Binds` requires an abstract class/interface
-method, which cannot coexist with a `@Provides`-only `object` in the same
-module. Each vertical slice (dictionary-side, autocomplete-side) therefore
-splits into a `@Provides` object + a `@Binds` abstract class. The
-autocomplete pair is kept structurally separate from the dictionary pair
-so the graph itself documents that autocomplete has no dependency on the
-hint pipeline.
+`InputFieldPolicy` (from `EditorInfo`) gates everything per field: suggestions,
+learning, autocorrect, learning hints, capitalisation mode, initial layer,
+Enter action. Passwords: nothing analysed or stored. Incognito: nothing stored.
 
-`KeyLingoInputMethodService` (`@AndroidEntryPoint`) field-injects:
-`generateHintsUseCase`, `generateAutocompleteSuggestionsUseCase`,
-`settingsDataStore`, `languagePack`, `dictionarySeeder`,
-`phraseChunkSeeder`, `englishWordSeeder`. It then constructs
-`KeyboardViewModel` manually with these — not via Hilt's ViewModel
-support, since an `InputMethodService` has no `ViewModelStoreOwner` shape
-a `@HiltViewModel` expects out of the box (the service implements the
-owner interfaces itself; see "Keyboard lifecycle" below).
+Threading: the ViewModel runs on the main thread but does no heavy work;
+lexicon search, translation and detection run on `AppDispatchers.compute`,
+Room on `Dispatchers.IO`. Only a 240-char window before the cursor is read per
+refresh (never the whole field).
 
----
+## 4. Suggestion engine (`GenerateAutocompleteSuggestionsUseCase`)
 
-## Database schema
+Mid-word (prefix non-empty) candidates and their score components:
+- bundled completions: `100 − 6·ln(rank+10)` (+25 if exactly the typed word)
+- personal vocabulary (past threshold): bundled frequency or 55, + `9·ln(1 + organic + 3·accepted)`, +6 if used in the last 24 h
+- spelling variants with identical letters (apostrophe/accent/case): frequency + 30
+- keyboard-aware typo corrections: frequency − 18·distance (−30 if the typed word is itself known)
+- context bonus (re-ranks only): personal bigram/trigram counts `10·ln(1+n)`, bundled cold-start list `8/(position+1)`
 
-**`keylingo_dictionary.db`** (schema v3, `fallbackToDestructiveMigration()`)
+Autocorrect (applied on space/punctuation, undone by one Backspace) fires only
+if the typed word is unknown, unlearned and not rejected this session, and:
+an exact variant exists (`dont`→`don't`, `tambien`→`también`, `i`→`I`), or the
+best whole-word correction is within the length-scaled distance limit
+(≤0.6 for 3–4 letters, ≤1.0 up to 7, ≤1.5 beyond), ranks ≤ 25,000 and beats the
+runner-up by a clear margin. Words with digits or inner capitals are never
+corrected. The literal typed word is always offered next to a correction.
 
-```
-dictionary_entries
-  id                 PK, autogenerate
-  sourceWord         TEXT
-  targetBase         TEXT
-  targetInfinitive   TEXT?
-  targetGerund       TEXT?
-  sourceLanguage     TEXT
-  targetLanguage     TEXT
-  partOfSpeech       TEXT
-  frequencyRank      INT
-  cefrLevel          TEXT
-  UNIQUE INDEX (sourceWord, sourceLanguage, targetLanguage)
+Between words: personal trigrams (30·ln) > bigrams (20·ln) > bundled cold-start
+(10/(pos+1)); sentence start uses the `<s>` row.
 
-phrase_chunks
-  id                 PK, autogenerate
-  sourcePhrase       TEXT
-  targetPhrase       TEXT
-  sourceLanguage     TEXT
-  targetLanguage     TEXT
-  wordCount          INT
-  requiredNextForm   TEXT?
-```
+`TypoDistance` is a weighted restricted Damerau–Levenshtein: adjacent key 0.45,
+other key 1.0, transposition 0.55, doubled/dropped repeated letter 0.35,
+insert/delete 0.9, accent-only 0.05. One DP pass per candidate yields both the
+whole-word and prefix distance; candidates are pruned by first letter
+(+ neighbours) and second letter. ~6 ms per lookup on the build VM's JVM.
 
-**`keylingo_autocomplete.db`** (schema v1, `fallbackToDestructiveMigration()`)
+## 5. Learning row (`LearningAssistant`)
 
-```
-english_words
-  id             PK, autogenerate
-  word           TEXT, UNIQUE INDEX
-  frequencyRank  INT
-```
+1. `TypingLanguageDetector`: counts words that are common English
+   (rank ≤ 15k) vs. in the Spanish lexicon, plus Spanish-only characters;
+   English unless Spanish clearly wins.
+2. English sentence → `EnglishToSpanishTranslator.translate()` → text +
+   aligned `TranslationSegment`s. Segments that are content words become
+   `HintWord`s (`hintText`, `formLabel` such as "gerund", "past · yo",
+   "noun · f"); `LearningModePolicy` keeps 8/5/3 hints (Beginner/Intermediate/
+   Advanced). The sentence chip is shown only if coverage is 100% and the
+   sentence has ≥ 2 words.
+3. Spanish sentence → `SpanishToEnglishGlosser` per word (conjugation-aware,
+   accent restoration, ambiguity shown as "we were / we went").
 
-Both databases are disposable local caches of bundled JSON — schema bumps
-intentionally destroy-and-reseed rather than use hand-written Migrations.
+## 6. Translator design (`EnglishToSpanishTranslator`)
 
-**Known data-model gap** (see PROJECT_STATE.md/DEBUG_STATE.md): the
-`dictionary_entries` unique index does not include `partOfSpeech`, so a
-word with two senses (e.g. "love" as noun and verb) collides on insert;
-`OnConflictStrategy.REPLACE` means only the later-inserted sense survives.
+Deterministic recursive-descent over tokens (contractions expanded):
+clause → [conjunction] [wh-word] (aux-inversion | subject) verb-group complements.
+- Verb group: do-support, negation, will/would, can/could/should/must/might,
+  be + -ing (estar + gerund), be going to (ir a), have + participle (haber),
+  have/has been + -ing, have to (tener que), used to (imperfect), let's (vamos a),
+  would like/love (me gustaría/encantaría), just + past (acabar de).
+- `be` + complement: ser vs estar by adjective class / location; tener idioms
+  (hambre, sed, miedo, frío, razón...); weather `hace frío`; age `tener N años`;
+  professions without article and with subject gender (`ella es maestra`).
+- Gustar construction with IO pronoun and agreement with the liked thing.
+- Clitics inserted before the finite verb (`te voy a llamar`, `no lo sé`),
+  attached to imperatives/infinitive chains with stress-preserving accents
+  (`llámame`, `esperar verte`).
+- Subjunctive after hope/want/need + que, negated think/believe, and in
+  `when/until` clauses with a future or imperative main clause.
+- Noun phrases: determiners/possessives/demonstratives/quantifiers, adjective
+  position and apocope (`un buen día`), agreement, compounds (`número de
+  teléfono`), personal `a`, `al`/`del`, time expressions, proper nouns.
+- Spanish punctuation `¿…?` placed at the start of the question clause.
+Unknown words are kept verbatim and lower `coverage`.
 
----
+## 7. Spanish morphology (`data/language/spanish`)
 
-## Hint pipeline — execution flow
+`SpanishConjugator`: present, preterite, imperfect, future, conditional,
+present subjunctive, tú imperatives (affirmative/negative), gerund,
+participle; stem changes (e>ie, o>ue, u>ue, e>i) incl. -ir preterite changes;
+-car/-gar/-zar, -ger/-gir, -cer/-cir (-zco), -ducir, -uir, vowel stems,
+-iar/-uar accents; tables for ~20 irregular verbs; reflexives and multi-word
+verbs. Vosotros is intentionally not modelled. `SpanishMorphology`: plurals
+with accent shifts, adjective agreement/apocope, articles (incl. `el agua`).
+`SpanishText`: accent folding (ñ kept distinct), clitic attachment stress rules.
 
-```
-KeyboardViewModel.refreshSuggestions()
-  |
-  |  (only if settings.learningEnabled)
-  v
-GenerateHintsUseCase(text, sourceLanguage="en", targetLanguage, learningMode)
-  v
-HintProvider.generateHints(...)  [DefaultHintProvider, thin wrapper]
-  v
-SentenceAnalyzer.analyze(...)
-  |
-  1. SourceLanguageRules.tokenize(text)        -> English word tokens (regex [A-Za-z']+)
-  2. PhraseMatcher: longest-match-first lookup over the token stream
-  |     -> PhraseChunkProvider.findChunks(...)  [Room phrase_chunks table]
-  3. For each remaining (non-chunked) word:
-  |     SourceLanguageRules.normalize(word)     -> lowercase
-  |     DictionaryProvider.lookup(word, ...)    -> RoomDictionaryProvider
-  |       (in-memory cache, keyed "word|source|target", including cached misses)
-  |       -> DictionaryDao.findWord(...)         [Room dictionary_entries table]
-  |     on miss: try SourceLanguageRules.inflectionCandidates(word) in order
-  4. Grammatical-form detection:
-  |     SourceLanguageRules.surfaceFormSignal(word)              e.g. "-ing" -> GERUND
-  |     SourceLanguageRules.formImpliedByPrecedingWord(prevWord)  e.g. "to" -> INFINITIVE
-  |     or a form implied by a matched phrase chunk's requiredNextForm
-  5. Confidence scoring per resolution path (exact / suffix-fallback /
-  |     chunk-derived / ambiguous-bare-verb)
-  6. LearningModePolicy.keepScore-driven trimming to the mode's hint count/preferences
-  v
-List<HintWord>
-  v
-merged into KeyboardUiState.hints
-```
+## 8. Persistence
 
----
-
-## Autocomplete pipeline — execution flow
-
-```
-KeyboardViewModel.refreshSuggestions()
-  |  (always active, independent of learningEnabled)
-  v
-extractCurrentPrefix(fullText)   -> last whitespace-delimited token, "" if trailing whitespace
-  v
-GenerateAutocompleteSuggestionsUseCase(prefix, maxSuggestions=5)
-  v
-AutocompleteProvider.suggest(prefix, maxSuggestions)  [RoomAutocompleteProvider]
-  |   normalize: trim + lowercase
-  v
-EnglishWordDao.findByPrefix(prefix, limit)
-  |   SQL: WHERE word LIKE :prefix || '%' ORDER BY frequencyRank ASC LIMIT :limit
-  v
-List<AutocompleteSuggestion>
-  v
-merged into KeyboardUiState.autocompleteSuggestions
-```
-
-No in-memory cache on the autocomplete side (unlike the dictionary
-provider) — the prefix changes almost every keystroke, so a cache would
-rarely hit.
-
-Selecting a suggestion:
-```
-HintBar -> onAutocompleteSelected(suggestion)
-  -> KeyboardViewModel.onAutocompleteSelected:
-        prefix = extractCurrentPrefix(currentFieldText())
-        textConnection.deleteCharactersBackward(prefix.length)
-        textConnection.commitText("word ")
-        scheduleSuggestionsRefresh()
-```
-
----
-
-## Important classes
-
-- **`KeyLingoInputMethodService`** — the real IME. Implements
-  `KeyboardTextConnection` against `currentInputConnection`; hosts the
-  Compose UI; seeds all three datasets in `onCreate()`; implements
-  `LifecycleOwner`/`ViewModelStoreOwner`/`SavedStateRegistryOwner`/
-  `OnBackPressedDispatcherOwner` manually (see lifecycle section).
-- **`KeyboardViewModel`** — plain Kotlin state holder (not
-  `androidx.lifecycle.ViewModel`). Owns `KeyboardUiState`, debounces and
-  runs both suggestion pipelines from one shared text read, turns
-  `KeyAction`s into `KeyboardTextConnection` calls. Currently imports
-  `android.util.Log` for temporary debug instrumentation (see
-  DEBUG_STATE.md) — this is a deliberate, flagged, temporary compromise
-  of its original "Android-framework-free" design.
-- **`KeyboardTextConnection`** — interface seam between the ViewModel and
-  Android's real `InputConnection`. Methods: `commitText`,
-  `deleteOneCharacterBackward`, `deleteCharactersBackward(charCount)`,
-  `performEnterAction`, `currentFieldText`.
-- **`SentenceAnalyzer`** — all hint-generation logic. Depends only on
-  `DictionaryProvider`, `SourceLanguageRules`, `PhraseMatcher` — no
-  hardcoded English morphology, no Android/Hilt/Compose dependency,
-  directly unit-testable.
-- **`RoomAutocompleteProvider`** / **`RoomDictionaryProvider`** — Room-backed
-  implementations of their respective domain interfaces. The dictionary
-  provider adds an in-memory cache (including negative/miss caching); the
-  autocomplete provider deliberately does not.
-- **`DictionarySeeder`** / **`PhraseChunkSeeder`** / **`EnglishWordSeeder`** —
-  idempotent one-time JSON-asset-to-Room population, all triggered
-  sequentially from `KeyLingoInputMethodService.onCreate()`.
-- **`GenerateHintsUseCase`** / **`GenerateAutocompleteSuggestionsUseCase`** —
-  the only two entry points the presentation layer calls into `domain`.
-  Both thin wrappers with a blank/empty-input guard.
-- **`KeyboardScreen`** — root Compose UI. Renders `HintBar` then the
-  active key rows (letters/symbols/numbers-via-symbols/emoji).
-- **`HintBar`** — renders both suggestion rows; each independently hidden
-  when empty, whole bar hidden (with fade/slide animation) only when both
-  are empty.
-
----
-
-## Keyboard lifecycle
-
-An `InputMethodService`'s soft-input window is an internal `Dialog` with
-its own `DecorView`, not an Activity window, so Compose's per-window
-`Recomposer` lookup has no owner tagged on that DecorView automatically.
-`KeyLingoInputMethodService` implements the four owner interfaces itself
-and calls `attachTreeOwnersToDialogDecorView()` before the `ComposeView`
-attaches.
-
-```
-onCreate()
-  -> construct KeyboardViewModel (manual, all deps passed through)
-  -> serviceScope.launch { dictionarySeeder; phraseChunkSeeder; englishWordSeeder }
-onCreateInputView()
-  -> ComposeView { KeyboardScreen(viewModel) }, owners attached
-onStartInputView(...)
-  -> triggers a suggestions refresh
-onDestroy()
-  -> clears ViewModelStore, cancels serviceScope
-```
-
-The seeding coroutine and `KeyboardViewModel`'s settings-flow collector
-(which can itself trigger a refresh) start concurrently — a known,
-unaddressed race on a cold start (see PROJECT_STATE.md "Known
-limitations").
+See DATABASE_AND_DICTIONARY_INVENTORY.md. All personal writes are atomic
+`INSERT OR IGNORE` + arithmetic `UPDATE` inside a transaction (SQLite 3.19 on
+API 26 lacks UPSERT). Schemas are exported to `app/schemas/`; user databases
+never use destructive migration.

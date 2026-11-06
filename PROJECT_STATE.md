@@ -1,144 +1,83 @@
 # KeyLingo — Project State
 
-Generated as a handoff snapshot for continuing development in a different
-Claude session. Verification legend used throughout this package:
-**✓ Verified** = confirmed by direct source/data inspection.
-**⚠ Assumed** = logically follows from verified facts but not directly
-observed (e.g. runtime behavior inferred from code that was never
-executed).
-**❌ Not Verified** = could not be checked in this environment at all.
+_Last updated: 2026-11-06. Describes the code on branch `claude/eager-dijkstra-jsufzj`._
 
-No Android SDK, emulator, device, or network access exists in this
-working environment. **No line of this codebase has ever actually been
-built or run during this project's history here.** Every runtime claim
-below is ⚠ Assumed unless marked otherwise, and is based on tracing code
-paths and, where possible, replicating the exact logic in a plain Python
-simulation against the real bundled data (see DEBUG_STATE.md for that
-methodology).
+Verification levels used in all KeyLingo docs:
 
----
+| Label | Meaning |
+|---|---|
+| **Built + tested** | Compiles in the real Gradle/AGP build and is covered by passing JVM unit tests (incl. Robolectric SQLite tests). |
+| **Built** | Compiles and is packaged in the APK, but has no automated test (usually Compose UI). |
+| **Device: not verified** | Nothing in this project has been run on a phone or emulator yet. |
 
-## 1. Project overview
+## 1. What KeyLingo is
 
-KeyLingo is an Android custom keyboard (`InputMethodService`) that teaches
-Spanish to English speakers while they type normally in any app. Two
-independent suggestion pipelines run side by side:
-1. **English autocomplete** — word completions for the word being typed.
-2. **Spanish hint pipeline** — translations of typed English shown above
-   the keyboard, read-only.
+An Android keyboard (`InputMethodService`, Jetpack Compose UI) for everyday
+English typing that teaches Spanish as you type. It is fully offline: no
+network permission, no network code, personal learning data stored only in
+on-device Room databases.
 
-Long-term vision (per product owner, not yet implemented): a full
-language-learning assistant with contextual sentence-level suggestions,
-grammar correction, spaced repetition, adaptive difficulty, and eventually
-multiple language packs — see TODO.md P4.
+## 2. Current state in one paragraph
 
----
+The project now **builds** (`assembleDebug`, minified `assembleRelease`,
+`lintDebug` with 0 errors) and has **98 passing unit tests**. Before this
+pass the code had never been compiled. The keyboard has a 61.5k-word English
+lexicon with keyboard-aware typo correction and conservative autocorrect,
+personal vocabulary and n-gram learning that is race-free and privacy-gated,
+next-word prediction with a cold-start model, a deterministic Spanish
+conjugation engine, and an offline rule-based English→Spanish sentence
+translator whose word alignments drive the learning hints. Typing Spanish is
+detected automatically and gets Spanish suggestions (with accent
+restoration) plus English glosses. **No physical-device or emulator testing
+has happened** — see §6.
 
-## 2. Features implemented
+## 3. Build and test results (this session)
 
-- ✓ Clean Architecture (`domain` → `data` → presentation), verified
-  unchanged this session.
-- ✓ Two separate Room databases: `keylingo_dictionary.db` (dictionary +
-  phrase chunks, schema v3) and `keylingo_autocomplete.db` (English word
-  list, schema v1).
-- ✓ Dictionary: 734 entries in `assets/dictionary/en_es.json`.
-- ✓ Phrase chunks: 35 entries in `assets/dictionary/chunks_en_es.json`,
-  seeding logic verified correct (uses the actual `"es"` field).
-- ✓ Autocomplete word list: 772 entries in `assets/autocomplete/en_words.json`.
-- ✓ `SentenceAnalyzer`: tokenize → phrase-chunk match → dictionary lookup
-  (with inflection fallback) → grammatical-form detection → confidence
-  scoring → `LearningModePolicy` trimming.
-- ✓ Dual-row `HintBar` (autocomplete row + hint row, independently hidden
-  when empty).
-- ✓ Autocomplete word replacement via `deleteCharactersBackward` +
-  commit-with-trailing-space.
-- **✓ Dictionary seeding bug fixed this session** (see §5 and
-  DEBUG_STATE.md) — `DictionarySeeder.kt` was reading a JSON field
-  (`"base"`) that does not exist in the bundled asset (which uses `"es"`),
-  causing every one of the 734 dictionary entries to be silently skipped
-  during seeding since the asset was authored. Fixed to read `"es"`.
+| Command | Result |
+|---|---|
+| `./gradlew :app:testDebugUnitTest` | ✅ 98 tests, 0 failures (11 suites, see TESTING.md) |
+| `./gradlew :app:assembleDebug` | ✅ `app-debug.apk` 17.7 MB |
+| `./gradlew :app:assembleRelease` | ✅ `app-release-unsigned.apk` 1.95 MB (R8 minified; was 7.0 MB before the keep-rule fix) |
+| `./gradlew :app:lintDebug` | ✅ 0 errors, 22 warnings (19 are "newer dependency version available") |
 
-## 3. Remaining issues
+**Build environment caveat.** This cloud container has no Android SDK, and
+the SDK download host is blocked. The build used: AGP/AndroidX/Room/Hilt
+from Google Maven and Maven Central (allowed by a dedicated network
+environment), `aapt2` from Google Maven (AGP does this itself), the
+`android-34` `android.jar` from the public `Sable/android-platforms`
+mirror, a `core-for-system-modules.jar` derived from it, and stub
+build-tools. The Gradle build itself is standard; nothing in the repo
+depends on that SDK. **Build release artifacts in Android Studio with a real
+SDK** before distributing.
 
-See DEBUG_STATE.md "Remaining risks" and TODO.md for the full prioritized
-list. Highlights:
+## 4. What changed (summary — details in CHANGELOG.md)
 
-- **⚠ Assumed, not runtime-verified**: the dictionary fix should now make
-  individual-word Spanish hints appear for the first time (previously
-  zero were possible). This is a strong logical inference from the code
-  and a Python simulation of the seeder against the real asset (see
-  DEBUG_STATE.md), but it has never actually been observed running.
-- **✓ Verified, new finding from this session's verification pass**: 11
-  English words appear twice in `en_es.json` with different parts of
-  speech (e.g. `"love"` as both verb→`amar` and noun→`amor`). The
-  `dictionary_entries` table's unique index is on `(sourceWord,
-  sourceLanguage, targetLanguage)` only — it does not include part of
-  speech — and `DictionaryDao.insertAll` uses
-  `OnConflictStrategy.REPLACE`. So for these 11 words, only whichever
-  sense appears later in the JSON array survives seeding; the other sense
-  is silently dropped. Not caused by this session's fix (the underlying
-  data-model gap predates it) but only became *reachable* once the fix
-  made seeding actually insert rows. Documented separately, not fixed —
-  see DEBUG_STATE.md and TODO.md P1.
-- **✓ Verified**: no persistent number row exists in `KeyboardLayoutProvider`'s
-  letters-mode layout; numbers are only reachable via the symbols-mode
-  switch. Whether this is a regression or was never built is ❌ Not
-  Verified (no history/build to compare against).
-- **❌ Not Verified**: typing responsiveness/smoothness relative to
-  Gboard — no measurement has been possible in this environment.
-- **⚠ Assumed**: English autocomplete is unaffected by this session's fix
-  — confirmed by checksum that no autocomplete file was touched — but
-  its actual runtime behavior (reported as "works" by the user) is itself
-  ❌ Not Verified from this side.
+1. **Build fixed**: missing `gradle-wrapper.jar` added; the hand-written `gradlew` was broken.
+2. **Data repaired**: every Spanish entry had lost its accents (`año`→`ano`, `bebé`→`bebe`, `trabajó`→`trabajo`); dictionary migrated to a lemma-based, POS-aware, gender-tagged TSV (1,325 rows).
+3. **Crash fixed**: concurrent learning writes violated a unique index inside fire-and-forget coroutines (IME crash) → atomic upserts + coroutine exception guard.
+4. **Privacy fixed**: password/incognito fields were learned from → `InputFieldPolicy`.
+5. **Input correctness**: cursor-relative context, grapheme-safe backspace, case-preserving suggestions, auto-shift that turns off, Enter follows the field action, `directBootAware` crash risk removed.
+6. **New capabilities**: lexicon + typo correction + autocorrect with undo, n-gram prediction with cold start, conjugation engine, sentence translator, Spanish typing support, long-press accents, haptics, emoji grid, "delete learned data".
 
-## 4. Verified runtime behavior
+## 5. Product rules status
 
-None. To repeat plainly: **nothing in this project has been built or run
-in this working environment at any point.** "Runtime behavior" reported
-in this document reflects either (a) the user's own device testing,
-relayed secondhand and not independently confirmed, or (b) logical
-inference from static code/data analysis, never (c) direct observation by
-whichever Claude session produced this documentation. Anywhere this
-document says a pipeline "should now work," read it as ⚠ Assumed.
+See FEATURE_IMPLEMENTATION_STATUS.md for the full matrix. Everything listed
+in the product vision has at least a working, tested core except: no
+device-level verification, no composing-text underline, no swipe typing, and
+the dictionary still lacks ~800 of the 2,500 most frequent English words
+(sentence translations are hidden whenever an unknown content word appears).
 
-## 5. Known limitations
+## 6. Outstanding device verification (must happen next)
 
-- Dictionary: 734 entries (curated, not the eventual 5000+ target);
-  architecture supports a drop-in larger file with zero code changes.
-- Dictionary entries have no `infinitive`/`gerund`/`rank`/`cefr` data
-  populated yet (the seeder and `DictionaryEntity` already support all
-  four; the bundled JSON simply doesn't set them) — this is *why* hints
-  can only ever show a single base translation today, not richer forms
-  (`trabajar`/`trabajando`/etc.) — a content-authoring task, not a code
-  task.
-- The 11-word duplicate-sense collision described in §3 (data-modeling
-  gap: unique index doesn't include part of speech).
-- Autocomplete word list: 772 entries, not production-scale (10k-100k
-  target).
-- No persistent number row.
-- No key-repeat/animation/haptic polish.
-- `KeyboardViewModel` currently has a temporary `android.util.Log`
-  dependency added for debugging in a prior session — not yet removed.
-  Tag `KLDebug`; see DEBUG_STATE.md.
-- No progress tracking, spaced repetition, grammar correction, or any of
-  the longer-term learning-system features — all future work, see
-  TODO.md P4.
+Nothing here can be closed without a phone/emulator. Checklist in TESTING.md §4:
+IME enable/switch flow, Compose rendering inside the IME window, key
+latency and suggestion latency, accent long-press overlay, haptics,
+autocorrect undo in real apps (WhatsApp, Gmail, Chrome), password fields,
+Enter actions, rotation/landscape height, dark mode, first-launch data load
+time, R8 release build behaviour, and Room migration on an upgraded install.
 
-## 6. Next recommended milestone
+## 7. Next milestone
 
-Per the product owner's own stated priorities (most recent instructions):
-1. **Confirm the dictionary fix on a real device** — build, install, type
-   `"work"`, verify `trabajar` appears as a hint. This is the single most
-   important next step: everything else in this document about the fix
-   is inference, not observation.
-2. Decide how to handle the 11-word duplicate-sense collision (see
-   TODO.md P1) — likely requires adding part-of-speech to the unique
-   index, or a different resolution strategy, which is a real (if small)
-   architecture decision, not a one-line fix.
-3. Investigate typing responsiveness (Priority 2 from the product
-   owner's brief) — debounce timing, recomposition counts, coroutine
-   scheduling. Not started.
-4. Add the configurable number row (Priority 3).
-5. Review autocomplete ranking (Priority 4).
-
-Full detail and additional priorities: TODO.md.
+Run the device checklist on a real phone and fix what it finds; then the
+top items of KNOWN_ISSUES_AND_BACKLOG.md (user gender for agreement,
+dictionary coverage of the top 3,000 words, composing-text model).
