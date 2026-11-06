@@ -521,10 +521,25 @@ class EnglishToSpanishTranslator(
         }
 
         private fun whQuestion() {
+            val whSegment = out.segments.size
+            val w = peek()!!.w
+            whQuestionBody(whSegment)
+            // Motion towards a place takes "adónde": "Where are you going?" -> "¿Adónde vas?",
+            // but not the periphrastic future "Where are you going to eat?" (-> "¿Dónde vas a comer?").
+            if (w == "where" && out.segments.getOrNull(whSegment)?.targetText == "dónde") {
+                val irForms = SpanishTense.values().flatMap { t -> SpanishPerson.values().map { p -> conj("ir", t, p) } }.toSet()
+                val ir = (whSegment + 1 until out.segments.size).firstOrNull { out.segments[it].targetText in irForms }
+                val nextTarget = ir?.let { (it + 1 until out.segments.size).map { k -> out.segments[k].targetText }.firstOrNull { t -> t.isNotEmpty() } }
+                if (ir != null && nextTarget != "a") {
+                    out.segments[whSegment] = out.segments[whSegment].copy(targetText = "adónde", hintText = "adónde")
+                }
+            }
+        }
+
+        private fun whQuestionBody(whSegment: Int) {
             val tok = peek()!!
             val w = tok.w
             if (atClauseStart()) markQuestion()
-            val whSegment = out.segments.size
             if (w == "how" && (word(1) == "much" || word(1) == "many")) {
                 out.add(rawOf(i, i + 2), if (word(1) == "many") "cuántos" else "cuánto", PartOfSpeech.PRONOUN, "question word"); i += 2
             } else {

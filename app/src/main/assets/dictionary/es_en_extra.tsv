@@ -1,0 +1,30 @@
+# Spanish lemmas that have no English headword of their own in en_es.tsv (or whose English
+# headword maps to a different Spanish word, e.g. be -> ser). Used ONLY for Spanish -> English.
+# columns: spanish  english  pos  gender
+estar	be	verb
+haber	have	verb
+llamarse	be called	verb
+quedar	meet	verb
+tocar	play	verb
+encantar	love	verb
+importar	matter	verb
+tomar	take	verb
+poder	can	verb
+deber	should	verb
+soler	usually	verb
+acabar	finish	verb
+mañana	morning	noun	f
+noche	night	noun	f
+tarde	afternoon	noun	f
+gente	people	noun	f
+cosa	thing	noun	f
+vez	time	noun	f
+hora	time	noun	f
+chico	boy	noun	m
+chica	girl	noun	f
+señor	sir	noun	m
+señora	lady	noun	f
+simpático	nice	adj
+guapo	good-looking	adj
+divertido	fun	adj
+precioso	beautiful	adj

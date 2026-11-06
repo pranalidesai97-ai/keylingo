@@ -35,10 +35,14 @@ data class SpanishFormMatch(
  * that is what makes Spanish -> English glosses and accent restoration work
  * for words the user types in Spanish.
  */
-class BundledDictionary(val entries: List<DictionaryEntry>) {
+class BundledDictionary(
+    val entries: List<DictionaryEntry>,
+    /** Spanish -> English only (estar, haber...): reverse-indexed, never used for English -> Spanish. */
+    val reverseOnly: List<DictionaryEntry> = emptyList()
+) {
 
     private val byLemma: Map<String, List<DictionaryEntry>> = entries.groupBy { it.sourceWord }
-    private val reverse: Map<String, List<SpanishFormMatch>> = buildReverseIndex(entries)
+    private val reverse: Map<String, List<SpanishFormMatch>> = buildReverseIndex(entries + reverseOnly)
 
     val size: Int get() = entries.size
 
@@ -95,9 +99,22 @@ class BundledDictionary(val entries: List<DictionaryEntry>) {
          * Parses `en_es.tsv`: english lemma, spanish, pos, gender. [englishRank]
          * supplies the frequency rank of the English lemma (from the lexicon).
          */
-        fun parseTsv(lines: Sequence<String>, englishRank: (String) -> Int, targetLanguage: String = "es"): BundledDictionary {
+        fun parseTsv(
+            lines: Sequence<String>, englishRank: (String) -> Int, targetLanguage: String = "es",
+            reverseOnlyLines: Sequence<String> = emptySequence()
+        ): BundledDictionary {
+            val entries = parseEntries(lines, englishRank, targetLanguage, firstId = 1L)
+            // es_en_extra.tsv lists the Spanish lemma first; swap to the english-first row shape.
+            val swapped = reverseOnlyLines.filter { it.isNotBlank() && !it.startsWith("#") }.map { line ->
+                val c = line.split('\t'); (listOf(c.getOrElse(1) { "" }, c[0]) + c.drop(2)).joinToString("\t")
+            }
+            val extra = parseEntries(swapped, englishRank, targetLanguage, firstId = 1_000_000L)
+            return BundledDictionary(entries, extra)
+        }
+
+        private fun parseEntries(lines: Sequence<String>, englishRank: (String) -> Int, targetLanguage: String, firstId: Long): List<DictionaryEntry> {
             val entries = mutableListOf<DictionaryEntry>()
-            var id = 1L
+            var id = firstId
             for (line in lines) {
                 if (line.isBlank() || line.startsWith("#")) continue
                 val cols = line.split('\t')
@@ -125,14 +142,14 @@ class BundledDictionary(val entries: List<DictionaryEntry>) {
                     )
                 )
             }
-            return BundledDictionary(entries)
+            return entries
         }
 
         private fun buildReverseIndex(entries: List<DictionaryEntry>): Map<String, List<SpanishFormMatch>> {
             val index = HashMap<String, MutableList<SpanishFormMatch>>(entries.size * 12)
             fun put(surface: String, match: SpanishFormMatch) {
                 val list = index.getOrPut(SpanishText.fold(surface)) { mutableListOf() }
-                if (list.none { it.entry.id == match.entry.id && it.surface == match.surface }) list.add(match)
+                if (list.none { it.entry.id == match.entry.id && it.surface == match.surface && it.tense == match.tense && it.person == match.person && it.kind == match.kind }) list.add(match)
             }
             for (e in entries) {
                 val es = e.baseTranslation
@@ -141,9 +158,14 @@ class BundledDictionary(val entries: List<DictionaryEntry>) {
                         val parts = SpanishConjugator.parse(es)
                         if (parts.tail.isNotEmpty()) { put(es, SpanishFormMatch(e, es, null, null, VerbFormKind.INFINITIVE, false)); continue }
                         put(es, SpanishFormMatch(e, es, null, null, VerbFormKind.INFINITIVE, false))
-                        for ((form, features) in SpanishConjugator.allForms(es)) {
-                            put(form, SpanishFormMatch(e, form, features.tense, features.person, features.kind, features.person?.isPlural == true))
+                        // Every (tense, person) reading is kept: "estaba" is both yo and él/ella, "comía" too.
+                        val inf = parts.infinitive
+                        for (tense in SpanishTense.entries) for (person in SpanishPerson.entries) {
+                            val form = SpanishConjugator.conjugate(inf, tense, person)
+                            put(form, SpanishFormMatch(e, form, tense, person, VerbFormKind.FINITE, person.isPlural))
                         }
+                        SpanishConjugator.gerund(inf).let { put(it, SpanishFormMatch(e, it, null, null, VerbFormKind.GERUND, false)) }
+                        SpanishConjugator.pastParticiple(inf).let { put(it, SpanishFormMatch(e, it, null, null, VerbFormKind.PARTICIPLE, false)) }
                     }
                     PartOfSpeech.NOUN -> {
                         put(es, SpanishFormMatch(e, es, null, null, null, e.pluralOnly))

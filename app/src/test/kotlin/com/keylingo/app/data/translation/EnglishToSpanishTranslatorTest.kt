@@ -24,6 +24,25 @@ class EnglishToSpanishTranslatorTest {
         assertTrue("Mistranslations:\n" + failures.joinToString("\n"), failures.isEmpty())
     }
 
+    @Test fun userExamples() = check(
+        "I am drinking water." to "Estoy bebiendo agua.",
+        "I don't understand." to "No entiendo.",
+        "I want to learn Spanish." to "Quiero aprender español.",
+        "I ate an apple." to "Comí una manzana.",
+        "Where are you going?" to "¿Adónde vas?",
+        "I went to the market yesterday." to "Fui al mercado ayer.",
+        "I am going to watch a movie with my sister." to "Voy a ver una película con mi hermana.",
+        "I love my family." to "Amo a mi familia.",
+        "She goes to the office every day." to "Ella va a la oficina todos los días.",
+    )
+
+    @Test fun whereWithMotionTakesAdonde() = check(
+        "Where is she going?" to "¿Adónde va?",
+        "Where did you go yesterday?" to "¿Adónde fuiste ayer?",
+        "Where are you going to eat?" to "¿Dónde vas a comer?", // periphrastic future: no motion to a place
+        "Where do you live?" to "¿Dónde vives?",
+    )
+
     @Test fun presentProgressiveAndLocation() = check(
         "I am working at home" to "Estoy trabajando en casa",
         "The kids are playing in the garden" to "Los niños están jugando en el jardín",

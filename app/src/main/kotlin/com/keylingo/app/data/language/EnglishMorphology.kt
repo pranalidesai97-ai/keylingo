@@ -82,6 +82,29 @@ object EnglishMorphology {
         return regularSuffix(lemma, "ed")
     }
 
+    /** Past participle ("go" -> "gone", "play" -> "played"). */
+    fun pastParticiple(lemma: String): String {
+        irregularVerbs.firstOrNull { it.first == lemma }?.let { return it.third.substringBefore('/') }
+        return regularSuffix(lemma, "ed")
+    }
+
+    private val pluralExceptions = mapOf(
+        "man" to "men", "woman" to "women", "child" to "children", "person" to "people", "foot" to "feet", "tooth" to "teeth",
+        "mouse" to "mice", "goose" to "geese", "life" to "lives", "wife" to "wives", "knife" to "knives", "leaf" to "leaves",
+        "half" to "halves", "shelf" to "shelves", "wolf" to "wolves", "potato" to "potatoes", "tomato" to "tomatoes", "hero" to "heroes",
+        "fish" to "fish", "sheep" to "sheep", "news" to "news", "clothes" to "clothes", "glasses" to "glasses", "pants" to "pants", "jeans" to "jeans",
+    )
+
+    /** Plural of an English noun ("city" -> "cities", "box" -> "boxes", "child" -> "children"). */
+    fun plural(noun: String): String {
+        pluralExceptions[noun]?.let { return it }
+        return when {
+            noun.endsWith("y") && noun.length > 1 && noun[noun.length - 2] !in "aeiou" -> noun.dropLast(1) + "ies"
+            noun.endsWith("s") || noun.endsWith("x") || noun.endsWith("z") || noun.endsWith("ch") || noun.endsWith("sh") -> noun + "es"
+            else -> noun + "s"
+        }
+    }
+
     fun thirdPerson(lemma: String): String = when {
         lemma == "be" -> "is"; lemma == "have" -> "has"
         lemma.endsWith("y") && lemma.length > 1 && lemma[lemma.length - 2] !in "aeiou" -> lemma.dropLast(1) + "ies"

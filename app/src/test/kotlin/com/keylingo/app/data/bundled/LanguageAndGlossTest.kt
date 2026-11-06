@@ -34,8 +34,24 @@ class LanguageAndGlossTest {
         assertTrue(en.hints.map { it.translatedWord }.containsAll(listOf("llamar", "mañana")))
         val es = assistant.analyze(data, "mañana vamos a la playa", LearningMode.BEGINNER, null)
         assertEquals("es", es.typingLanguage)
-        assertNull(es.sentence)
+        assertEquals("Tomorrow we go to the beach", es.sentence?.translatedText)
+        assertEquals("en", es.sentence?.targetLanguage)
         assertNotNull(es.hints.firstOrNull { it.originalWord == "playa" && it.translatedWord == "beach" })
+    }
+
+    @Test fun spanishSentenceChipExplainsTheGrammarAndHidesPartialTranslations() {
+        val assistant = com.keylingo.app.data.hint.LearningAssistant(BundledDataSupplier { data }, com.keylingo.app.testing.inlineDispatchers)
+        val progressive = assistant.analyze(data, "Estoy aprendiendo español.", LearningMode.BEGINNER, null, typingLanguage = "es")
+        assertEquals("I am learning Spanish.", progressive.sentence?.translatedText)
+        assertTrue(progressive.sentence!!.notes.first().startsWith("estar + gerund"))
+        val gustar = assistant.analyze(data, "Me gustan los perros", LearningMode.BEGINNER, null, typingLanguage = "es")
+        assertTrue(gustar.sentence!!.notes.any { it.startsWith("gustar") })
+        // A word the translator does not know: no sentence chip, but the known words still get hints.
+        val partial = assistant.analyze(data, "La casa xyzzyq grande", LearningMode.BEGINNER, null, typingLanguage = "es")
+        assertNull(partial.sentence)
+        assertTrue(partial.hints.isNotEmpty())
+        // A single word gets a word hint, not a sentence chip.
+        assertNull(assistant.analyze(data, "Mañana", LearningMode.BEGINNER, null, typingLanguage = "es").sentence)
     }
 
     @Test fun learningModeControlsHowManyHintsSurvive() {

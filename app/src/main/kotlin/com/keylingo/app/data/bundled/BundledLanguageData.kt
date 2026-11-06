@@ -8,6 +8,7 @@ import com.keylingo.app.data.lexicon.LexiconWord
 import com.keylingo.app.data.translation.EnglishToSpanishTranslator
 import com.keylingo.app.data.translation.Idiom
 import com.keylingo.app.data.translation.SpanishToEnglishGlosser
+import com.keylingo.app.data.translation.SpanishToEnglishTranslator
 import com.keylingo.app.domain.model.PartOfSpeech
 
 /** Cold-start next-word lists: previous word (lowercase) -> likely next words, best first. */
@@ -46,6 +47,8 @@ class BundledLanguageData(
     val englishMisspellings: Map<String, String> = emptyMap()
 ) {
     val translator = EnglishToSpanishTranslator(dictionary, idioms)
+    /** Spanish -> English sentences; English casing ("Spanish", "Monday") comes from the lexicon. */
+    val spanishTranslator = SpanishToEnglishTranslator(dictionary) { w -> englishLexicon.find(w)?.display ?: w }
     val glosser = SpanishToEnglishGlosser(dictionary)
     val languageDetector = TypingLanguageDetector(englishLexicon, spanishLexicon)
     val grammarChecker = EnglishGrammarChecker(englishLexicon, dictionary)
@@ -57,6 +60,7 @@ class BundledLanguageData(
         const val ENGLISH_LEXICON = "lexicon/en_words.tsv"
         const val DICTIONARY = "dictionary/en_es.tsv"
         const val IDIOMS = "dictionary/idioms_en_es.tsv"
+        const val ES_EN_EXTRA = "dictionary/es_en_extra.tsv"
         const val EN_NEXT_WORDS = "prediction/en_next_words.tsv"
         const val ES_NEXT_WORDS = "prediction/es_next_words.tsv"
         const val EN_MISSPELLINGS = "lexicon/en_misspellings.tsv"
@@ -81,7 +85,9 @@ class BundledLanguageData(
          */
         fun load(read: (String) -> Sequence<String>): BundledLanguageData {
             val english = Lexicon.parseTsv(read(ENGLISH_LEXICON), foldAccents = false)
-            val dictionary = BundledDictionary.parseTsv(read(DICTIONARY), englishRank = { english.find(it)?.rank ?: 50_000 })
+            val dictionary = BundledDictionary.parseTsv(
+                read(DICTIONARY), englishRank = { english.find(it)?.rank ?: 50_000 }, reverseOnlyLines = read(ES_EN_EXTRA)
+            )
             val idioms = read(IDIOMS).filter { it.isNotBlank() && !it.startsWith("#") }.mapNotNull { line ->
                 val cols = line.split('\t')
                 if (cols.size >= 2) Idiom(cols[0].trim(), cols[1].trim()) else null
