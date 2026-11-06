@@ -84,6 +84,13 @@ class KeyboardViewModel(
     private var lastOwnEditAt = 0L
 
     init {
+        // Once per keyboard start: forget incidental history past its retention period (local DELETEs only).
+        scope.launch {
+            runCatching {
+                learnedVocabularyProvider.pruneStale(clock())
+                contextPredictionProvider.pruneStale(clock())
+            }
+        }
         scope.launch {
             settingsFlow.collect { settings ->
                 _uiState.update { it.copy(settings = settings) }

@@ -14,5 +14,6 @@ data class LearnedWord(
     val word: String,
     val organicCount: Int,
     val acceptedCount: Int,
-    val lastUsedAtEpochMillis: Long
+    val lastUsedAtEpochMillis: Long,
+    val languageCode: String = "en"
 )

@@ -24,6 +24,15 @@ interface LearnedVocabularyProvider {
     /** True once [word] is part of the user's vocabulary (so autocorrect must leave it alone). */
     suspend fun isLearned(word: String, languageCode: String = "en"): Boolean
 
+    /** The learned vocabulary (past the threshold), most recently used first, for the Settings list. */
+    suspend fun listLearned(limit: Int = 1000): List<LearnedWord> = emptyList()
+
+    /** Forgets one word, so it is neither suggested nor protected from autocorrect any more. */
+    suspend fun forget(word: String, languageCode: String) {}
+
+    /** Applies [com.keylingo.app.domain.model.PersonalDataRetention] to incidental history. Returns rows removed. */
+    suspend fun pruneStale(now: Long): Int = 0
+
     /** Deletes the whole personal vocabulary (user-initiated, from Settings). */
     suspend fun clearAll()
 }

@@ -67,4 +67,21 @@ abstract class LearnedWordDao {
 
     @Query("DELETE FROM learned_words")
     abstract suspend fun deleteAll()
+
+    @Query(
+        """
+        SELECT * FROM learned_words
+        WHERE organicCount >= 3 OR acceptedCount >= 1
+        ORDER BY lastUsedAtEpochMillis DESC
+        LIMIT :limit
+        """
+    )
+    abstract suspend fun listLearned(limit: Int): List<LearnedWordEntity>
+
+    @Query("DELETE FROM learned_words WHERE word = :word AND language = :language")
+    abstract suspend fun delete(word: String, language: String)
+
+    /** Words that never reached the learned bar and have not been typed since [cutoff]. */
+    @Query("DELETE FROM learned_words WHERE organicCount < 3 AND acceptedCount = 0 AND lastUsedAtEpochMillis < :cutoff")
+    abstract suspend fun deleteUnlearnedOlderThan(cutoff: Long): Int
 }

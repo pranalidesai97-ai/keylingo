@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
@@ -35,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.keylingo.app.R
 import com.keylingo.app.data.settings.DarkModeOption
 import com.keylingo.app.data.settings.HintSizeOption
+import com.keylingo.app.data.settings.TypingLanguageOption
 import com.keylingo.app.domain.model.LearningMode
 import com.keylingo.app.settings.SettingsViewModel
 import com.keylingo.app.ui.theme.KeyboardThemes
@@ -44,6 +47,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onOpenLearnedWords: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
@@ -59,72 +63,40 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
-            LearningToggleSection(
-                enabled = settings.learningEnabled,
-                onToggle = viewModel::setLearningEnabled
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(20.dp))
-
-            NumberRowToggleSection(
-                enabled = settings.showNumberRow,
-                onToggle = viewModel::setShowNumberRow
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
+            // ---- Typing
+            SectionHeader(stringResource(R.string.settings_section_typing), first = true)
             ToggleRow(
                 title = stringResource(R.string.settings_autocorrect),
                 description = stringResource(R.string.settings_autocorrect_desc),
                 checked = settings.autocorrectEnabled,
                 onToggle = viewModel::setAutocorrectEnabled
             )
-
-            Spacer(modifier = Modifier.height(20.dp))
+            Gap()
+            ToggleRow(
+                title = stringResource(R.string.settings_show_number_row),
+                description = stringResource(R.string.settings_show_number_row_desc),
+                checked = settings.showNumberRow,
+                onToggle = viewModel::setShowNumberRow
+            )
+            Gap()
             ToggleRow(
                 title = stringResource(R.string.settings_haptics),
                 description = stringResource(R.string.settings_haptics_desc),
                 checked = settings.hapticsEnabled,
                 onToggle = viewModel::setHapticsEnabled
             )
-
-            Spacer(modifier = Modifier.height(20.dp))
+            Gap()
             ToggleRow(
                 title = stringResource(R.string.settings_sound),
                 description = stringResource(R.string.settings_sound_desc),
                 checked = settings.soundEnabled,
                 onToggle = viewModel::setSoundEnabled
             )
+            Gap()
+            TypingLanguageSection(selected = settings.typingLanguage, onSelect = viewModel::setTypingLanguage)
 
-            Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(20.dp))
-
-            LearningModeSection(
-                selected = settings.learningMode,
-                onSelect = viewModel::setLearningMode
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(20.dp))
-
-            LanguageSection(
-                selectedCode = settings.targetLanguageCode,
-                onSelect = viewModel::setTargetLanguage
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(20.dp))
-
-            DarkModeSection(
-                selected = settings.darkMode,
-                onSelect = viewModel::setDarkMode
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
+            // ---- Appearance
+            SectionHeader(stringResource(R.string.settings_section_appearance))
             Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
             val systemDark = isSystemInDarkTheme()
@@ -137,31 +109,53 @@ fun SettingsScreen(
                 onSelectPreset = viewModel::setThemePreset,
                 onSelectCustom = viewModel::setCustomAccent
             )
+            Gap()
+            DarkModeSection(selected = settings.darkMode, onSelect = viewModel::setDarkMode)
+            Gap()
+            HintSizeSection(selected = settings.hintSize, onSelect = viewModel::setHintSize)
 
-            Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(20.dp))
-
-            HintSizeSection(
-                selected = settings.hintSize,
-                onSelect = viewModel::setHintSize
+            // ---- Learning & translation
+            SectionHeader(stringResource(R.string.settings_section_learning))
+            ToggleRow(
+                title = stringResource(R.string.settings_learning_enabled),
+                description = stringResource(R.string.settings_learning_enabled_desc),
+                checked = settings.learningEnabled,
+                onToggle = viewModel::setLearningEnabled
             )
+            Gap()
+            ToggleRow(
+                title = stringResource(R.string.settings_sentence_translation),
+                description = stringResource(R.string.settings_sentence_translation_desc),
+                checked = settings.sentenceTranslationEnabled,
+                onToggle = viewModel::setSentenceTranslationEnabled
+            )
+            Gap()
+            ToggleRow(
+                title = stringResource(R.string.settings_grammar),
+                description = stringResource(R.string.settings_grammar_desc),
+                checked = settings.grammarEnabled,
+                onToggle = viewModel::setGrammarEnabled
+            )
+            Gap()
+            LearningModeSection(selected = settings.learningMode, onSelect = viewModel::setLearningMode)
+            Gap()
+            LanguageSection(selectedCode = settings.targetLanguageCode, onSelect = viewModel::setTargetLanguage)
 
-            Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(20.dp))
-
+            // ---- Personal dictionary
+            SectionHeader(stringResource(R.string.settings_section_personal))
+            Text(stringResource(R.string.settings_learned_words), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.settings_learned_words_desc),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = onOpenLearnedWords) { Text(stringResource(R.string.settings_learned_words_open)) }
+            Gap()
             ClearPersonalDataSection(onConfirm = { done -> viewModel.clearPersonalData(done) })
 
-            Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = stringResource(R.string.settings_about),
-                style = MaterialTheme.typography.titleLarge
-            )
-            Spacer(modifier = Modifier.height(6.dp))
+            // ---- About
+            SectionHeader(stringResource(R.string.settings_about))
             Text(
                 text = stringResource(R.string.settings_about_desc),
                 style = MaterialTheme.typography.bodyLarge,
@@ -173,49 +167,60 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun LearningToggleSection(enabled: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.settings_learning_enabled), style = MaterialTheme.typography.titleLarge)
-            Text(
-                stringResource(R.string.settings_learning_enabled_desc),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Switch(checked = enabled, onCheckedChange = onToggle)
+private fun SectionHeader(title: String, first: Boolean = false) {
+    if (!first) {
+        Spacer(modifier = Modifier.height(24.dp))
+        HorizontalDivider()
     }
+    Spacer(modifier = Modifier.height(if (first) 4.dp else 16.dp))
+    Text(title.uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+    Spacer(modifier = Modifier.height(12.dp))
 }
 
 @Composable
-private fun NumberRowToggleSection(enabled: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.settings_show_number_row), style = MaterialTheme.typography.titleLarge)
-            Text(
-                stringResource(R.string.settings_show_number_row_desc),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+private fun Gap() = Spacer(modifier = Modifier.height(20.dp))
+
+@Composable
+private fun TypingLanguageSection(selected: TypingLanguageOption, onSelect: (TypingLanguageOption) -> Unit) {
+    Text(stringResource(R.string.settings_typing_language), style = MaterialTheme.typography.titleLarge)
+    Text(
+        stringResource(R.string.settings_typing_language_desc),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    val options = listOf(
+        TypingLanguageOption.AUTO to stringResource(R.string.settings_typing_language_auto),
+        TypingLanguageOption.ENGLISH to stringResource(R.string.settings_typing_language_en),
+        TypingLanguageOption.SPANISH to stringResource(R.string.settings_typing_language_es)
+    )
+    Column(modifier = Modifier.selectableGroup()) {
+        options.forEach { (option, label) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(selected = option == selected, onClick = { onSelect(option) }),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(selected = option == selected, onClick = { onSelect(option) })
+                Text(label, modifier = Modifier.padding(start = 8.dp))
+            }
         }
-        Switch(checked = enabled, onCheckedChange = onToggle)
     }
 }
 
 @Composable
 private fun ToggleRow(title: String, description: String, checked: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
+    // The whole row is the touch target (and one accessibility node), not just the small switch.
+    Row(
+        modifier = Modifier.fillMaxWidth().toggleable(value = checked, role = Role.Switch, onValueChange = onToggle),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
             Text(title, style = MaterialTheme.typography.titleLarge)
             Text(description, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = checked, onCheckedChange = onToggle)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

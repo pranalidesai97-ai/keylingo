@@ -70,4 +70,33 @@ abstract class BigramDao {
         deleteAllBigrams()
         deleteAllTrigrams()
     }
+
+    @Query("DELETE FROM bigrams WHERE language = :language AND (previousWord = :word OR nextWord = :word)")
+    protected abstract suspend fun deleteBigramsWith(word: String, language: String)
+
+    @Query("DELETE FROM trigrams WHERE language = :language AND (secondPreviousWord = :word OR previousWord = :word OR nextWord = :word)")
+    protected abstract suspend fun deleteTrigramsWith(word: String, language: String)
+
+    @Transaction
+    open suspend fun deleteWord(word: String, language: String) {
+        deleteBigramsWith(word, language)
+        deleteTrigramsWith(word, language)
+    }
+
+    @Query("DELETE FROM bigrams WHERE count <= 1 AND lastUsedAtEpochMillis < :cutoff")
+    protected abstract suspend fun deleteSingleUseBigrams(cutoff: Long): Int
+
+    @Query("DELETE FROM trigrams WHERE count <= 1 AND lastUsedAtEpochMillis < :cutoff")
+    protected abstract suspend fun deleteSingleUseTrigrams(cutoff: Long): Int
+
+    /** Keeps the [keep] most recently used bigrams. */
+    @Query("DELETE FROM bigrams WHERE id IN (SELECT id FROM bigrams ORDER BY lastUsedAtEpochMillis DESC LIMIT -1 OFFSET :keep)")
+    protected abstract suspend fun capBigrams(keep: Int): Int
+
+    @Query("DELETE FROM trigrams WHERE id IN (SELECT id FROM trigrams ORDER BY lastUsedAtEpochMillis DESC LIMIT -1 OFFSET :keep)")
+    protected abstract suspend fun capTrigrams(keep: Int): Int
+
+    @Transaction
+    open suspend fun prune(singleUseCutoff: Long, maxBigrams: Int, maxTrigrams: Int): Int =
+        deleteSingleUseBigrams(singleUseCutoff) + deleteSingleUseTrigrams(singleUseCutoff) + capBigrams(maxBigrams) + capTrigrams(maxTrigrams)
 }

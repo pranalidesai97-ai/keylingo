@@ -75,6 +75,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsDataStore.setCustomAccent(argb) }
     }
 
+    fun setGrammarEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsDataStore.setGrammarEnabled(enabled) }
+    }
+
+    fun setSentenceTranslationEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsDataStore.setSentenceTranslationEnabled(enabled) }
+    }
+
     fun setSoundEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsDataStore.setSoundEnabled(enabled) }
     }

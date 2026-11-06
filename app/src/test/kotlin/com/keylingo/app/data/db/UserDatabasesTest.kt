@@ -107,4 +107,60 @@ class UserDatabasesTest {
         db.execSQL("INSERT INTO trigrams (secondPreviousWord, previousWord, nextWord, language, count, lastUsedAtEpochMillis) VALUES ('very', 'good', 'morning', 'en', 1, 1)")
         db.close()
     }
+
+    // ---- Phase 5: retention, listing and forgetting
+
+    private val day = 24L * 60 * 60 * 1000
+
+    @Test fun retentionForgetsIncidentalWordsButKeepsLearnedOnes() = runBlocking {
+        vocabulary.recordOrganicUsage("zorbix")               // typed once: incidental
+        vocabulary.recordAcceptedSuggestion("keylingo")       // accepted once: learned
+        repeat(3) { vocabulary.recordOrganicUsage("quokka") } // typed 3 times: learned
+        val now = System.currentTimeMillis()
+        assertEquals(0, vocabulary.pruneStale(now + 29 * day)) // not old enough yet
+        assertEquals(1, vocabulary.pruneStale(now + 31 * day))
+        assertEquals(null, learningDb.learnedWordDao().find("zorbix", "en"))
+        assertTrue(vocabulary.isLearned("keylingo") && vocabulary.isLearned("quokka"))
+    }
+
+    @Test fun singleUseSequencesExpireAndStorageIsCapped() = runBlocking {
+        repeat(2) { sequences.recordSequence("good", "morning") }
+        sequences.recordSequence("purple", "elephant", secondPreviousWord = "the")
+        val now = System.currentTimeMillis()
+        sequences.pruneStale(now + 61 * day)
+        assertEquals(mapOf("morning" to 2), sequences.nextWordCounts("good"))
+        assertTrue(sequences.nextWordCounts("purple").isEmpty())
+        assertTrue(sequences.nextWordCountsAfterPair("the", "purple").isEmpty())
+
+        val dao = contextDb.bigramDao()
+        dao.record(null, "a", "one", "en", 1_000)
+        dao.record(null, "a", "two", "en", 2_000)
+        dao.record(null, "a", "three", "en", 3_000)
+        dao.prune(singleUseCutoff = 0, maxBigrams = 2, maxTrigrams = 10) // keeps the 2 most recently used: good->morning and a->three
+        assertEquals(setOf("three"), sequences.nextWordCounts("a").keys)
+        assertEquals(mapOf("morning" to 2), sequences.nextWordCounts("good")) // newest rows survive the cap
+    }
+
+    @Test fun listingShowsOnlyLearnedWordsNewestFirst() = runBlocking {
+        vocabulary.recordOrganicUsage("once")
+        vocabulary.recordAcceptedSuggestion("casa", "es")
+        Thread.sleep(5)
+        vocabulary.recordAcceptedSuggestion("quokka")
+        val listed = vocabulary.listLearned()
+        assertEquals(listOf("quokka" to "en", "casa" to "es"), listed.map { it.word to it.languageCode })
+    }
+
+    @Test fun forgettingAWordRemovesItFromSuggestionsAndPredictions() = runBlocking {
+        vocabulary.recordAcceptedSuggestion("quokka")
+        sequences.recordSequence("cute", "quokka", secondPreviousWord = "a")
+        sequences.recordSequence("quokka", "island")
+        sequences.recordSequence("cute", "cat")
+        vocabulary.forget("Quokka", "en")
+        sequences.forgetWord("quokka", "en")
+        assertFalse(vocabulary.isLearned("quokka"))
+        assertTrue(vocabulary.suggest("quo").isEmpty())
+        assertEquals(setOf("cat"), sequences.nextWordCounts("cute").keys)
+        assertTrue(sequences.nextWordCounts("quokka").isEmpty())
+        assertTrue(sequences.nextWordCountsAfterPair("a", "cute").isEmpty())
+    }
 }

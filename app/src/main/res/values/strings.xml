@@ -53,4 +53,29 @@
     <string name="learning_mode_advanced_desc">Minimal hints, only for difficult or uncommon words</string>
     <string name="settings_about">About</string>
     <string name="settings_about_desc">KeyLingo teaches you Spanish as you type. Everything runs offline: your keystrokes and learned words never leave this device.</string>
+    <string name="settings_section_typing">Typing</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_learning">Learning &amp; translation</string>
+    <string name="settings_section_personal">Personal dictionary</string>
+    <string name="settings_typing_language">Typing language</string>
+    <string name="settings_typing_language_desc">Which dictionary drives suggestions and autocorrect. Auto detects English or Spanish from what you type.</string>
+    <string name="settings_typing_language_auto">Auto-detect</string>
+    <string name="settings_typing_language_en">English</string>
+    <string name="settings_typing_language_es">Spanish</string>
+    <string name="settings_grammar">Grammar suggestions</string>
+    <string name="settings_grammar_desc">Offer a corrected English sentence after you finish a word. Nothing changes unless you tap it.</string>
+    <string name="settings_sentence_translation">Sentence translation</string>
+    <string name="settings_sentence_translation_desc">Show the whole sentence translated when every word is understood.</string>
+    <string name="settings_learned_words">Learned words</string>
+    <string name="settings_learned_words_desc">See and delete the words KeyLingo learned from your typing. Words typed only once or twice are forgotten after 30 days.</string>
+    <string name="settings_learned_words_open">Manage learned words</string>
+    <string name="learned_words_title">Learned words</string>
+    <string name="learned_words_empty">No learned words yet. A word is learned after you type it 3 times or pick it from the suggestions.</string>
+    <string name="learned_words_filter">Filter</string>
+    <plurals name="learned_words_uses">
+        <item quantity="one">Used %1$d time</item>
+        <item quantity="other">Used %1$d times</item>
+    </plurals>
+    <string name="learned_words_delete">Delete %1$s</string>
+    <string name="learned_words_back">Back</string>
 </resources>

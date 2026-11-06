@@ -22,4 +22,10 @@ interface ContextPredictionProvider {
 
     /** Deletes all personal sequence history (user-initiated, from Settings). */
     suspend fun clearAll()
+
+    /** Deletes every stored sequence containing [word] (when the user forgets that word). */
+    suspend fun forgetWord(word: String, languageCode: String) {}
+
+    /** Applies [com.keylingo.app.domain.model.PersonalDataRetention] to sequence history. Returns rows removed. */
+    suspend fun pruneStale(now: Long): Int = 0
 }

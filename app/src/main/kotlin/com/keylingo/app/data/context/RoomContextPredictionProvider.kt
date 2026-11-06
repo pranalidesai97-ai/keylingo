@@ -1,5 +1,6 @@
 package com.keylingo.app.data.context
 
+import com.keylingo.app.domain.model.PersonalDataRetention
 import com.keylingo.app.data.WordEligibility
 import com.keylingo.app.domain.repository.ContextPredictionProvider
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +40,14 @@ class RoomContextPredictionProvider @Inject constructor(
     }
 
     override suspend fun clearAll() = withContext(Dispatchers.IO) { dao.deleteAll() }
+
+    override suspend fun forgetWord(word: String, languageCode: String) = withContext(Dispatchers.IO) {
+        dao.deleteWord(word.trim().lowercase(), languageCode)
+    }
+
+    override suspend fun pruneStale(now: Long): Int = withContext(Dispatchers.IO) {
+        dao.prune(now - PersonalDataRetention.SINGLE_USE_SEQUENCE_TTL_MS, PersonalDataRetention.MAX_BIGRAMS, PersonalDataRetention.MAX_TRIGRAMS)
+    }
 
     private companion object {
         const val MAX_NEXT_WORDS = 50

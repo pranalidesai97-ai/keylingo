@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.keylingo.app.data.settings.DarkModeOption
 import com.keylingo.app.settings.SettingsViewModel
+import com.keylingo.app.settings.ui.LearnedWordsScreen
 import com.keylingo.app.settings.ui.SettingsScreen
 import com.keylingo.app.ui.onboarding.OnboardingScreen
 import com.keylingo.app.ui.theme.KeyLingoTheme
@@ -23,6 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 private object Routes {
     const val ONBOARDING = "onboarding"
     const val SETTINGS = "settings"
+    const val LEARNED_WORDS = "learned_words"
 }
 
 /**
@@ -61,7 +63,13 @@ private fun KeyLingoApp() {
                 )
             }
             composable(Routes.SETTINGS) {
-                SettingsScreen(onBack = { navController.popBackStack() })
+                SettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenLearnedWords = { navController.navigate(Routes.LEARNED_WORDS) }
+                )
+            }
+            composable(Routes.LEARNED_WORDS) {
+                LearnedWordsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

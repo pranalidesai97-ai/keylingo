@@ -1,5 +1,6 @@
 package com.keylingo.app.data.learning
 
+import com.keylingo.app.domain.model.PersonalDataRetention
 import com.keylingo.app.data.WordEligibility
 import com.keylingo.app.domain.model.LearnedWord
 import com.keylingo.app.domain.repository.LearnedVocabularyProvider
@@ -53,4 +54,16 @@ class RoomLearnedVocabularyProvider @Inject constructor(
     }
 
     override suspend fun clearAll() = withContext(Dispatchers.IO) { dao.deleteAll() }
+
+    override suspend fun listLearned(limit: Int): List<LearnedWord> = withContext(Dispatchers.IO) {
+        dao.listLearned(limit).map { LearnedWord(it.word, it.organicCount, it.acceptedCount, it.lastUsedAtEpochMillis, it.language) }
+    }
+
+    override suspend fun forget(word: String, languageCode: String) = withContext(Dispatchers.IO) {
+        dao.delete(word.trim().lowercase(), languageCode)
+    }
+
+    override suspend fun pruneStale(now: Long): Int = withContext(Dispatchers.IO) {
+        dao.deleteUnlearnedOlderThan(now - PersonalDataRetention.UNLEARNED_WORD_TTL_MS)
+    }
 }
