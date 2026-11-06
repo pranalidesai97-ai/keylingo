@@ -31,12 +31,20 @@ private val DarkColors = darkColorScheme(
     surfaceVariant = HintChipDark
 )
 
+/**
+ * Material theme for the companion app and for text defaults inside the
+ * keyboard. [accent] (the keyboard theme's accent) tints primary elements so
+ * Settings matches the chosen keyboard theme.
+ */
 @Composable
 fun KeyLingoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    accent: Color? = null,
+    onAccent: Color? = null,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColors else LightColors
+    val base = if (darkTheme) DarkColors else LightColors
+    val colorScheme = if (accent != null && onAccent != null) base.copy(primary = accent, onPrimary = onAccent) else base
     MaterialTheme(
         colorScheme = colorScheme,
         typography = KeyLingoTypography,

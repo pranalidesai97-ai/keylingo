@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +42,9 @@ import com.keylingo.app.keyboard.KeyboardMode
 import com.keylingo.app.keyboard.KeyboardUiState
 import com.keylingo.app.keyboard.KeyboardViewModel
 import com.keylingo.app.ui.theme.KeyLingoTheme
+import com.keylingo.app.ui.theme.KeyboardThemes
+import com.keylingo.app.ui.theme.LocalKeyboardColors
+import androidx.compose.runtime.CompositionLocalProvider
 import kotlin.math.roundToInt
 
 /**
@@ -72,9 +74,15 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
     }
 
     val feedback = rememberKeyFeedback(uiState.settings.hapticsEnabled, uiState.settings.soundEnabled)
+    val settings = uiState.settings
+    val systemDark = isSystemInDarkTheme()
+    val dark = KeyboardThemes.useDark(settings.themePreset, settings.darkMode == DarkModeOption.SYSTEM, settings.darkMode == DarkModeOption.DARK, systemDark)
+    val palette = remember(settings.themePreset, settings.customAccentArgb, dark) {
+        KeyboardThemes.palette(settings.themePreset, settings.customAccentArgb, dark)
+    }
 
-    KeyLingoTheme(darkTheme = isDarkTheme(uiState.settings.darkMode)) {
-        Surface(color = MaterialTheme.colorScheme.background) {
+    CompositionLocalProvider(LocalKeyboardColors provides palette) { KeyLingoTheme(darkTheme = dark) {
+        Surface(color = palette.background) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     val onSuggestion = remember(viewModel) { viewModel::onAutocompleteSelected }
@@ -93,7 +101,7 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(KEY_ROWS_HEIGHT)
-                            .background(MaterialTheme.colorScheme.background)
+                            .background(palette.background)
                             .padding(horizontal = 4.dp, vertical = 4.dp)
                     ) {
                         if (uiState.mode == KeyboardMode.EMOJI) {
@@ -107,7 +115,7 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
                 popup?.let { AccentPopupOverlay(it) }
             }
         }
-    }
+    } }
 }
 
 @Composable
@@ -145,13 +153,14 @@ private fun EmojiGrid(onEmoji: (String) -> Unit, modifier: Modifier) {
                     .aspectRatio(1f)
                     .clickable { onEmoji(emoji) },
                 contentAlignment = Alignment.Center
-            ) { Text(emoji, fontSize = 24.sp) }
+            ) { Text(emoji, fontSize = 24.sp, color = LocalKeyboardColors.current.keyText) }
         }
     }
 }
 
 @Composable
 private fun AccentPopupOverlay(state: AccentPopupState) {
+    val colors = LocalKeyboardColors.current
     val density = LocalDensity.current
     val cellWidth = with(density) { state.anchor.width.toDp() }
     val cellHeight = with(density) { (state.anchor.height * 0.9f).toDp() }
@@ -161,7 +170,7 @@ private fun AccentPopupOverlay(state: AccentPopupState) {
             .offset { offset }
             .zIndex(10f)
             .shadow(6.dp, RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp))
+            .background(colors.popup, RoundedCornerShape(10.dp))
             .padding(2.dp)
     ) {
         state.options.forEachIndexed { index, option ->
@@ -169,18 +178,11 @@ private fun AccentPopupOverlay(state: AccentPopupState) {
             Box(
                 modifier = Modifier
                     .size(width = cellWidth, height = cellHeight)
-                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
+                    .background(if (selected) colors.accent else colors.popup, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(option, fontSize = 20.sp, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                Text(option, fontSize = 20.sp, color = if (selected) colors.onAccent else colors.keyText)
             }
         }
     }
-}
-
-@Composable
-private fun isDarkTheme(mode: DarkModeOption): Boolean = when (mode) {
-    DarkModeOption.DARK -> true
-    DarkModeOption.LIGHT -> false
-    DarkModeOption.SYSTEM -> isSystemInDarkTheme()
 }

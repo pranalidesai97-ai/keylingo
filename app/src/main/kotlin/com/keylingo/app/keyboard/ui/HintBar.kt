@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,6 +29,7 @@ import com.keylingo.app.domain.model.AutocompleteSuggestion
 import com.keylingo.app.domain.model.HintWord
 import com.keylingo.app.domain.model.LearningAssistance
 import com.keylingo.app.domain.model.SuggestionKind
+import com.keylingo.app.ui.theme.LocalKeyboardColors
 
 /**
  * Fixed height of one strip row, sized for a two-line hint chip at
@@ -64,7 +64,7 @@ fun HintBar(
         modifier = modifier
             .fillMaxWidth()
             .height(SUGGESTION_ROW_HEIGHT * 2)
-            .background(MaterialTheme.colorScheme.background)
+            .background(LocalKeyboardColors.current.strip)
     ) {
         SuggestionRow {
             suggestions.forEach { suggestion ->
@@ -106,13 +106,13 @@ private fun SuggestionChip(
     hintSize: HintSizeOption,
     onClick: (AutocompleteSuggestion) -> Unit
 ) {
-    val colors = MaterialTheme.colorScheme
+    val colors = LocalKeyboardColors.current
     val label = if (suggestion.kind == SuggestionKind.LITERAL) "“${suggestion.word}”" else suggestion.word
     Row(
         modifier = Modifier
             .fillMaxHeight()
             .widthIn(min = 56.dp)
-            .background(if (highlighted) colors.primaryContainer else colors.surfaceVariant, RoundedCornerShape(14.dp))
+            .background(if (highlighted) colors.accent else colors.chip, RoundedCornerShape(14.dp))
             .clickable { onClick(suggestion) }
             .padding(horizontal = 14.dp, vertical = 6.dp)
             .semantics { contentDescription = if (highlighted) "Autocorrect to ${suggestion.word}" else "Suggestion ${suggestion.word}" },
@@ -121,7 +121,7 @@ private fun SuggestionChip(
     ) {
         Text(
             text = label,
-            color = if (highlighted) colors.onPrimaryContainer else colors.onSurfaceVariant,
+            color = if (highlighted) colors.onAccent else colors.chipText,
             fontSize = fontSizeFor(hintSize),
             fontWeight = if (highlighted) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
@@ -132,51 +132,53 @@ private fun SuggestionChip(
 
 @Composable
 private fun SentenceChip(text: String, typingLanguage: String, hintSize: HintSizeOption) {
-    val colors = MaterialTheme.colorScheme
+    val colors = LocalKeyboardColors.current
     Row(
         modifier = Modifier
             .fillMaxHeight()
-            .background(colors.primary, RoundedCornerShape(14.dp))
+            .background(colors.translationChip, RoundedCornerShape(14.dp))
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .semantics { contentDescription = "Translation: $text" },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = if (typingLanguage == "en") "ES" else "EN",
-            color = colors.onPrimary.copy(alpha = 0.75f),
+            color = colors.onTranslationChip.copy(alpha = 0.8f),
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(end = 6.dp)
         )
-        Text(text = text, color = colors.onPrimary, fontSize = fontSizeFor(hintSize), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text = text, color = colors.onTranslationChip, fontSize = fontSizeFor(hintSize), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
 private fun HintChip(hint: HintWord, hintSize: HintSizeOption) {
-    val colors = MaterialTheme.colorScheme
+    val colors = LocalKeyboardColors.current
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .background(colors.surfaceVariant, RoundedCornerShape(14.dp))
+            .background(colors.chip, RoundedCornerShape(14.dp))
             .padding(horizontal = 12.dp, vertical = 2.dp)
             .semantics { contentDescription = "${hint.originalWord}: ${hint.translatedWord}, ${hint.formLabel}" },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Explicit line heights: the default body line height (24sp) clipped the caption in the 46dp row.
         Text(
             text = hint.translatedWord,
-            color = colors.primary,
+            color = colors.hintText,
             fontSize = fontSizeFor(hintSize),
+            lineHeight = fontSizeFor(hintSize) * 1.15f,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
         Text(
             text = "${hint.originalWord} · ${hint.formLabel}",
-            color = colors.onSurfaceVariant,
+            color = colors.caption,
             fontSize = 10.sp,
-            lineHeight = 11.sp,
+            lineHeight = 12.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

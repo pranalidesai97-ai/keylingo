@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.KeyboardCapslock
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +54,7 @@ import com.keylingo.app.keyboard.EnterKeyAction
 import com.keylingo.app.keyboard.KeyAction
 import com.keylingo.app.keyboard.KeyboardLayoutProvider
 import com.keylingo.app.keyboard.ShiftState
+import com.keylingo.app.ui.theme.LocalKeyboardColors
 
 /** Long-press-to-repeat tuning for Backspace. */
 private const val BACKSPACE_INITIAL_DELAY_MS = 350L
@@ -98,17 +98,21 @@ fun RowScope.KeyboardKey(
     val alternates = remember(action) { KeyboardLayoutProvider.alternatesFor(action) }
     val bounds = remember { arrayOf(Rect.Zero) }
 
-    val colors = MaterialTheme.colorScheme
+    val palette = LocalKeyboardColors.current
     val isAccentKey = action is KeyAction.Shift || action is KeyAction.Backspace || action is KeyAction.Enter ||
         action is KeyAction.SwitchToSymbols || action is KeyAction.SwitchToLetters || action is KeyAction.SwitchToNumbers
     val enterHighlighted = action is KeyAction.Enter && enterAction != EnterKeyAction.NEWLINE
+    val active = (action is KeyAction.Shift && shiftState != ShiftState.OFF) || enterHighlighted
     val background = when {
-        action is KeyAction.Shift && shiftState != ShiftState.OFF -> colors.primary
-        enterHighlighted -> colors.primary
-        isAccentKey -> colors.surfaceVariant
-        else -> colors.surface
+        active -> palette.accent
+        isAccentKey -> palette.specialKey
+        else -> palette.key
     }
-    val contentColor = if ((action is KeyAction.Shift && shiftState != ShiftState.OFF) || enterHighlighted) colors.onPrimary else colors.onSurface
+    val contentColor = when {
+        active -> palette.onAccent
+        isAccentKey -> palette.specialKeyText
+        else -> palette.keyText
+    }
     val pressedOverlay = contentColor.copy(alpha = 0.16f)
     val face by animateColorAsState(
         targetValue = if (isPressed) pressedOverlay.compositeOver(background) else background,

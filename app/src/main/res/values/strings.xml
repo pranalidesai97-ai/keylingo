@@ -28,6 +28,16 @@
     <string name="settings_personal_data_clear">Delete learned words</string>
     <string name="settings_personal_data_confirm_title">Delete learned words?</string>
     <string name="settings_personal_data_confirm_text">KeyLingo will forget every word and word sequence it learned from you. Bundled dictionaries are not affected. This cannot be undone.</string>
+    <string name="settings_theme">Keyboard theme</string>
+    <string name="theme_sunlight_yellow">Sunlight Yellow</string>
+    <string name="theme_lavender_purple">Lavender Purple</string>
+    <string name="theme_dark_violet">Dark Violet</string>
+    <string name="theme_mint_green">Mint Green</string>
+    <string name="theme_ocean_blue">Ocean Blue</string>
+    <string name="theme_blush_pink">Blush Pink</string>
+    <string name="theme_custom">Custom colour</string>
+    <string name="theme_custom_preview">Your colour</string>
+    <string name="theme_custom_hue">Fine-tune hue</string>
     <string name="settings_language">Learning language</string>
     <string name="settings_dark_mode">Dark mode</string>
     <string name="settings_hint_size">Hint text size</string>

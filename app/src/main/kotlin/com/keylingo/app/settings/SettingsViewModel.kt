@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.keylingo.app.data.settings.DarkModeOption
 import com.keylingo.app.data.settings.HintSizeOption
 import com.keylingo.app.data.settings.KeyLingoSettings
+import com.keylingo.app.data.settings.KeyboardThemePreset
 import com.keylingo.app.data.settings.SettingsDataStore
 import com.keylingo.app.domain.model.LearningMode
 import com.keylingo.app.domain.repository.ContextPredictionProvider
@@ -59,6 +60,14 @@ class SettingsViewModel @Inject constructor(
 
     fun setHapticsEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsDataStore.setHapticsEnabled(enabled) }
+    }
+
+    fun setThemePreset(preset: KeyboardThemePreset) {
+        viewModelScope.launch { settingsDataStore.setThemePreset(preset) }
+    }
+
+    fun setCustomAccent(argb: Int) {
+        viewModelScope.launch { settingsDataStore.setCustomAccent(argb) }
     }
 
     fun setSoundEnabled(enabled: Boolean) {

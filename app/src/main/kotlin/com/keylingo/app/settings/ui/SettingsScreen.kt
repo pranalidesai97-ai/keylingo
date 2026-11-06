@@ -37,6 +37,8 @@ import com.keylingo.app.data.settings.DarkModeOption
 import com.keylingo.app.data.settings.HintSizeOption
 import com.keylingo.app.domain.model.LearningMode
 import com.keylingo.app.settings.SettingsViewModel
+import com.keylingo.app.ui.theme.KeyboardThemes
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,6 +122,20 @@ fun SettingsScreen(
             DarkModeSection(
                 selected = settings.darkMode,
                 onSelect = viewModel::setDarkMode
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.height(8.dp))
+            val systemDark = isSystemInDarkTheme()
+            ThemePickerSection(
+                selected = settings.themePreset,
+                customAccentArgb = settings.customAccentArgb,
+                darkPreview = { preset ->
+                    KeyboardThemes.useDark(preset, settings.darkMode == DarkModeOption.SYSTEM, settings.darkMode == DarkModeOption.DARK, systemDark)
+                },
+                onSelectPreset = viewModel::setThemePreset,
+                onSelectCustom = viewModel::setCustomAccent
             )
 
             Spacer(modifier = Modifier.height(20.dp))
