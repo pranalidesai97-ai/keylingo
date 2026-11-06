@@ -1,15 +1,15 @@
 package com.keylingo.app.di
 
-import com.keylingo.app.data.dictionary.RoomDictionaryProvider
-import com.keylingo.app.data.dictionary.RoomPhraseChunkProvider
-import com.keylingo.app.data.hint.DefaultHintProvider
-import com.keylingo.app.data.language.EnglishSourceLanguageRules
+import com.keylingo.app.data.bundled.BundledAutocompleteProvider
+import com.keylingo.app.data.bundled.BundledDataSupplier
+import com.keylingo.app.data.bundled.BundledLanguageDataSource
+import com.keylingo.app.data.bundled.BundledLanguageDetector
+import com.keylingo.app.data.hint.LearningAssistant
 import com.keylingo.app.data.language.SpanishLanguagePack
-import com.keylingo.app.domain.repository.DictionaryProvider
+import com.keylingo.app.domain.repository.AutocompleteProvider
 import com.keylingo.app.domain.repository.HintProvider
+import com.keylingo.app.domain.repository.LanguageDetector
 import com.keylingo.app.domain.repository.LanguagePack
-import com.keylingo.app.domain.repository.PhraseChunkProvider
-import com.keylingo.app.domain.repository.SourceLanguageRules
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,31 +17,26 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * Binds the domain-layer interfaces to today's concrete implementations.
- * Swapping any of these later -- a bigger dictionary, smarter NLP, a new
- * source or target language -- means changing only the class bound here.
+ * Binds the domain interfaces served by the bundled (read-only, in-memory)
+ * language data. Personal-data bindings live in [LearningBindsModule] and
+ * [ContextBindsModule] so the two kinds of data stay visibly separate.
  */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class AppModule {
 
-    @Binds
-    @Singleton
-    abstract fun bindDictionaryProvider(impl: RoomDictionaryProvider): DictionaryProvider
+    @Binds @Singleton
+    abstract fun bindBundledDataSupplier(impl: BundledLanguageDataSource): BundledDataSupplier
 
-    @Binds
-    @Singleton
-    abstract fun bindPhraseChunkProvider(impl: RoomPhraseChunkProvider): PhraseChunkProvider
+    @Binds @Singleton
+    abstract fun bindAutocompleteProvider(impl: BundledAutocompleteProvider): AutocompleteProvider
 
-    @Binds
-    @Singleton
-    abstract fun bindHintProvider(impl: DefaultHintProvider): HintProvider
+    @Binds @Singleton
+    abstract fun bindHintProvider(impl: LearningAssistant): HintProvider
 
-    @Binds
-    @Singleton
+    @Binds @Singleton
+    abstract fun bindLanguageDetector(impl: BundledLanguageDetector): LanguageDetector
+
+    @Binds @Singleton
     abstract fun bindLanguagePack(impl: SpanishLanguagePack): LanguagePack
-
-    @Binds
-    @Singleton
-    abstract fun bindSourceLanguageRules(impl: EnglishSourceLanguageRules): SourceLanguageRules
 }

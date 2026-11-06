@@ -21,16 +21,21 @@ import javax.inject.Singleton
  * without any user text and [get] returns null; the keyboard keeps working
  * as a plain keyboard with no suggestions rather than crashing.
  */
+/** Supplies the loaded bundled data (or null if unavailable). Lets providers be tested without Android. */
+fun interface BundledDataSupplier {
+    suspend fun get(): BundledLanguageData?
+}
+
 @Singleton
 class BundledLanguageDataSource @Inject constructor(
     @ApplicationContext private val context: Context
-) {
+) : BundledDataSupplier {
     private val mutex = Mutex()
     private var deferred: CompletableDeferred<BundledLanguageData?>? = null
     @Volatile private var loaded: BundledLanguageData? = null
 
     /** Starts loading in the background if not already started. Cheap to call repeatedly. */
-    suspend fun get(): BundledLanguageData? {
+    override suspend fun get(): BundledLanguageData? {
         val existing = mutex.withLock {
             deferred ?: CompletableDeferred<BundledLanguageData?>().also { deferred = it; it.startLoad() }
         }

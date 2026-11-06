@@ -2,27 +2,42 @@ package com.keylingo.app.data.context
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
- * Holds the user's personal word-sequence (bigram) history. Kept as its
- * own database, separate from [com.keylingo.app.data.learning.LearningDatabase]
- * (personal vocabulary) -- "does the user know this word" and "what word
- * tends to follow this one" are different questions with different query
- * shapes and different growth patterns (bigram rows can grow much faster
- * than vocabulary rows for an active typist), so keeping them in separate
- * tables/databases means one feature's data volume or schema evolution
- * never affects the other.
+ * The user's personal word-sequence history. Holds genuine user data, so it
+ * never uses destructive migration: every schema change ships a real
+ * [Migration], covered by a migration test against the exported schemas in
+ * app/schemas/.
  *
- * Like [LearningDatabase][com.keylingo.app.data.learning.LearningDatabase],
- * this holds genuine user data and deliberately does **not** use
- * `fallbackToDestructiveMigration()` -- see that class's KDoc for the
- * reasoning, which applies identically here.
+ * v1: bigrams. v2: + trigrams (additive; existing bigram history is kept).
  */
 @Database(
-    entities = [BigramEntity::class],
-    version = 1,
-    exportSchema = false
+    entities = [BigramEntity::class, TrigramEntity::class],
+    version = 2,
+    exportSchema = true
 )
 abstract class ContextDatabase : RoomDatabase() {
     abstract fun bigramDao(): BigramDao
+
+    companion object {
+        const val NAME = "keylingo_context.db"
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `trigrams` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`secondPreviousWord` TEXT NOT NULL, `previousWord` TEXT NOT NULL, `nextWord` TEXT NOT NULL, " +
+                        "`language` TEXT NOT NULL, `count` INTEGER NOT NULL, `lastUsedAtEpochMillis` INTEGER NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_trigrams_secondPreviousWord_previousWord_nextWord_language` " +
+                        "ON `trigrams` (`secondPreviousWord`, `previousWord`, `nextWord`, `language`)"
+                )
+            }
+        }
+
+        val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2)
+    }
 }

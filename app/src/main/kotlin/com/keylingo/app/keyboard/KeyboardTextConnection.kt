@@ -1,31 +1,30 @@
 package com.keylingo.app.keyboard
 
 /**
- * Thin seam between the presentation layer ([KeyboardViewModel]) and the
- * Android [android.view.inputmethod.InputConnection] the IME service
- * holds. Keeping this as an interface means the ViewModel is plain,
- * testable Kotlin with no Android Service dependency.
+ * Thin seam between [KeyboardViewModel] and Android's InputConnection, so
+ * the ViewModel stays plain, testable Kotlin. Only text near the cursor is
+ * ever read, and only to compute suggestions/hints -- it is never stored.
  */
 interface KeyboardTextConnection {
-    /** Commit literal text at the cursor -- this IS the user's real message. */
+    /** Commit literal text at the cursor (replacing any selection) -- this IS the user's real message. */
     fun commitText(text: String)
 
-    /** Delete exactly one character before the cursor (or the selection, if any). */
-    fun deleteOneCharacterBackward()
-
-    /**
-     * Delete [charCount] characters immediately before the cursor, without
-     * touching the rest of the field. Used to remove the in-progress word
-     * before committing an autocomplete replacement -- distinct from
-     * [deleteOneCharacterBackward], which also special-cases an active
-     * selection (not relevant here: autocomplete selection happens while
-     * actively typing, never with a text selection active).
-     */
+    /** Delete [charCount] UTF-16 chars before the cursor (callers pass whole graphemes / whole words). */
     fun deleteCharactersBackward(charCount: Int)
 
-    /** Perform the field's declared IME action (Next/Done/Search/...) or insert a newline. */
+    /** Backspace semantics: delete the selection if there is one, else one grapheme, else send a DEL key event (for empty fields / custom editors). */
+    fun deleteBackward(graphemeLength: Int)
+
+    /** Perform the field's declared IME action (Send/Search/Done...) or insert a newline. */
     fun performEnterAction()
 
-    /** Read the full current text of the field being edited, for hint analysis only. */
-    fun currentFieldText(): String
+    /** Up to [maxChars] characters before the cursor ("" when unavailable). */
+    fun textBeforeCursor(maxChars: Int): String
+
+    /** Up to [maxChars] characters after the cursor. */
+    fun textAfterCursor(maxChars: Int): String
+
+    /** Group several edits so the app sees them atomically (no flicker, one undo step). */
+    fun beginBatchEdit() {}
+    fun endBatchEdit() {}
 }

@@ -4,7 +4,6 @@ import android.inputmethodservice.InputMethodService
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.ExtractedTextRequest
 import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
@@ -21,17 +20,18 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.keylingo.app.data.autocomplete.EnglishWordSeeder
-import com.keylingo.app.data.dictionary.DictionarySeeder
-import com.keylingo.app.data.dictionary.PhraseChunkSeeder
+import android.util.Log
+import com.keylingo.app.data.bundled.BundledLanguageDataSource
 import com.keylingo.app.data.settings.SettingsDataStore
 import com.keylingo.app.domain.repository.ContextPredictionProvider
+import com.keylingo.app.domain.repository.LanguageDetector
 import com.keylingo.app.domain.repository.LanguagePack
 import com.keylingo.app.domain.repository.LearnedVocabularyProvider
 import com.keylingo.app.domain.usecase.GenerateAutocompleteSuggestionsUseCase
 import com.keylingo.app.domain.usecase.GenerateHintsUseCase
 import com.keylingo.app.keyboard.ui.KeyboardScreen
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -84,15 +84,23 @@ class KeyLingoInputMethodService :
     @Inject lateinit var generateAutocompleteSuggestionsUseCase: GenerateAutocompleteSuggestionsUseCase
     @Inject lateinit var learnedVocabularyProvider: LearnedVocabularyProvider
     @Inject lateinit var contextPredictionProvider: ContextPredictionProvider
+    @Inject lateinit var languageDetector: LanguageDetector
     @Inject lateinit var settingsDataStore: SettingsDataStore
     @Inject lateinit var languagePack: LanguagePack
-    @Inject lateinit var dictionarySeeder: DictionarySeeder
-    @Inject lateinit var phraseChunkSeeder: PhraseChunkSeeder
-    @Inject lateinit var englishWordSeeder: EnglishWordSeeder
+    @Inject lateinit var bundledData: BundledLanguageDataSource
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
-    private var serviceScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    /**
+     * A failure in any background job (a database error while recording a
+     * word, an unexpected parse error) must never take the keyboard down
+     * mid-sentence: log it -- without any user text -- and keep typing.
+     */
+    private val crashGuard = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Background keyboard task failed: ${throwable.javaClass.simpleName}", throwable)
+    }
+    private var serviceScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + crashGuard)
 
     private lateinit var keyboardViewModel: KeyboardViewModel
 
@@ -111,28 +119,23 @@ class KeyLingoInputMethodService :
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
 
-        serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + crashGuard)
         keyboardViewModel = KeyboardViewModel(
             generateHintsUseCase = generateHintsUseCase,
-            generateAutocompleteSuggestionsUseCase = generateAutocompleteSuggestionsUseCase,
+            generateSuggestions = generateAutocompleteSuggestionsUseCase,
             learnedVocabularyProvider = learnedVocabularyProvider,
             contextPredictionProvider = contextPredictionProvider,
-            settingsDataStore = settingsDataStore,
+            languageDetector = languageDetector,
+            settingsFlow = settingsDataStore.settingsFlow,
             languagePack = languagePack,
             textConnection = this,
             scope = serviceScope
         )
 
-        // Offline dictionary + phrase-chunk + autocomplete-word-list seeding:
-        // all idempotent, so this is cheap on every subsequent call once the
-        // data is already in Room. englishWordSeeder is intentionally not
-        // passed a LanguagePack -- autocomplete is English-only regardless
-        // of which language is being taught, unlike the other two seeders.
-        serviceScope.launch {
-            dictionarySeeder.seedIfNeeded(languagePack)
-            phraseChunkSeeder.seedIfNeeded(languagePack)
-            englishWordSeeder.seedIfNeeded()
-        }
+        // Parse the bundled lexicons/dictionary in the background right away,
+        // so the first keystroke already has suggestions. Loading happens
+        // once per process; later callers just await the same instance.
+        serviceScope.launch { bundledData.get() }
     }
 
     override fun onCreateInputView(): View {
@@ -187,7 +190,20 @@ class KeyLingoInputMethodService :
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        keyboardViewModel.onInputFieldContentChanged()
+        keyboardViewModel.onStartInput(InputFieldPolicy.from(info), restarting)
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int, candidatesStart: Int, candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        hasSelection = newSelStart != newSelEnd
+        keyboardViewModel.onSelectionChanged()
+    }
+
+    override fun onFinishInput() {
+        super.onFinishInput()
+        if (::keyboardViewModel.isInitialized) keyboardViewModel.onFinishInput()
     }
 
     override fun onWindowShown() {
@@ -214,17 +230,21 @@ class KeyLingoInputMethodService :
 
     // ---- KeyboardTextConnection: the only place that touches InputConnection ----
 
+    /** Tracked from onUpdateSelection so Backspace needs no extra IPC round trip to know about a selection. */
+    private var hasSelection = false
+
     override fun commitText(text: String) {
         currentInputConnection?.commitText(text, 1)
     }
 
-    override fun deleteOneCharacterBackward() {
+    override fun deleteBackward(graphemeLength: Int) {
         val connection = currentInputConnection ?: return
-        val selectedText = connection.getSelectedText(0)
-        if (!selectedText.isNullOrEmpty()) {
-            connection.commitText("", 1)
-        } else {
-            connection.deleteSurroundingText(1, 0)
+        when {
+            hasSelection -> connection.commitText("", 1)
+            graphemeLength > 0 -> connection.deleteSurroundingText(graphemeLength, 0)
+            // Nothing before the cursor (or an editor that hides its text): let the app handle a real DEL key,
+            // e.g. removing a recipient chip or an empty list item.
+            else -> sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
         }
     }
 
@@ -235,13 +255,8 @@ class KeyLingoInputMethodService :
 
     override fun performEnterAction() {
         val connection = currentInputConnection ?: return
-        val editorInfo = currentInputEditorInfo
-        val action = editorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)
-
-        val isMultiline = editorInfo?.inputType?.and(EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE) != 0
-        if (!isMultiline && action != null &&
-            action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED
-        ) {
+        val action = InputFieldPolicy.from(currentInputEditorInfo).editorAction
+        if (action != null) {
             connection.performEditorAction(action)
         } else {
             connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
@@ -249,14 +264,21 @@ class KeyLingoInputMethodService :
         }
     }
 
-    override fun currentFieldText(): String {
-        val connection = currentInputConnection ?: return ""
-        val extracted = connection.getExtractedText(ExtractedTextRequest(), 0)
-        if (extracted?.text != null) return extracted.text.toString()
+    override fun textBeforeCursor(maxChars: Int): String =
+        currentInputConnection?.getTextBeforeCursor(maxChars, 0)?.toString().orEmpty()
 
-        // Fallback for editors that don't support extracted text requests.
-        val before = connection.getTextBeforeCursor(1000, 0) ?: ""
-        val after = connection.getTextAfterCursor(1000, 0) ?: ""
-        return "$before$after"
+    override fun textAfterCursor(maxChars: Int): String =
+        currentInputConnection?.getTextAfterCursor(maxChars, 0)?.toString().orEmpty()
+
+    override fun beginBatchEdit() {
+        currentInputConnection?.beginBatchEdit()
+    }
+
+    override fun endBatchEdit() {
+        currentInputConnection?.endBatchEdit()
+    }
+
+    private companion object {
+        const val TAG = "KeyLingoIME"
     }
 }

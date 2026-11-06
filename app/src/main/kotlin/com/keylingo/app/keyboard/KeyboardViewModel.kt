@@ -1,17 +1,21 @@
 package com.keylingo.app.keyboard
 
 import com.keylingo.app.data.settings.KeyLingoSettings
-import com.keylingo.app.data.settings.SettingsDataStore
 import com.keylingo.app.domain.model.AutocompleteSuggestion
 import com.keylingo.app.domain.model.HintWord
+import com.keylingo.app.domain.model.LearningAssistance
+import com.keylingo.app.domain.model.SuggestionKind
 import com.keylingo.app.domain.repository.ContextPredictionProvider
+import com.keylingo.app.domain.repository.LanguageDetector
 import com.keylingo.app.domain.repository.LanguagePack
 import com.keylingo.app.domain.repository.LearnedVocabularyProvider
 import com.keylingo.app.domain.usecase.GenerateAutocompleteSuggestionsUseCase
 import com.keylingo.app.domain.usecase.GenerateHintsUseCase
+import com.keylingo.app.domain.usecase.SuggestionRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,347 +27,419 @@ enum class ShiftState { OFF, SHIFTED_ONCE, CAPS_LOCK }
 data class KeyboardUiState(
     val mode: KeyboardMode = KeyboardMode.LETTERS,
     val shiftState: ShiftState = ShiftState.OFF,
-    val autocompleteSuggestions: List<AutocompleteSuggestion> = emptyList(),
-    val hints: List<HintWord> = emptyList(),
+    val suggestions: List<AutocompleteSuggestion> = emptyList(),
+    /** The candidate that will replace the current word on the next space/punctuation, if any. */
+    val autoCorrection: AutocompleteSuggestion? = null,
+    val assistance: LearningAssistance = LearningAssistance.EMPTY,
+    val typingLanguage: String = "en",
+    val policy: InputFieldPolicy = InputFieldPolicy.DEFAULT,
     val settings: KeyLingoSettings = KeyLingoSettings()
-)
-
-/**
- * Extracts the word currently being typed from the full field text: the
- * last whitespace-delimited token. Returns "" when the text is empty or
- * ends in whitespace (nothing is mid-word right now). Pure and
- * independent of Android/coroutines/DI on purpose, so it's trivially
- * testable and reusable without duplicating the logic.
- *
- * Assumption: this operates on the full field text and assumes the
- * cursor is at the end of it, matching how [KeyboardTextConnection.currentFieldText]
- * is already used for hint generation elsewhere in this class. A field
- * edited mid-text (cursor not at the end) is out of scope, same as it
- * already was for hints.
- */
-private fun extractCurrentPrefix(text: String): String {
-    if (text.isEmpty() || text.last().isWhitespace()) return ""
-    val lastWhitespaceIndex = text.indexOfLast { it.isWhitespace() }
-    return if (lastWhitespaceIndex == -1) text else text.substring(lastWhitespaceIndex + 1)
+) {
+    val autocompleteSuggestions: List<AutocompleteSuggestion> get() = suggestions
+    val hints: List<HintWord> get() = assistance.hints
 }
 
-/**
- * Extracts the word immediately before whatever [extractCurrentPrefix]
- * would return, for bigram context. Handles both real scenarios:
- *
- * - Mid-word (e.g. "I am happ"): the current word is "happ" (non-empty),
- *   so the previous word is whatever came before it -- "am".
- * - Right after a word boundary (e.g. "I am " -- a trailing space was
- *   just committed): [extractCurrentPrefix] returns "" here (nothing
- *   typed yet for the next word), so "the previous word" is simply the
- *   last completed word in the text so far -- also "am". This is the case
- *   that matters for pure next-word prediction (prefix empty, but there's
- *   still a real word to key context off of).
- *
- * Returns "" if there's no earlier word at all (e.g. text is just "I " or empty).
- */
-private fun extractPreviousCompletedWord(text: String): String {
-    val currentWord = extractCurrentPrefix(text)
-    return if (currentWord.isEmpty()) {
-        extractCurrentPrefix(text.trimEnd())
-    } else {
-        val withoutCurrentWord = text.dropLast(currentWord.length).trimEnd()
-        extractCurrentPrefix(withoutCurrentWord)
-    }
-}
-
-/** Punctuation that ends a word/sentence -- committing one of these is treated as "the word right before it was just completed" for personal-vocabulary/bigram learning purposes. Deliberately excludes other Symbol-action characters (emoji, currency signs, etc.), which aren't word boundaries. */
-private val WORD_BOUNDARY_SYMBOLS = setOf(".", ",", "!", "?", ";", ":")
+/** Punctuation that ends a word (triggers learning and autocorrect) and is followed by a space after a picked suggestion. */
+private val WORD_SEPARATOR_PUNCTUATION = setOf(".", ",", "!", "?", ";", ":")
 
 /**
- * Holds all keyboard + suggestion-bar state and turns [KeyAction]s into
- * real text commits via [KeyboardTextConnection]. This is a plain Kotlin
- * class rather than an androidx.lifecycle.ViewModel because an
- * InputMethodService has no Activity/Fragment-style ViewModelStoreOwner
- * to host one -- the IME service supplies a long-lived [CoroutineScope]
- * instead and cancels it in onDestroy().
- *
- * Three independent learning/data sources feed [generateAutocompleteSuggestionsUseCase]
- * (which itself merges them -- see that use case's KDoc): the static
- * bundled word list, personal learned vocabulary, and personal
- * word-sequence (bigram) history. This class's job is just to report the
- * two real signals each of those needs -- a word being completed
- * ([recordWordBoundary]) and a suggestion being explicitly tapped
- * ([onAutocompleteSelected]) -- and to read back a merged, ranked result
- * for [KeyboardUiState]. It has no ranking logic of its own.
- *
- * Hints ([generateHintsUseCase]) remain a fully separate pipeline, driven
- * by the full field text, active only when [KeyLingoSettings.learningEnabled]
- * is on -- unchanged from before.
+ * Holds all keyboard state and turns [KeyAction]s into edits through
+ * [KeyboardTextConnection]. A plain class (not androidx ViewModel): an
+ * InputMethodService has no ViewModelStoreOwner, so the service owns
+ * [scope] and cancels it in onDestroy(). Runs on the main thread; every
+ * expensive step (lexicon search, translation, database I/O) happens in
+ * suspend functions that switch dispatchers inside the data layer.
  */
 class KeyboardViewModel(
     private val generateHintsUseCase: GenerateHintsUseCase,
-    private val generateAutocompleteSuggestionsUseCase: GenerateAutocompleteSuggestionsUseCase,
+    private val generateSuggestions: GenerateAutocompleteSuggestionsUseCase,
     private val learnedVocabularyProvider: LearnedVocabularyProvider,
     private val contextPredictionProvider: ContextPredictionProvider,
-    private val settingsDataStore: SettingsDataStore,
+    private val languageDetector: LanguageDetector,
+    private val settingsFlow: Flow<KeyLingoSettings>,
     private val languagePack: LanguagePack,
     private val textConnection: KeyboardTextConnection,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val clock: () -> Long = System::currentTimeMillis
 ) {
     private val _uiState = MutableStateFlow(KeyboardUiState())
     val uiState: StateFlow<KeyboardUiState> = _uiState.asStateFlow()
 
-    private var suggestionsDebounceJob: Job? = null
-    private var lastShiftPressAtMillis = 0L
-    private val doubleTapWindowMillis = 300L
+    private var suggestionJob: Job? = null
+    private var hintJob: Job? = null
+
+    /** The word the cached suggestions/autocorrection were computed for; autocorrect only applies if it still matches. */
+    private var suggestionsComputedFor: String? = null
+
+    private data class AppliedCorrection(val original: String, val replacement: String, val separator: String)
+    private var lastCorrection: AppliedCorrection? = null
+    private val rejectedCorrections = mutableSetOf<String>()
+
+    /** True right after a picked suggestion committed "word " -- punctuation typed next swaps with that space. */
+    private var phantomSpace = false
+    private var autoShifted = false
+    private var lastShiftPressAt = 0L
     private var lastKeyWasSpace = false
-    private var lastSpacePressAtMillis = 0L
-    private val doubleSpaceWindowMillis = 500L
+    private var lastSpacePressAt = 0L
+    private var lastOwnEditAt = 0L
 
     init {
         scope.launch {
-            settingsDataStore.settingsFlow.collect { settings ->
+            settingsFlow.collect { settings ->
                 _uiState.update { it.copy(settings = settings) }
-                refreshSuggestions()
+                scheduleRefresh(immediate = true)
             }
         }
     }
 
-    /** Called by the IME whenever the field content changes underneath us (focus change, etc). */
-    fun onInputFieldContentChanged() {
-        scheduleSuggestionsRefresh()
+    private fun context(): TextContext =
+        TextContext(textConnection.textBeforeCursor(CONTEXT_WINDOW), textConnection.textAfterCursor(4))
+
+    private val state get() = _uiState.value
+    private val policy get() = state.policy
+
+    // ------------------------------------------------------------ lifecycle
+
+    /** A new field gained focus (or the same field restarted). */
+    fun onStartInput(newPolicy: InputFieldPolicy, restarting: Boolean) {
+        lastCorrection = null
+        phantomSpace = false
+        lastKeyWasSpace = false
+        suggestionsComputedFor = null
+        val mode = if (restarting) state.mode else if (newPolicy.startInSymbols) KeyboardMode.SYMBOLS_1 else KeyboardMode.LETTERS
+        _uiState.update {
+            it.copy(policy = newPolicy, mode = mode, shiftState = ShiftState.OFF, suggestions = emptyList(),
+                autoCorrection = null, assistance = LearningAssistance.EMPTY)
+        }
+        autoShifted = false
+        updateAutoShift()
+        scheduleRefresh(immediate = true)
     }
+
+    /** The field lost focus: forget everything derived from its text. */
+    fun onFinishInput() {
+        suggestionJob?.cancel(); hintJob?.cancel()
+        lastCorrection = null
+        phantomSpace = false
+        _uiState.update { it.copy(suggestions = emptyList(), autoCorrection = null, assistance = LearningAssistance.EMPTY) }
+    }
+
+    /** The cursor/selection moved. Ignores the echo of our own edits; an external move cancels undo/space-swap state. */
+    fun onSelectionChanged() {
+        if (clock() - lastOwnEditAt > OWN_EDIT_ECHO_MILLIS) {
+            lastCorrection = null
+            phantomSpace = false
+            updateAutoShift()
+        }
+        scheduleRefresh()
+    }
+
+    /** Legacy entry point kept for callers that only know "content changed". */
+    fun onInputFieldContentChanged() = scheduleRefresh()
+
+    // ------------------------------------------------------------ key input
 
     fun onKeyAction(action: KeyAction) {
         val wasSpace = lastKeyWasSpace
         lastKeyWasSpace = false
-
+        lastOwnEditAt = clock()
         when (action) {
             is KeyAction.Character -> {
-                val useUpper = _uiState.value.shiftState != ShiftState.OFF
-                textConnection.commitText(if (useUpper) action.upper else action.lower)
+                lastCorrection = null
+                phantomSpace = false
+                val upper = state.shiftState != ShiftState.OFF || policy.capitalizeAll
+                textConnection.commitText(if (upper) action.upper else action.lower)
                 consumeOneShotShift()
-                maybeAutoCapitalize()
-                scheduleSuggestionsRefresh()
+                updateAutoShift()
+                scheduleRefresh()
             }
-            is KeyAction.Symbol -> {
-                if (action.value in WORD_BOUNDARY_SYMBOLS) {
-                    recordWordBoundary(textConnection.currentFieldText())
-                }
-                textConnection.commitText(action.value)
-                maybeAutoCapitalize()
-                scheduleSuggestionsRefresh()
-            }
-            KeyAction.Space -> {
-                val now = System.currentTimeMillis()
-                val text = textConnection.currentFieldText()
-                // Double-space-to-period: only if the previous key press was
-                // also Space, within the double-tap window, the field
-                // genuinely ends with a single space right now (the one that
-                // press just committed), and there's a non-whitespace
-                // character right before it -- so this never fires at the
-                // start of a field or after already-punctuated/blank text.
-                val isDoubleSpace = wasSpace &&
-                    (now - lastSpacePressAtMillis) < doubleSpaceWindowMillis &&
-                    text.isNotEmpty() && text.last() == ' ' &&
-                    text.length >= 2 && !text[text.length - 2].isWhitespace()
-
-                if (isDoubleSpace) {
-                    // The word before this space was already recorded when
-                    // the first of the two spaces was pressed (see below);
-                    // don't double-record it here.
-                    textConnection.deleteOneCharacterBackward() // remove the space just committed
-                    textConnection.commitText(". ")
-                } else {
-                    recordWordBoundary(text)
-                    textConnection.commitText(" ")
-                }
-                lastKeyWasSpace = true
-                lastSpacePressAtMillis = now
-                maybeAutoCapitalize()
-                scheduleSuggestionsRefresh()
-            }
-            KeyAction.Backspace -> {
-                // Deletion never records anything -- word-boundary
-                // learning only fires from the specific key actions above
-                // and below, never from the debounced refresh, so
-                // backspacing through text cannot create incorrect
-                // sequence/vocabulary records.
-                textConnection.deleteOneCharacterBackward()
-                maybeAutoCapitalize()
-                scheduleSuggestionsRefresh()
-            }
+            is KeyAction.Symbol -> onSymbol(action.value)
+            KeyAction.Space -> onSpace(wasSpace)
+            KeyAction.Backspace -> onBackspace()
             KeyAction.Enter -> {
-                recordWordBoundary(textConnection.currentFieldText())
+                val ctx = context()
+                recordWordBoundary(ctx)
+                lastCorrection = null
+                phantomSpace = false
                 textConnection.performEnterAction()
-                maybeAutoCapitalize()
-                scheduleSuggestionsRefresh()
+                updateAutoShift()
+                scheduleRefresh()
             }
             KeyAction.Shift -> handleShiftPress()
-            KeyAction.SwitchToSymbols -> setMode(
-                if (_uiState.value.mode == KeyboardMode.SYMBOLS_1) KeyboardMode.SYMBOLS_2 else KeyboardMode.SYMBOLS_1
-            )
+            KeyAction.SwitchToSymbols -> setMode(if (state.mode == KeyboardMode.SYMBOLS_1) KeyboardMode.SYMBOLS_2 else KeyboardMode.SYMBOLS_1)
             KeyAction.SwitchToLetters -> setMode(KeyboardMode.LETTERS)
             KeyAction.SwitchToNumbers -> setMode(KeyboardMode.SYMBOLS_1)
             KeyAction.Emoji -> setMode(KeyboardMode.EMOJI)
         }
     }
 
-    /**
-     * Auto-capitalization: after a sentence boundary -- start of field, a
-     * newline, or a "."/"!"/"?" as the last non-space character before the
-     * cursor (fires as soon as the punctuation itself is typed, whether or
-     * not a space follows yet) -- arms a one-shot shift so the next letter
-     * typed comes out uppercase without the user pressing Shift -- reusing
-     * [ShiftState.SHIFTED_ONCE] and [consumeOneShotShift] rather than a
-     * separate mechanism. Only ever upgrades from OFF; never touches an
-     * existing SHIFTED_ONCE or CAPS_LOCK the user set manually, so it
-     * can't fight a deliberate manual shift/caps-lock choice.
-     */
-    private fun maybeAutoCapitalize() {
-        if (_uiState.value.shiftState != ShiftState.OFF) return
-        val text = textConnection.currentFieldText()
-        val shouldCapitalize = if (text.isEmpty()) {
-            true
-        } else if (text.endsWith("\n")) {
-            true
+    private fun onSymbol(value: String) {
+        if (value in WORD_SEPARATOR_PUNCTUATION) {
+            textConnection.beginBatchEdit()
+            val ctx = context()
+            val corrected = applyAutoCorrection(ctx, separator = value)
+            if (!corrected) {
+                recordWordBoundary(ctx)
+                lastCorrection = null
+                if (phantomSpace && ctx.before.endsWith(" ")) {
+                    // "word |" + "." -> "word. " (the space we added after a suggestion moves behind the punctuation)
+                    textConnection.deleteCharactersBackward(1)
+                    textConnection.commitText("$value ")
+                } else {
+                    textConnection.commitText(value)
+                }
+            }
+            textConnection.endBatchEdit()
         } else {
-            val trimmed = text.trimEnd(' ')
-            trimmed.isEmpty() || trimmed.last() == '.' || trimmed.last() == '!' || trimmed.last() == '?'
+            lastCorrection = null
+            textConnection.commitText(value)
         }
-        if (shouldCapitalize) {
-            _uiState.update { it.copy(shiftState = ShiftState.SHIFTED_ONCE) }
-        }
+        phantomSpace = false
+        updateAutoShift()
+        scheduleRefresh()
     }
 
-    /**
-     * Fire-and-forget record of a naturally-completed word boundary:
-     * reports the completed word to [learnedVocabularyProvider] (personal
-     * vocabulary) *and* the (previousWord -> completedWord) pair to
-     * [contextPredictionProvider] (bigram history), both from the same
-     * text snapshot so they're always consistent with each other. Both
-     * providers own their own eligibility rules (via the shared
-     * `WordEligibility` check) and thresholds -- this call site doesn't
-     * duplicate any of that, it just reports "this boundary happened".
-     *
-     * [text] must be the field's content *before* the boundary character
-     * (space/enter/punctuation) is committed -- callers pass the snapshot
-     * they already read for that purpose.
-     */
-    private fun recordWordBoundary(text: String) {
-        val completedWord = extractCurrentPrefix(text)
-        if (completedWord.isBlank()) return
+    private fun onSpace(previousKeyWasSpace: Boolean) {
+        val now = clock()
+        val ctx = context()
+        val before = ctx.before
+        // Double-space -> ". " only right after a word character, never after existing punctuation.
+        val isDoubleSpace = previousKeyWasSpace && now - lastSpacePressAt < DOUBLE_SPACE_WINDOW_MILLIS &&
+            before.length >= 2 && before.last() == ' ' && before[before.length - 2].isLetterOrDigit() && policy.allowAutoCorrect
+        textConnection.beginBatchEdit()
+        if (isDoubleSpace) {
+            textConnection.deleteCharactersBackward(1)
+            textConnection.commitText(". ")
+            lastCorrection = null
+        } else if (!applyAutoCorrection(ctx, separator = " ")) {
+            recordWordBoundary(ctx)
+            lastCorrection = null
+            textConnection.commitText(" ")
+        }
+        textConnection.endBatchEdit()
+        phantomSpace = false
+        lastKeyWasSpace = true
+        lastSpacePressAt = now
+        updateAutoShift()
+        scheduleRefresh()
+    }
 
-        val previousWord = extractPreviousCompletedWord(text)
-
-        scope.launch {
-            learnedVocabularyProvider.recordOrganicUsage(completedWord)
-            if (previousWord.isNotBlank()) {
-                contextPredictionProvider.recordSequence(previousWord, completedWord)
+    private fun onBackspace() {
+        val ctx = context()
+        val undo = lastCorrection
+        if (undo != null && ctx.before.endsWith(undo.replacement + undo.separator)) {
+            // One Backspace right after an autocorrection restores exactly what was typed and remembers the choice.
+            textConnection.beginBatchEdit()
+            textConnection.deleteCharactersBackward(undo.replacement.length + undo.separator.length)
+            textConnection.commitText(undo.original)
+            textConnection.endBatchEdit()
+            rejectedCorrections.add(undo.original.lowercase())
+            if (policy.allowLearning) {
+                val lang = state.typingLanguage
+                scope.launch { learnedVocabularyProvider.recordRejectedCorrection(undo.original, lang) }
             }
+        } else {
+            textConnection.deleteBackward(ctx.lastGraphemeLength)
         }
+        lastCorrection = null
+        phantomSpace = false
+        updateAutoShift()
+        scheduleRefresh()
     }
 
     /**
-     * Called when the user taps a suggestion in the autocomplete row.
-     * Replaces only the in-progress word (never the whole field): deletes
-     * exactly the current prefix's length immediately before the cursor,
-     * commits the chosen word, then a single trailing space so typing can
-     * continue immediately. Also records this as an explicit acceptance --
-     * a stronger learning signal than organic typing (see
-     * [LearnedVocabularyProvider.recordAcceptedSuggestion]) -- and, if
-     * there's a previous word to key off, records the bigram too, exactly
-     * as if the word had been typed and completed organically.
+     * Replaces the word before the cursor with the pending autocorrection
+     * (if it is still valid for exactly this word) and commits [separator].
+     * Returns false when nothing was corrected.
      */
+    private fun applyAutoCorrection(ctx: TextContext, separator: String): Boolean {
+        val correction = state.autoCorrection ?: return false
+        val word = ctx.currentWord
+        if (word.isEmpty() || ctx.cursorInsideWord || word != suggestionsComputedFor) return false
+        if (!state.settings.autocorrectEnabled || !policy.allowAutoCorrect) return false
+        if (correction.word == word) return false
+        textConnection.deleteCharactersBackward(word.length)
+        textConnection.commitText(correction.word + separator)
+        lastCorrection = AppliedCorrection(word, correction.word, separator)
+        recordWordBoundary(ctx, overrideWord = correction.word)
+        _uiState.update { it.copy(autoCorrection = null) }
+        suggestionsComputedFor = null
+        return true
+    }
+
+    /** Learning: report a completed word (and its preceding words) -- only where the field allows it. */
+    private fun recordWordBoundary(ctx: TextContext, overrideWord: String? = null) {
+        if (!policy.allowLearning) return
+        val word = overrideWord ?: ctx.currentWord
+        if (word.isBlank() || ctx.cursorInsideWord) return
+        val previous = ctx.previousWord
+        val second = ctx.secondPreviousWord
+        val lang = state.typingLanguage
+        scope.launch {
+            learnedVocabularyProvider.recordOrganicUsage(word, lang)
+            if (!previous.isNullOrBlank()) contextPredictionProvider.recordSequence(previous, word, lang, second)
+        }
+    }
+
+    // ------------------------------------------------------------ suggestions
+
+    /** The user tapped a suggestion chip. Replaces only the partial word before the cursor. */
     fun onAutocompleteSelected(suggestion: AutocompleteSuggestion) {
-        val textBefore = textConnection.currentFieldText()
-        val prefix = extractCurrentPrefix(textBefore)
-        val previousWord = extractPreviousCompletedWord(textBefore)
+        lastOwnEditAt = clock()
+        val ctx = context()
+        val prefix = if (ctx.cursorInsideWord) "" else ctx.currentWord
+        val word = if (prefix.isEmpty() && ctx.atSentenceStart && policy.autoCapitalize && suggestion.kind == SuggestionKind.PREDICTION)
+            suggestion.word.replaceFirstChar { it.titlecase() } else suggestion.word
+        val nextChar = ctx.after.firstOrNull()
+        val needsSpace = nextChar == null || !(nextChar.isWhitespace() || nextChar.toString() in WORD_SEPARATOR_PUNCTUATION)
 
-        if (prefix.isNotEmpty()) {
-            textConnection.deleteCharactersBackward(prefix.length)
-        }
-        textConnection.commitText("${suggestion.word} ")
+        textConnection.beginBatchEdit()
+        if (prefix.isNotEmpty()) textConnection.deleteCharactersBackward(prefix.length)
+        textConnection.commitText(if (needsSpace) "$word " else word)
+        textConnection.endBatchEdit()
 
-        scope.launch {
-            learnedVocabularyProvider.recordAcceptedSuggestion(suggestion.word)
-            if (previousWord.isNotBlank()) {
-                contextPredictionProvider.recordSequence(previousWord, suggestion.word)
+        if (policy.allowLearning) {
+            val lang = suggestion.languageCode
+            val previous = ctx.previousWord
+            val second = ctx.secondPreviousWord
+            scope.launch {
+                if (suggestion.kind == SuggestionKind.LITERAL) learnedVocabularyProvider.recordRejectedCorrection(word, lang)
+                else learnedVocabularyProvider.recordAcceptedSuggestion(word, lang)
+                if (!previous.isNullOrBlank()) contextPredictionProvider.recordSequence(previous, word, lang, second)
             }
         }
-
+        if (suggestion.kind == SuggestionKind.LITERAL) rejectedCorrections.add(word.lowercase())
+        lastCorrection = null
+        phantomSpace = needsSpace
         lastKeyWasSpace = false
-        scheduleSuggestionsRefresh()
+        consumeOneShotShift()
+        updateAutoShift()
+        scheduleRefresh(immediate = true)
     }
 
-    private fun setMode(mode: KeyboardMode) {
-        _uiState.update { it.copy(mode = mode) }
-    }
+    // ------------------------------------------------------------ shift / mode
+
+    private fun setMode(mode: KeyboardMode) = _uiState.update { it.copy(mode = mode) }
 
     private fun handleShiftPress() {
-        val now = System.currentTimeMillis()
-        val isDoubleTap = now - lastShiftPressAtMillis < doubleTapWindowMillis
-        lastShiftPressAtMillis = now
-
-        val current = _uiState.value.shiftState
+        val now = clock()
+        val isDoubleTap = now - lastShiftPressAt < DOUBLE_TAP_SHIFT_MILLIS
+        lastShiftPressAt = now
         val next = when {
-            isDoubleTap -> ShiftState.CAPS_LOCK
-            current == ShiftState.OFF -> ShiftState.SHIFTED_ONCE
+            isDoubleTap && state.shiftState != ShiftState.CAPS_LOCK -> ShiftState.CAPS_LOCK
+            state.shiftState == ShiftState.OFF -> ShiftState.SHIFTED_ONCE
             else -> ShiftState.OFF
         }
+        autoShifted = false
         _uiState.update { it.copy(shiftState = next) }
     }
 
     private fun consumeOneShotShift() {
-        if (_uiState.value.shiftState == ShiftState.SHIFTED_ONCE) {
+        if (state.shiftState == ShiftState.SHIFTED_ONCE) {
+            autoShifted = false
             _uiState.update { it.copy(shiftState = ShiftState.OFF) }
         }
     }
 
-    private fun scheduleSuggestionsRefresh() {
-        suggestionsDebounceJob?.cancel()
-        suggestionsDebounceJob = scope.launch {
-            delay(150)
-            refreshSuggestions()
+    /**
+     * Arms a one-shot shift at a sentence start (or word start, for
+     * name-style fields), and -- unlike before -- also disarms an automatic
+     * shift once the context no longer calls for it (e.g. after Backspace).
+     * Never overrides a shift the user set manually or caps lock.
+     */
+    private fun updateAutoShift() {
+        val current = state.shiftState
+        if (current == ShiftState.CAPS_LOCK) return
+        if (current == ShiftState.SHIFTED_ONCE && !autoShifted) return
+        val ctx = context()
+        val shouldShift = when {
+            policy.capitalizeEveryWord -> ctx.currentWord.isEmpty() && (ctx.before.isEmpty() || ctx.before.last().isWhitespace())
+            policy.autoCapitalize -> ctx.atSentenceStart
+            else -> false
+        }
+        if (shouldShift && current == ShiftState.OFF) {
+            autoShifted = true
+            _uiState.update { it.copy(shiftState = ShiftState.SHIFTED_ONCE) }
+        } else if (!shouldShift && autoShifted && current == ShiftState.SHIFTED_ONCE) {
+            autoShifted = false
+            _uiState.update { it.copy(shiftState = ShiftState.OFF) }
         }
     }
 
-    /**
-     * Single shared text read, then two independent pipelines merged into
-     * one state update. Autocomplete (itself now driven by both the
-     * current prefix *and* the previous completed word, for bigram
-     * context) runs regardless of [KeyLingoSettings.learningEnabled];
-     * hints keep their pre-existing gating on it, unchanged.
-     */
+    // ------------------------------------------------------------ refresh
+
+    private fun scheduleRefresh(immediate: Boolean = false) {
+        suggestionJob?.cancel()
+        suggestionJob = scope.launch {
+            if (!immediate) delay(SUGGESTION_DEBOUNCE_MILLIS)
+            refreshSuggestions()
+        }
+        hintJob?.cancel()
+        hintJob = scope.launch {
+            delay(if (immediate) 0 else HINT_DEBOUNCE_MILLIS)
+            refreshHints()
+        }
+    }
+
     private suspend fun refreshSuggestions() {
-        val text = textConnection.currentFieldText()
-        val settings = _uiState.value.settings
-
-        val prefix = extractCurrentPrefix(text)
-        val previousWord = extractPreviousCompletedWord(text)
-        val autocomplete = if (prefix.isEmpty() && previousWord.isBlank()) {
-            emptyList()
-        } else {
-            generateAutocompleteSuggestionsUseCase(prefix = prefix, previousWord = previousWord)
+        if (!policy.showSuggestions) {
+            suggestionsComputedFor = null
+            if (state.suggestions.isNotEmpty() || state.autoCorrection != null) _uiState.update { it.copy(suggestions = emptyList(), autoCorrection = null) }
+            return
         }
-
-        val hints = if (settings.learningEnabled) {
-            generateHintsUseCase(
-                text = text,
-                sourceLanguage = "en",
-                targetLanguage = languagePack.languageCode,
-                learningMode = settings.learningMode
-            )
-        } else {
-            emptyList()
+        val ctx = context()
+        val language = languageDetector.detect(ctx.currentSentence.ifEmpty { ctx.currentWord })
+        val prefix = if (ctx.cursorInsideWord) "" else ctx.currentWord
+        // Predict the next word only right after a space (not straight after "word," or mid-punctuation).
+        val canPredict = prefix.isNotEmpty() || ctx.before.isEmpty() || ctx.before.last().isWhitespace()
+        val result = if (!canPredict) com.keylingo.app.domain.model.SuggestionResult.EMPTY else generateSuggestions(
+            SuggestionRequest(
+                prefix = prefix,
+                previousWord = ctx.previousWord,
+                secondPreviousWord = ctx.secondPreviousWord,
+                languageCode = language,
+                maxSuggestions = MAX_SUGGESTIONS,
+                allowAutoCorrect = state.settings.autocorrectEnabled && policy.allowAutoCorrect && !ctx.cursorInsideWord,
+                allowPersonalData = policy.allowLearning,
+                rejectedCorrections = rejectedCorrections
+            ),
+            now = clock()
+        )
+        val capitalised = if (prefix.isEmpty() && ctx.atSentenceStart && policy.autoCapitalize) {
+            result.suggestions.map { it.copy(word = it.word.replaceFirstChar { c -> c.titlecase() }) }
+        } else result.suggestions
+        suggestionsComputedFor = prefix
+        val s = state
+        if (s.suggestions != capitalised || s.autoCorrection != result.autoCorrection || s.typingLanguage != language) {
+            _uiState.update { it.copy(suggestions = capitalised, autoCorrection = result.autoCorrection, typingLanguage = language) }
         }
+    }
 
-        // Avoid a no-op StateFlow emission (and the recomposition it would
-        // trigger downstream) when the results are identical to what's
-        // already shown -- e.g. the debounce firing again mid-pause with
-        // the same prefix, or backspacing back to text that resolves to
-        // the same suggestions. List equality here is structural
-        // (List.equals), not identity, so this correctly catches "same
-        // content, new list instance" too.
-        val current = _uiState.value
-        if (current.autocompleteSuggestions != autocomplete || current.hints != hints) {
-            _uiState.update { it.copy(autocompleteSuggestions = autocomplete, hints = hints) }
+    private suspend fun refreshHints() {
+        val s = state
+        if (!s.settings.learningEnabled || !policy.allowLearningHints) {
+            if (s.assistance != LearningAssistance.EMPTY) _uiState.update { it.copy(assistance = LearningAssistance.EMPTY) }
+            return
         }
+        val ctx = context()
+        // Keep showing the sentence just finished ("I am tired." ) until the next one starts.
+        val sentence = ctx.currentSentence.ifEmpty {
+            val head = ctx.before.trimEnd()
+            val end = head.length
+            val start = TextContext.lastSentenceBoundary(head.dropLast(1))
+            if (end > 0) head.substring(start, end).trim() else ""
+        }
+        val assistance = generateHintsUseCase(sentence, languagePack.languageCode, s.settings.learningMode)
+        if (state.assistance != assistance) _uiState.update { it.copy(assistance = assistance) }
+    }
+
+    companion object {
+        const val CONTEXT_WINDOW = 240
+        const val MAX_SUGGESTIONS = 5
+        const val SUGGESTION_DEBOUNCE_MILLIS = 20L
+        const val HINT_DEBOUNCE_MILLIS = 220L
+        const val DOUBLE_SPACE_WINDOW_MILLIS = 500L
+        const val DOUBLE_TAP_SHIFT_MILLIS = 300L
+        const val OWN_EDIT_ECHO_MILLIS = 250L
     }
 }

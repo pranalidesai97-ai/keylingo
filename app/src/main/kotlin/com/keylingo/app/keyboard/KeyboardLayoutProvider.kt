@@ -97,18 +97,52 @@ object KeyboardLayoutProvider {
         return listOf(row1, row2, row3, row4)
     }
 
-    private fun emojiRows(): List<List<KeyDefinition>> {
-        val emojis = listOf(
-            "😀","😁","😂","🤣","😊","😍","😘","😜","🤔","😎",
-            "😢","😭","😡","👍","👎","👏","🙏","💪","🔥","🎉",
-            "❤️","💔","⭐","☀️","🌙","🍎","🍕","☕","🐶","🐱"
-        )
-        val chunked = emojis.chunked(10).map { row -> row.map { KeyDefinition(KeyAction.Symbol(it)) } }
-        val bottomRow = listOf(
+    /** Emoji mode shows [EMOJI] in a scrollable grid; this row sits below it. */
+    private fun emojiRows(): List<List<KeyDefinition>> = listOf(
+        listOf(
             KeyDefinition(KeyAction.SwitchToLetters, weight = 2f),
             KeyDefinition(KeyAction.Space, weight = 5f),
             KeyDefinition(KeyAction.Backspace, weight = 2f)
         )
-        return chunked + listOf(bottomRow)
+    )
+
+    /**
+     * Long-press alternatives: Spanish accents and ñ first (the most common
+     * need for KeyLingo users), then other Latin accents; inverted ¿ ¡ for
+     * Spanish punctuation.
+     */
+    private val alternates: Map<String, List<String>> = mapOf(
+        "a" to listOf("á", "à", "ä", "â", "ã"),
+        "e" to listOf("é", "è", "ë", "ê"),
+        "i" to listOf("í", "ì", "ï", "î"),
+        "o" to listOf("ó", "ò", "ö", "ô", "õ"),
+        "u" to listOf("ú", "ü", "ù", "û"),
+        "n" to listOf("ñ"),
+        "c" to listOf("ç"),
+        "s" to listOf("ß"),
+        "y" to listOf("ý", "ÿ"),
+        "?" to listOf("¿"),
+        "!" to listOf("¡"),
+        "." to listOf(",", "?", "!", "¿", "¡", "'", "\"", ":", ";", "-"),
+        "," to listOf(".", "?", "!", "¿", "¡", "'", "\""),
+        "1" to listOf("¹", "½"), "2" to listOf("²"), "3" to listOf("³"),
+        "$" to listOf("€", "£", "¥", "¢"),
+    )
+
+    fun alternatesFor(action: KeyAction): List<String> = when (action) {
+        is KeyAction.Character -> alternates[action.lower].orEmpty()
+        is KeyAction.Symbol -> alternates[action.value].orEmpty()
+        else -> emptyList()
     }
+
+    val EMOJI: List<String> = (
+        "😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😜 🤪 😝 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 " +
+        "😬 😮‍💨 🤥 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🥵 🥶 🥴 😵 🤯 🤠 🥳 😎 🤓 🧐 😕 😟 🙁 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 " +
+        "😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 💀 💩 🤡 👻 👽 🤖 😺 😸 😹 😻 🙈 🙉 🙊 " +
+        "👍 👎 👏 🙌 👐 🤲 🙏 🤝 👋 🤚 ✋ 👌 🤌 🤏 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✊ 👊 💪 " +
+        "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💯 ✨ ⭐ 🌟 🔥 🎉 🎊 🎈 🎁 🎂 " +
+        "☀️ 🌙 🌈 ☁️ 🌧️ ❄️ 🌊 🌸 🌹 🌻 🌴 🍀 🍎 🍌 🍓 🍕 🍔 🌮 🍟 🍣 🍪 🍫 🍿 ☕ 🍷 🍺 🥂 " +
+        "🐶 🐱 🐭 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦋 🐢 🐍 🐬 🐳 " +
+        "⚽ 🏀 🎾 🎮 🎵 🎶 🎧 📱 💻 📷 📚 ✏️ 💼 🏠 🚗 ✈️ 🚀 ⏰ 💡 💰 🛒 ✅ ❌ ❓ ❗ 👀 🇪🇸 🇲🇽 🇺🇸"
+        ).split(' ').filter { it.isNotBlank() }
 }

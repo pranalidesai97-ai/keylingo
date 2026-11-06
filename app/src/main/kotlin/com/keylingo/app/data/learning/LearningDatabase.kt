@@ -20,7 +20,7 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [LearnedWordEntity::class],
     version = 1,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class LearningDatabase : RoomDatabase() {
     abstract fun learnedWordDao(): LearnedWordDao

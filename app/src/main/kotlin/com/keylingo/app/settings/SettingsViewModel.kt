@@ -7,6 +7,8 @@ import com.keylingo.app.data.settings.HintSizeOption
 import com.keylingo.app.data.settings.KeyLingoSettings
 import com.keylingo.app.data.settings.SettingsDataStore
 import com.keylingo.app.domain.model.LearningMode
+import com.keylingo.app.domain.repository.ContextPredictionProvider
+import com.keylingo.app.domain.repository.LearnedVocabularyProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +18,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsDataStore: SettingsDataStore
+    private val settingsDataStore: SettingsDataStore,
+    private val learnedVocabularyProvider: LearnedVocabularyProvider,
+    private val contextPredictionProvider: ContextPredictionProvider
 ) : ViewModel() {
 
     val settings: StateFlow<KeyLingoSettings> = settingsDataStore.settingsFlow.stateIn(
@@ -47,5 +51,22 @@ class SettingsViewModel @Inject constructor(
 
     fun setShowNumberRow(show: Boolean) {
         viewModelScope.launch { settingsDataStore.setShowNumberRow(show) }
+    }
+
+    fun setAutocorrectEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsDataStore.setAutocorrectEnabled(enabled) }
+    }
+
+    fun setHapticsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsDataStore.setHapticsEnabled(enabled) }
+    }
+
+    /** Deletes every word and word sequence KeyLingo has learned from this user. Bundled dictionaries are unaffected. */
+    fun clearPersonalData(onDone: () -> Unit) {
+        viewModelScope.launch {
+            learnedVocabularyProvider.clearAll()
+            contextPredictionProvider.clearAll()
+            onDone()
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.keylingo.app.data.translation
 import com.keylingo.app.data.dictionary.BundledDictionary
 import com.keylingo.app.data.dictionary.SpanishFormMatch
 import com.keylingo.app.data.language.EnglishMorphology
+import com.keylingo.app.data.language.spanish.SpanishConjugator
 import com.keylingo.app.data.language.spanish.SpanishPerson
 import com.keylingo.app.data.language.spanish.SpanishTense
 import com.keylingo.app.data.language.spanish.SpanishText
@@ -58,23 +59,36 @@ class SpanishToEnglishGlosser(private val dictionary: BundledDictionary) {
         // Exact function-word spelling first ("si" vs "sí" differ in meaning), then accent-insensitive.
         functionWords[lower]?.let { (en, canonical) -> return SpanishGloss(word, canonical, en, "function word", null) }
         val matches = dictionary.lookupSpanish(lower)
-        val best = matches.sortedWith(compareBy({ if (SpanishText.fold(it.surface) == SpanishText.fold(lower) && it.surface == lower) 0 else 1 }, { it.entry.frequencyRank })).firstOrNull()
+        // A reflexive verb form typed without its pronoun ("casas" from casarse) is an unlikely reading.
+        fun reflexive(m: SpanishFormMatch) = m.entry.partOfSpeech == PartOfSpeech.VERB && SpanishConjugator.parse(m.entry.baseTranslation).reflexive
+        val plausible = matches.filterNot { reflexive(it) }.ifEmpty { matches }
+        val best = plausible.sortedWith(compareBy({ if (it.surface == lower) 0 else 1 }, { it.entry.frequencyRank })).firstOrNull()
         if (best == null) {
             functionWords.entries.firstOrNull { SpanishText.fold(it.key) == SpanishText.fold(lower) }?.let { (_, v) ->
                 return SpanishGloss(word, v.second, v.first, "function word", null)
             }
             return null
         }
-        val e = best.entry
+        val (english, label) = describe(best)
+        // Genuinely ambiguous forms (fui/fue/fuimos = ser AND ir) show both readings, most frequent first.
+        val alternative = plausible.asSequence()
+            .filter { it.surface == best.surface && it.entry.baseTranslation != best.entry.baseTranslation }
+            .sortedBy { it.entry.frequencyRank }
+            .map { describe(it).first }
+            .firstOrNull { it != english }
+        return SpanishGloss(word, best.surface, if (alternative != null) "$english / $alternative" else english, label, best)
+    }
+
+    private fun describe(m: SpanishFormMatch): Pair<String, String> {
+        val e = m.entry
         val lemma = e.sourceWord
-        val (english, label) = when (e.partOfSpeech) {
-            PartOfSpeech.VERB -> verbGloss(lemma, best)
-            PartOfSpeech.NOUN -> (if (best.plural && !e.pluralOnly) pluralize(lemma) else lemma) to ("noun · ${e.gender ?: "m"}" + if (best.plural) " pl" else "")
+        return when (e.partOfSpeech) {
+            PartOfSpeech.VERB -> verbGloss(lemma, m)
+            PartOfSpeech.NOUN -> (if (m.plural && !e.pluralOnly) pluralize(lemma) else lemma) to ("noun · ${e.gender ?: "m"}" + if (m.plural) " pl" else "")
             PartOfSpeech.ADJECTIVE -> lemma to "adjective"
             PartOfSpeech.ADVERB -> lemma to "adverb"
             else -> lemma to e.partOfSpeech.name.lowercase()
         }
-        return SpanishGloss(word, best.surface, english, label, best)
     }
 
     private fun pluralize(noun: String): String = EnglishMorphology.thirdPerson(noun).let {
@@ -91,7 +105,7 @@ class SpanishToEnglishGlosser(private val dictionary: BundledDictionary) {
                 val subject = pronounFor[person] ?: ""
                 val verb = when (m.tense) {
                     SpanishTense.PRESENT -> if (person == SpanishPerson.EL) EnglishMorphology.thirdPerson(lemma) else if (lemma == "be") beForm(person) else lemma
-                    SpanishTense.PRETERITE -> EnglishMorphology.pastTense(lemma)
+                    SpanishTense.PRETERITE -> if (lemma == "be") (if (person == SpanishPerson.YO || person == SpanishPerson.EL) "was" else "were") else EnglishMorphology.pastTense(lemma)
                     SpanishTense.IMPERFECT -> "used to $lemma"
                     SpanishTense.FUTURE -> "will $lemma"
                     SpanishTense.CONDITIONAL -> "would $lemma"

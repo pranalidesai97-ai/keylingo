@@ -1,4 +1,5 @@
 # Cold-start next-word model for Spanish: previous word <TAB> likely next words, most likely first.
+<s>	hola	yo	no	sí	qué	cómo	gracias	buenos	la	el	me	te	por
 yo	soy	estoy	tengo	quiero	no	creo	también	voy	sé
 no	sé	puedo	quiero	tengo	es	me	te	hay	estoy	hay	problema
 me	gusta	encanta	voy	siento	llamo	parece	gustaría

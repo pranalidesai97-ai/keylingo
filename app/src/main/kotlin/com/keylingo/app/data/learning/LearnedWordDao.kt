@@ -1,34 +1,54 @@
 package com.keylingo.app.data.learning
 
 import androidx.room.Dao
-import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
+import androidx.room.Transaction
 
+/**
+ * Personal-vocabulary DAO. Writes are atomic upserts: the previous
+ * "find, then insert or update" sequence raced when two word-boundary
+ * events for the same new word ran concurrently -- both saw "absent", the
+ * second insert violated the unique (word, language) index, and the
+ * exception escaped a fire-and-forget coroutine and crashed the keyboard.
+ * INSERT OR IGNORE followed by an arithmetic UPDATE, inside one
+ * transaction, cannot race (works on SQLite 3.19 / API 26, which lacks UPSERT).
+ */
 @Dao
-interface LearnedWordDao {
+abstract class LearnedWordDao {
 
     @Query("SELECT * FROM learned_words WHERE word = :word AND language = :language LIMIT 1")
-    suspend fun find(word: String, language: String): LearnedWordEntity?
+    abstract suspend fun find(word: String, language: String): LearnedWordEntity?
 
-    @Insert
-    suspend fun insert(entity: LearnedWordEntity)
+    @Query(
+        """
+        INSERT OR IGNORE INTO learned_words (word, language, organicCount, acceptedCount, lastUsedAtEpochMillis)
+        VALUES (:word, :language, 0, 0, :now)
+        """
+    )
+    protected abstract suspend fun insertIfAbsent(word: String, language: String, now: Long)
 
-    @Update
-    suspend fun update(entity: LearnedWordEntity)
+    @Query(
+        """
+        UPDATE learned_words
+        SET organicCount = organicCount + :organicDelta,
+            acceptedCount = acceptedCount + :acceptedDelta,
+            lastUsedAtEpochMillis = :now
+        WHERE word = :word AND language = :language
+        """
+    )
+    protected abstract suspend fun increment(word: String, language: String, organicDelta: Int, acceptedDelta: Int, now: Long)
+
+    @Transaction
+    open suspend fun recordUsage(word: String, language: String, organicDelta: Int, acceptedDelta: Int, now: Long) {
+        insertIfAbsent(word, language, now)
+        increment(word, language, organicDelta, acceptedDelta, now)
+    }
 
     /**
-     * Prefix search restricted to words that meet the "actually learned"
-     * threshold -- see [RoomLearnedVocabularyProvider] for why 3 organic
-     * uses or 1 explicit acceptance is the bar, rather than surfacing a
-     * word after a single incidental typing (which would risk exactly the
-     * typo/garbage-string problem this feature must avoid).
-     *
-     * Ranked by a fixed, deterministic weighting (an explicit acceptance
-     * counts as 3 organic uses -- a tap is a much stronger signal than
-     * incidental typing), then by recency as a tiebreaker. Hardcoded
-     * rather than parameterized: this is meant to be simple and legible,
-     * not a tunable ML weight.
+     * Prefix search restricted to words past the "actually learned" bar:
+     * 3 organic uses or 1 explicit acceptance. A single incidental typing
+     * (often a typo) never surfaces. Ranked by acceptance-weighted
+     * frequency, then recency.
      */
     @Query(
         """
@@ -40,5 +60,11 @@ interface LearnedWordDao {
         LIMIT :limit
         """
     )
-    suspend fun findByPrefix(prefix: String, language: String, limit: Int): List<LearnedWordEntity>
+    abstract suspend fun findByPrefix(prefix: String, language: String, limit: Int): List<LearnedWordEntity>
+
+    @Query("SELECT COUNT(*) FROM learned_words WHERE word = :word AND language = :language AND (organicCount >= 3 OR acceptedCount >= 1)")
+    abstract suspend fun countLearned(word: String, language: String): Int
+
+    @Query("DELETE FROM learned_words")
+    abstract suspend fun deleteAll()
 }

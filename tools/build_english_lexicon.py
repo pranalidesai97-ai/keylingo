@@ -38,12 +38,14 @@ CONTRACTIONS = [
     "hadn't", "mustn't", "needn't", "y'all", "ma'am", "o'clock",
 ]
 CAPITALISED = [
+    # Month/name words that are also common lowercase words (may, march, august, god, ok)
+    # are deliberately NOT listed: forcing a capital on them would corrupt normal typing.
     "I", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
-    "January", "February", "March", "April", "May", "June", "July", "August", "September",
+    "January", "February", "April", "June", "July", "September",
     "October", "November", "December", "English", "Spanish", "French", "German", "Italian",
     "Portuguese", "Chinese", "Japanese", "American", "Mexican", "British", "Canadian", "European",
     "Latin", "America", "Mexico", "Spain", "Canada", "England", "Europe", "Christmas", "Easter",
-    "Halloween", "Thanksgiving", "God", "Mr", "Mrs", "Ms", "Dr", "OK", "TV", "USA", "UK",
+    "Halloween", "Thanksgiving", "Mr", "Mrs", "Ms", "Dr", "TV", "USA", "UK",
 ]
 MODERN = [
     "ok", "okay", "app", "apps", "wifi", "online", "offline", "email", "emails", "emailed",
@@ -61,6 +63,10 @@ NO_SUGGEST = {
     "asshole", "dick", "cock", "cunt", "pussy", "whore", "slut", "nigger", "nigga", "faggot",
     "fag", "retard", "retarded", "damn", "crap", "piss", "pissed", "tits", "twat", "wanker",
 }
+
+# Real but archaic words that are almost always a missing-apostrophe typo in practice
+# ("cant" -> "can't"). Kept as known words, but ranked last and never suggested.
+DEMOTE = {"cant", "wont"}
 
 WORD_RE = re.compile(r"^[A-Za-z][A-Za-z']*$")
 
@@ -124,6 +130,11 @@ def main(package_dir, curated_path, out_path):
             next_rank += 1
         if key in NO_SUGGEST:
             entries[key] = (entries[key][0], entries[key][1], "n")
+
+    for key in DEMOTE:
+        if key in entries:
+            entries[key] = (entries[key][0], next_rank, "n")
+            next_rank += 1
 
     rows = sorted(entries.values(), key=lambda e: (e[1], e[0]))
     with open(out_path, "w", encoding="utf-8") as out:

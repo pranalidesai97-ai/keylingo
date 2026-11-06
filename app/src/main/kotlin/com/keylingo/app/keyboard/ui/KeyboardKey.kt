@@ -1,199 +1,244 @@
 package com.keylingo.app.keyboard.ui
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.scale
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.KeyboardReturn
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardCapslock
 import androidx.compose.material.icons.filled.Mood
-import androidx.compose.material.icons.filled.SpaceBar
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.keylingo.app.keyboard.EnterKeyAction
 import com.keylingo.app.keyboard.KeyAction
+import com.keylingo.app.keyboard.KeyboardLayoutProvider
 import com.keylingo.app.keyboard.ShiftState
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-/** Long-press-to-repeat tuning for Backspace, matching Gboard's feel. */
+/** Long-press-to-repeat tuning for Backspace. */
 private const val BACKSPACE_INITIAL_DELAY_MS = 350L
 private const val BACKSPACE_REPEAT_INTERVAL_MS = 55L
-private const val BACKSPACE_ACCELERATED_INTERVAL_MS = 40L
+private const val BACKSPACE_ACCELERATED_INTERVAL_MS = 35L
 private const val BACKSPACE_ACCELERATE_AFTER_REPEATS = 15
+/** How long a key must be held before its accent alternatives appear. */
+private const val ALTERNATES_DELAY_MS = 320L
+
+/** Callbacks a key uses to drive the screen-level accent popup overlay. */
+class AccentPopupController(
+    val show: (options: List<String>, anchor: Rect) -> Unit,
+    val select: (index: Int) -> Unit,
+    val dismiss: () -> Unit
+)
 
 /**
- * A single key. Weighted width is applied by the caller (the row Composable)
- * via [RowScope.weight]; this Composable only cares about its own content
- * and press feedback.
+ * A single key. Width comes from the caller's [RowScope.weight]. Letters
+ * and symbols commit on release (like Gboard); holding a key with
+ * alternatives opens the accent popup -- slide to choose, release to type.
+ * Backspace deletes immediately on press and auto-repeats with acceleration.
  */
 @Composable
 fun RowScope.KeyboardKey(
     action: KeyAction,
-    weight: Float,
     shiftState: ShiftState,
     onClick: (KeyAction) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enterAction: EnterKeyAction = EnterKeyAction.NEWLINE,
+    spaceLabel: String = "",
+    hapticsEnabled: Boolean = true,
+    accentPopup: AccentPopupController? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else 1f,
-        animationSpec = tween(80),
-        label = "keyPressScale"
-    )
+    val scale by animateFloatAsState(targetValue = if (isPressed) 0.92f else 1f, animationSpec = tween(70), label = "keyPressScale")
+    val view = LocalView.current
+    val currentOnClick by rememberUpdatedState(onClick)
+    val currentShift by rememberUpdatedState(shiftState)
+    val haptics by rememberUpdatedState(hapticsEnabled)
+    val alternates = remember(action) { KeyboardLayoutProvider.alternatesFor(action) }
+    var bounds = remember { arrayOf(Rect.Zero) }
 
-    val isAccentKey = action is KeyAction.Shift || action is KeyAction.Backspace ||
-        action is KeyAction.Enter || action is KeyAction.SwitchToSymbols ||
-        action is KeyAction.SwitchToLetters || action is KeyAction.SwitchToNumbers
-
+    val colors = MaterialTheme.colorScheme
+    val isAccentKey = action is KeyAction.Shift || action is KeyAction.Backspace || action is KeyAction.Enter ||
+        action is KeyAction.SwitchToSymbols || action is KeyAction.SwitchToLetters || action is KeyAction.SwitchToNumbers
+    val enterHighlighted = action is KeyAction.Enter && enterAction != EnterKeyAction.NEWLINE
     val background = when {
-        action is KeyAction.Shift && shiftState != ShiftState.OFF -> MaterialTheme.colorScheme.primary
-        isAccentKey -> MaterialTheme.colorScheme.surfaceVariant
-        else -> MaterialTheme.colorScheme.surface
+        action is KeyAction.Shift && shiftState != ShiftState.OFF -> colors.primary
+        enterHighlighted -> colors.primary
+        isAccentKey -> colors.surfaceVariant
+        else -> colors.surface
     }
-    val contentColor = if (action is KeyAction.Shift && shiftState != ShiftState.OFF) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurface
+    val contentColor = if ((action is KeyAction.Shift && shiftState != ShiftState.OFF) || enterHighlighted) colors.onPrimary else colors.onSurface
+
+    fun tick() {
+        if (haptics) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
     }
 
-    // Backspace gets a custom gesture handler (tap = delete one, hold =
-    // repeat with acceleration) instead of plain .clickable, so it can
-    // drive repeated onClick(action) calls itself while the pointer stays
-    // down. Every other key keeps the original .clickable behavior
-    // unchanged -- this is intentionally scoped to Backspace only, not a
-    // general press-handling rewrite. Press/Release/Cancel interactions
-    // are emitted manually here so the existing scale animation above
-    // (which reads interactionSource) keeps working identically for this
-    // key too.
-    val pressModifier = if (action == KeyAction.Backspace) {
+    fun withShift(alt: String): KeyAction =
+        if (action is KeyAction.Character) KeyAction.Character(alt.lowercase(), alt.uppercase()) else KeyAction.Symbol(alt)
+
+    val gesture = if (action == KeyAction.Backspace) {
         Modifier.pointerInput(action) {
-            // AwaitPointerEventScope (the receiver inside awaitPointerEventScope{})
-            // is @RestrictsSuspension: only suspend functions that are members/
-            // extensions of that exact scope (awaitFirstDown, waitForUpOrCancellation)
-            // may be called inside it -- not coroutineScope/launch/delay/emit. So
-            // those two calls are each isolated in their own small
-            // awaitPointerEventScope{} block, called from this outer,
-            // unrestricted coroutineScope -- which is where the repeat-loop and
-            // interaction emissions actually run. The outer while(true) gives the
-            // same "keep detecting new gestures forever" behavior awaitEachGesture
-            // provided.
             coroutineScope {
                 while (true) {
                     val down = awaitPointerEventScope { awaitFirstDown() }
                     val press = PressInteraction.Press(down.position)
                     interactionSource.tryEmit(press)
-
-                    onClick(action) // immediate single delete on initial press, same as a plain tap
-
+                    tick()
+                    currentOnClick(action)
                     val repeatJob = launch {
                         delay(BACKSPACE_INITIAL_DELAY_MS)
-                        var intervalMs = BACKSPACE_REPEAT_INTERVAL_MS
+                        var interval = BACKSPACE_REPEAT_INTERVAL_MS
                         var repeats = 0
                         while (isActive) {
-                            onClick(action)
-                            repeats++
-                            if (repeats == BACKSPACE_ACCELERATE_AFTER_REPEATS) {
-                                intervalMs = BACKSPACE_ACCELERATED_INTERVAL_MS
-                            }
-                            delay(intervalMs)
+                            currentOnClick(action)
+                            if (++repeats == BACKSPACE_ACCELERATE_AFTER_REPEATS) interval = BACKSPACE_ACCELERATED_INTERVAL_MS
+                            delay(interval)
                         }
                     }
-
                     val up = awaitPointerEventScope { waitForUpOrCancellation() }
-                    repeatJob.cancel() // stop immediately when released (or gesture cancelled)
-                    interactionSource.tryEmit(
-                        if (up != null) PressInteraction.Release(press) else PressInteraction.Cancel(press)
-                    )
+                    repeatJob.cancel()
+                    interactionSource.tryEmit(if (up != null) PressInteraction.Release(press) else PressInteraction.Cancel(press))
                 }
             }
         }
     } else {
-        Modifier.clickable(
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = { onClick(action) }
-        )
+        Modifier.pointerInput(action, alternates) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val press = PressInteraction.Press(down.position)
+                interactionSource.tryEmit(press)
+                tick()
+                val quickUp = withTimeoutOrNull(if (alternates.isEmpty()) Long.MAX_VALUE else ALTERNATES_DELAY_MS) { waitForUpOrCancellation() }
+                if (quickUp != null || alternates.isEmpty() || accentPopup == null) {
+                    // Normal tap (or a cancelled gesture, in which case quickUp is null and nothing is typed).
+                    interactionSource.tryEmit(if (quickUp != null) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+                    if (quickUp != null) currentOnClick(action)
+                    return@awaitEachGesture
+                }
+                // Long press: show alternatives; horizontal movement selects; release commits.
+                val anchor = bounds[0]
+                accentPopup.show(alternates, anchor)
+                var selected = 0
+                var committed = false
+                while (true) {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    if (!change.pressed) { committed = true; change.consume(); break }
+                    val cell = anchor.width.coerceAtLeast(1f)
+                    val index = ((change.position.x - down.position.x) / cell + 0.5f).toInt().coerceIn(0, alternates.size - 1)
+                    if (index != selected) { selected = index; accentPopup.select(index); tick() }
+                    change.consume()
+                }
+                accentPopup.dismiss()
+                interactionSource.tryEmit(PressInteraction.Release(press))
+                if (committed) {
+                    val alt = alternates[selected]
+                    currentOnClick(withShift(if (currentShift != ShiftState.OFF) alt.uppercase() else alt))
+                }
+            }
+        }
     }
 
     Box(
         modifier = modifier
             .fillMaxHeight()
             .padding(3.dp)
+            .onGloballyPositioned { bounds[0] = it.boundsInRoot() }
             .scale(scale)
             .background(background, RoundedCornerShape(8.dp))
-            .then(pressModifier)
-            .wrapContentSize(Alignment.Center),
+            .then(gesture)
+            .semantics { contentDescription = describe(action, shiftState, enterAction) },
         contentAlignment = Alignment.Center
     ) {
-        KeyContent(action = action, shiftState = shiftState, contentColor = contentColor)
+        KeyContent(action, shiftState, contentColor, enterAction, spaceLabel, hasAlternates = alternates.isNotEmpty())
     }
 }
 
+private fun describe(action: KeyAction, shift: ShiftState, enter: EnterKeyAction): String = when (action) {
+    is KeyAction.Character -> if (shift != ShiftState.OFF) action.upper else action.lower
+    is KeyAction.Symbol -> action.value
+    KeyAction.Shift -> when (shift) { ShiftState.CAPS_LOCK -> "Caps lock on"; ShiftState.SHIFTED_ONCE -> "Shift on"; else -> "Shift" }
+    KeyAction.Backspace -> "Delete"
+    KeyAction.Enter -> enter.name.lowercase().replaceFirstChar { it.uppercase() }.let { if (enter == EnterKeyAction.NEWLINE) "Enter" else it }
+    KeyAction.Space -> "Space"
+    KeyAction.Emoji -> "Emoji"
+    KeyAction.SwitchToSymbols -> "More symbols"
+    KeyAction.SwitchToLetters -> "Letters"
+    KeyAction.SwitchToNumbers -> "Numbers and symbols"
+}
+
 @Composable
-private fun KeyContent(action: KeyAction, shiftState: ShiftState, contentColor: Color) {
+private fun KeyContent(action: KeyAction, shiftState: ShiftState, contentColor: Color, enterAction: EnterKeyAction, spaceLabel: String, hasAlternates: Boolean) {
     when (action) {
-        is KeyAction.Character -> {
-            val label = if (shiftState != ShiftState.OFF) action.upper else action.lower
-            Text(text = label, color = contentColor, fontSize = 20.sp)
+        is KeyAction.Character -> Box(contentAlignment = Alignment.Center) {
+            Text(text = if (shiftState != ShiftState.OFF) action.upper else action.lower, color = contentColor, fontSize = 20.sp)
+            if (hasAlternates) Text("·", color = contentColor.copy(alpha = 0.35f), fontSize = 10.sp, modifier = Modifier.align(Alignment.TopEnd).padding(end = 2.dp))
         }
-        is KeyAction.Symbol -> {
-            Text(text = action.value, color = contentColor, fontSize = 18.sp)
-        }
+        is KeyAction.Symbol -> Text(text = action.value, color = contentColor, fontSize = 18.sp)
         KeyAction.Shift -> Icon(
-            imageVector = Icons.Filled.ArrowUpward,
-            contentDescription = "Shift",
-            tint = contentColor
+            imageVector = if (shiftState == ShiftState.CAPS_LOCK) Icons.Filled.KeyboardCapslock else Icons.Filled.ArrowUpward,
+            contentDescription = null, tint = contentColor
         )
-        KeyAction.Backspace -> Icon(
-            imageVector = Icons.AutoMirrored.Filled.Backspace,
-            contentDescription = "Backspace",
-            tint = contentColor
-        )
+        KeyAction.Backspace -> Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = null, tint = contentColor)
         KeyAction.Enter -> Icon(
-            imageVector = Icons.Filled.KeyboardReturn,
-            contentDescription = "Enter",
-            tint = contentColor
+            imageVector = when (enterAction) {
+                EnterKeyAction.SEND -> Icons.AutoMirrored.Filled.Send
+                EnterKeyAction.SEARCH -> Icons.Filled.Search
+                EnterKeyAction.GO, EnterKeyAction.NEXT -> Icons.AutoMirrored.Filled.ArrowForward
+                EnterKeyAction.DONE -> Icons.Filled.Check
+                EnterKeyAction.PREVIOUS -> Icons.AutoMirrored.Filled.ArrowBack
+                EnterKeyAction.NEWLINE -> Icons.AutoMirrored.Filled.KeyboardReturn
+            },
+            contentDescription = null, tint = contentColor
         )
-        KeyAction.Space -> Icon(
-            imageVector = Icons.Filled.SpaceBar,
-            contentDescription = "Space",
-            tint = contentColor
-        )
-        KeyAction.Emoji -> Icon(
-            imageVector = Icons.Filled.Mood,
-            contentDescription = "Emoji",
-            tint = contentColor
-        )
-        KeyAction.SwitchToSymbols -> Text(text = "#+=", color = contentColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        KeyAction.SwitchToLetters -> Text(text = "ABC", color = contentColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        KeyAction.SwitchToNumbers -> Text(text = "?123", color = contentColor, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        KeyAction.Space -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = spaceLabel, color = contentColor.copy(alpha = 0.55f), fontSize = 12.sp)
+        }
+        KeyAction.Emoji -> Icon(Icons.Filled.Mood, contentDescription = null, tint = contentColor)
+        KeyAction.SwitchToSymbols -> Text("#+=", color = contentColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        KeyAction.SwitchToLetters -> Text("ABC", color = contentColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        KeyAction.SwitchToNumbers -> Text("?123", color = contentColor, fontSize = 13.sp, fontWeight = FontWeight.Medium)
     }
 }

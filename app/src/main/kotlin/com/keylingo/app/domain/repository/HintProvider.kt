@@ -1,37 +1,35 @@
 package com.keylingo.app.domain.repository
 
 import com.keylingo.app.domain.model.HintWord
+import com.keylingo.app.domain.model.LearningAssistance
 import com.keylingo.app.domain.model.LearningMode
 
 /**
- * Turns the text currently being typed into a small set of learning hints.
- * The MVP implementation ([com.keylingo.app.data.hint.SentenceAnalyzer], via
- * the thin [com.keylingo.app.data.hint.DefaultHintProvider] adapter) is a
- * tokenizer + local-grammar-signal detector over [DictionaryProvider]; a
- * future implementation could swap in on-device NLP or full phrase-chunk
- * recognition without the keyboard code needing to change.
+ * Turns the sentence currently being typed into learning assistance: a
+ * sentence translation plus per-word/phrase hints, in whichever direction
+ * applies (typing English -> Spanish hints; typing Spanish -> English glosses).
+ * Never mutates the typed text.
  */
 interface HintProvider {
 
     /**
-     * Given the full current text of the input field (or the active
-     * sentence/segment of it), return an ordered list of hints for the
-     * "meaningful" words only. Never mutates or returns the typed text.
-     *
-     * [learningMode] shapes *how many* hints come back and *which*
-     * candidates survive when a sentence has more of them than fit
-     * (see [com.keylingo.app.data.hint.LearningModePolicy]) -- it's a
-     * required parameter, not a default, so no call site can silently
-     * ignore the user's chosen mode.
-     *
-     * [maxHints], if provided, hard-overrides the mode's own default hint
-     * count; leave it null to let [learningMode] decide.
+     * [text] is the current sentence (the caller strips earlier sentences).
+     * [learningMode] decides how many word hints survive (see LearningModePolicy);
+     * [maxHints] hard-overrides that when non-null.
      */
+    suspend fun assist(
+        text: String,
+        targetLanguage: String,
+        learningMode: LearningMode,
+        maxHints: Int? = null
+    ): LearningAssistance
+
+    /** Convenience for callers that only need word hints. */
     suspend fun generateHints(
         text: String,
         sourceLanguage: String,
         targetLanguage: String,
         learningMode: LearningMode,
         maxHints: Int? = null
-    ): List<HintWord>
+    ): List<HintWord> = assist(text, targetLanguage, learningMode, maxHints).hints
 }

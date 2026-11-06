@@ -20,7 +20,9 @@ data class KeyLingoSettings(
     val darkMode: DarkModeOption = DarkModeOption.SYSTEM,
     val hintSize: HintSizeOption = HintSizeOption.MEDIUM,
     val learningMode: LearningMode = LearningMode.INTERMEDIATE,
-    val showNumberRow: Boolean = true
+    val showNumberRow: Boolean = true,
+    val autocorrectEnabled: Boolean = true,
+    val hapticsEnabled: Boolean = true
 )
 
 private val Context.dataStore by preferencesDataStore(name = "keylingo_settings")
@@ -36,6 +38,8 @@ class SettingsDataStore @Inject constructor(
         val HINT_SIZE = stringPreferencesKey("hint_size")
         val LEARNING_MODE = stringPreferencesKey("learning_mode")
         val SHOW_NUMBER_ROW = booleanPreferencesKey("show_number_row")
+        val AUTOCORRECT = booleanPreferencesKey("autocorrect_enabled")
+        val HAPTICS = booleanPreferencesKey("haptics_enabled")
     }
 
     val settingsFlow: Flow<KeyLingoSettings> = context.dataStore.data.map { prefs ->
@@ -48,7 +52,9 @@ class SettingsDataStore @Inject constructor(
                 ?: HintSizeOption.MEDIUM,
             learningMode = prefs[Keys.LEARNING_MODE]?.let { runCatching { LearningMode.valueOf(it) }.getOrNull() }
                 ?: LearningMode.INTERMEDIATE,
-            showNumberRow = prefs[Keys.SHOW_NUMBER_ROW] ?: true
+            showNumberRow = prefs[Keys.SHOW_NUMBER_ROW] ?: true,
+            autocorrectEnabled = prefs[Keys.AUTOCORRECT] ?: true,
+            hapticsEnabled = prefs[Keys.HAPTICS] ?: true
         )
     }
 
@@ -74,5 +80,13 @@ class SettingsDataStore @Inject constructor(
 
     suspend fun setShowNumberRow(show: Boolean) {
         context.dataStore.edit { it[Keys.SHOW_NUMBER_ROW] = show }
+    }
+
+    suspend fun setAutocorrectEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.AUTOCORRECT] = enabled }
+    }
+
+    suspend fun setHapticsEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.HAPTICS] = enabled }
     }
 }

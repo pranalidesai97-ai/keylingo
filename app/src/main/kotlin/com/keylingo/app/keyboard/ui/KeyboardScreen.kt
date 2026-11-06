@@ -1,113 +1,179 @@
 package com.keylingo.app.keyboard.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.keylingo.app.data.settings.DarkModeOption
 import com.keylingo.app.keyboard.KeyAction
 import com.keylingo.app.keyboard.KeyDefinition
 import com.keylingo.app.keyboard.KeyboardLayoutProvider
+import com.keylingo.app.keyboard.KeyboardMode
+import com.keylingo.app.keyboard.KeyboardUiState
 import com.keylingo.app.keyboard.KeyboardViewModel
-import com.keylingo.app.keyboard.ShiftState
 import com.keylingo.app.ui.theme.KeyLingoTheme
+import kotlin.math.roundToInt
 
 /**
- * Root composable rendered inside the InputMethodService's ComposeView.
- * Layout, top to bottom: suggestion bar (autocomplete row + learning hint
- * row), then the active keyboard rows (letters / symbols / numbers / emoji
- * depending on mode).
+ * Fixed total height of the key area in every mode (letters with/without
+ * the number row, symbols, emoji): rows share it by weight, so switching
+ * modes never resizes the keyboard.
+ */
+private val KEY_ROWS_HEIGHT = 260.dp
+
+private data class AccentPopupState(val options: List<String>, val anchor: Rect, val selected: Int)
+
+/**
+ * Root composable of the IME window: suggestion/learning strip, key rows,
+ * and an overlay for the long-press accent popup (drawn inside this layout
+ * rather than in a separate window, which IMEs handle unreliably).
  */
 @Composable
 fun KeyboardScreen(viewModel: KeyboardViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    var popup by remember { mutableStateOf<AccentPopupState?>(null) }
+    val popupController = remember {
+        AccentPopupController(
+            show = { options, anchor -> popup = AccentPopupState(options, anchor, 0) },
+            select = { index -> popup = popup?.copy(selected = index) },
+            dismiss = { popup = null }
+        )
+    }
 
     KeyLingoTheme(darkTheme = isDarkTheme(uiState.settings.darkMode)) {
         Surface(color = MaterialTheme.colorScheme.background) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                val onAutocompleteSelected = remember(viewModel) { viewModel::onAutocompleteSelected }
-                val onKeyAction = remember(viewModel) { viewModel::onKeyAction }
-
-                HintBar(
-                    autocompleteSuggestions = uiState.autocompleteSuggestions,
-                    hints = uiState.hints,
-                    hintSize = uiState.settings.hintSize,
-                    onAutocompleteSelected = onAutocompleteSelected
-                )
-                val keyRows = remember(uiState.mode, uiState.settings.showNumberRow) {
-                    KeyboardLayoutProvider.rowsFor(uiState.mode, uiState.settings.showNumberRow)
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    val onSuggestion = remember(viewModel) { viewModel::onAutocompleteSelected }
+                    val onKeyAction = remember(viewModel) { viewModel::onKeyAction }
+                    HintBar(
+                        suggestions = uiState.suggestions,
+                        autoCorrection = uiState.autoCorrection,
+                        assistance = uiState.assistance,
+                        hintSize = uiState.settings.hintSize,
+                        onSuggestionSelected = onSuggestion
+                    )
+                    val rows = remember(uiState.mode, uiState.settings.showNumberRow) {
+                        KeyboardLayoutProvider.rowsFor(uiState.mode, uiState.settings.showNumberRow)
+                    }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(KEY_ROWS_HEIGHT)
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(horizontal = 4.dp, vertical = 4.dp)
+                    ) {
+                        if (uiState.mode == KeyboardMode.EMOJI) {
+                            EmojiGrid(onEmoji = { onKeyAction(KeyAction.Symbol(it)) }, modifier = Modifier.weight(4f))
+                        }
+                        rows.forEach { row ->
+                            KeyRow(row, uiState, onKeyAction, popupController, Modifier.weight(1f))
+                        }
+                    }
                 }
-                KeyRows(
-                    rows = keyRows,
-                    shiftState = uiState.shiftState,
-                    onKeyAction = onKeyAction
-                )
+                popup?.let { AccentPopupOverlay(it) }
             }
         }
     }
 }
-
-/**
- * Fixed total height for the key-rows area, regardless of which mode is
- * active. Sized to the tallest mode (LETTERS with the number row on: 5
- * rows at the previous fixed-52dp-per-row baseline = 260dp).
- *
- * Root cause this fixes: rows used to each get a fixed `height(52.dp)`,
- * so total height was `52.dp * rowCount` -- and row count genuinely
- * differs by mode (LETTERS: 4 or 5 depending on the number-row setting;
- * SYMBOLS_1/SYMBOLS_2/EMOJI: always 4), so the keyboard visibly changed
- * size switching modes. Now every mode's rows share this same fixed
- * total height via `Modifier.weight(1f)` each, so N rows always sum to
- * exactly [KEY_ROWS_HEIGHT] -- a 4-row mode's rows are proportionally
- * taller, a 5-row mode's rows are the original 52dp, but the *total*
- * footprint never changes.
- */
-private val KEY_ROWS_HEIGHT = 260.dp
 
 @Composable
-private fun KeyRows(
-    rows: List<List<KeyDefinition>>,
-    shiftState: ShiftState,
-    onKeyAction: (KeyAction) -> Unit
+private fun KeyRow(
+    row: List<KeyDefinition>,
+    uiState: KeyboardUiState,
+    onKeyAction: (KeyAction) -> Unit,
+    popupController: AccentPopupController,
+    modifier: Modifier
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(KEY_ROWS_HEIGHT)
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 4.dp, vertical = 4.dp)
-    ) {
-        rows.forEach { row ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                row.forEach { keyDef ->
-                    KeyboardKey(
-                        action = keyDef.action,
-                        weight = keyDef.weight,
-                        shiftState = shiftState,
-                        onClick = onKeyAction,
-                        modifier = Modifier.weight(keyDef.weight)
-                    )
-                }
-            }
+    val spaceLabel = if (uiState.typingLanguage == "es") "Español" else "English"
+    Row(modifier = modifier.fillMaxWidth()) {
+        row.forEach { keyDef ->
+            KeyboardKey(
+                action = keyDef.action,
+                shiftState = uiState.shiftState,
+                onClick = onKeyAction,
+                modifier = Modifier.weight(keyDef.weight),
+                enterAction = uiState.policy.enterAction,
+                spaceLabel = spaceLabel,
+                hapticsEnabled = uiState.settings.hapticsEnabled,
+                accentPopup = popupController
+            )
         }
     }
 }
 
+@Composable
+private fun EmojiGrid(onEmoji: (String) -> Unit, modifier: Modifier) {
+    LazyVerticalGrid(columns = GridCells.Fixed(8), modifier = modifier.fillMaxWidth()) {
+        items(KeyboardLayoutProvider.EMOJI) { emoji ->
+            Box(
+                modifier = Modifier
+                    .aspectRatio(1f)
+                    .clickable { onEmoji(emoji) },
+                contentAlignment = Alignment.Center
+            ) { Text(emoji, fontSize = 24.sp) }
+        }
+    }
+}
+
+@Composable
+private fun AccentPopupOverlay(state: AccentPopupState) {
+    val density = LocalDensity.current
+    val cellWidth = with(density) { state.anchor.width.toDp() }
+    val cellHeight = with(density) { (state.anchor.height * 0.9f).toDp() }
+    val offset = IntOffset(state.anchor.left.roundToInt(), (state.anchor.top - state.anchor.height * 0.95f).roundToInt().coerceAtLeast(0))
+    Row(
+        modifier = Modifier
+            .offset { offset }
+            .zIndex(10f)
+            .shadow(6.dp, RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp))
+            .padding(2.dp)
+    ) {
+        state.options.forEachIndexed { index, option ->
+            val selected = index == state.selected
+            Box(
+                modifier = Modifier
+                    .size(width = cellWidth, height = cellHeight)
+                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(option, fontSize = 20.sp, color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+            }
+        }
+    }
+}
 
 @Composable
 private fun isDarkTheme(mode: DarkModeOption): Boolean = when (mode) {

@@ -25,5 +25,5 @@ walked run ran sleep slept wake woke cook cooked clean cleaned learn learned stu
 remember forget forgot understand understood ask asked answer answered change changed check
 checked show showed share shared plan plans visit visited travel trip vacation hotel
 airport flight ticket weather rain sunny cold hot warm outside inside downtown store shop
-Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May
-June July August September October November December English Spanish
+Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February April May
+June July September October November December English Spanish

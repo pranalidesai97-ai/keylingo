@@ -10,7 +10,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -21,6 +24,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -66,6 +72,22 @@ fun SettingsScreen(
             )
 
             Spacer(modifier = Modifier.height(20.dp))
+            ToggleRow(
+                title = stringResource(R.string.settings_autocorrect),
+                description = stringResource(R.string.settings_autocorrect_desc),
+                checked = settings.autocorrectEnabled,
+                onToggle = viewModel::setAutocorrectEnabled
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            ToggleRow(
+                title = stringResource(R.string.settings_haptics),
+                description = stringResource(R.string.settings_haptics_desc),
+                checked = settings.hapticsEnabled,
+                onToggle = viewModel::setHapticsEnabled
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -100,6 +122,12 @@ fun SettingsScreen(
                 selected = settings.hintSize,
                 onSelect = viewModel::setHintSize
             )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(20.dp))
+
+            ClearPersonalDataSection(onConfirm = { done -> viewModel.clearPersonalData(done) })
 
             Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider()
@@ -153,6 +181,44 @@ private fun NumberRowToggleSection(enabled: Boolean, onToggle: (Boolean) -> Unit
             )
         }
         Switch(checked = enabled, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun ToggleRow(title: String, description: String, checked: Boolean, onToggle: (Boolean) -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleLarge)
+            Text(description, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun ClearPersonalDataSection(onConfirm: (onDone: () -> Unit) -> Unit) {
+    var confirming by remember { mutableStateOf(false) }
+    var cleared by remember { mutableStateOf(false) }
+    Text(stringResource(R.string.settings_personal_data), style = MaterialTheme.typography.titleLarge)
+    Text(
+        stringResource(if (cleared) R.string.settings_personal_data_cleared else R.string.settings_personal_data_desc),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedButton(onClick = { confirming = true }) { Text(stringResource(R.string.settings_personal_data_clear)) }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.settings_personal_data_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_personal_data_confirm_text)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onConfirm { cleared = true } }) {
+                    Text(stringResource(R.string.settings_personal_data_clear))
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirming = false }) { Text(stringResource(android.R.string.cancel)) } }
+        )
     }
 }
 

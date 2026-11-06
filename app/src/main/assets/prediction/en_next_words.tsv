@@ -1,5 +1,6 @@
 # Cold-start next-word model for English: previous word <TAB> likely next words, most likely first.
 # Authored for KeyLingo from common conversational patterns. Personal history always outranks this.
+<s>	I	the	thanks	hi	ok	yes	what	how	can	do	are	is	my	we	please	sorry	let's	good	where	just
 i	am	will	have	think	don't	can	was	love	just	know	want	need	miss	hope	feel	got	can't	would
 i'm	not	going	so	sorry	on	at	in	here	just	really	fine	good	sure	coming	home	tired	trying	still
 you	are	can	have	know	want	were	should	need	too	guys	think	like	look	doing	so	ok	all

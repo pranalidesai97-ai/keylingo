@@ -1,38 +1,73 @@
 package com.keylingo.app.data.context
 
 import androidx.room.Dao
-import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
+import androidx.room.Transaction
 
+/**
+ * Personal n-gram DAO. All writes are atomic INSERT OR IGNORE + UPDATE
+ * pairs inside a transaction (see [com.keylingo.app.data.learning.LearnedWordDao]
+ * for why the old find-then-insert sequence crashed under concurrency).
+ */
 @Dao
-interface BigramDao {
+abstract class BigramDao {
 
     @Query("SELECT * FROM bigrams WHERE previousWord = :previousWord AND nextWord = :nextWord AND language = :language LIMIT 1")
-    suspend fun find(previousWord: String, nextWord: String, language: String): BigramEntity?
+    abstract suspend fun find(previousWord: String, nextWord: String, language: String): BigramEntity?
 
-    @Insert
-    suspend fun insert(entity: BigramEntity)
+    @Query("INSERT OR IGNORE INTO bigrams (previousWord, nextWord, language, count, lastUsedAtEpochMillis) VALUES (:previous, :next, :language, 0, :now)")
+    protected abstract suspend fun insertBigramIfAbsent(previous: String, next: String, language: String, now: Long)
 
-    @Update
-    suspend fun update(entity: BigramEntity)
+    @Query("UPDATE bigrams SET count = count + 1, lastUsedAtEpochMillis = :now WHERE previousWord = :previous AND nextWord = :next AND language = :language")
+    protected abstract suspend fun incrementBigram(previous: String, next: String, language: String, now: Long)
 
-    /**
-     * All known next-words for [previousWord], highest count first, capped
-     * at [limit]. Called **once per suggestion refresh** by
-     * [RoomContextPredictionProvider.nextWordCounts] -- the ranking code
-     * then does an in-memory map lookup per candidate rather than issuing
-     * one query per candidate. This is the concrete mechanism satisfying
-     * "do not query the database repeatedly for every suggestion
-     * candidate".
-     */
     @Query(
         """
-        SELECT * FROM bigrams
-        WHERE previousWord = :previousWord AND language = :language
-        ORDER BY count DESC
-        LIMIT :limit
+        INSERT OR IGNORE INTO trigrams (secondPreviousWord, previousWord, nextWord, language, count, lastUsedAtEpochMillis)
+        VALUES (:second, :previous, :next, :language, 0, :now)
         """
     )
-    suspend fun findByPreviousWord(previousWord: String, language: String, limit: Int): List<BigramEntity>
+    protected abstract suspend fun insertTrigramIfAbsent(second: String, previous: String, next: String, language: String, now: Long)
+
+    @Query(
+        """
+        UPDATE trigrams SET count = count + 1, lastUsedAtEpochMillis = :now
+        WHERE secondPreviousWord = :second AND previousWord = :previous AND nextWord = :next AND language = :language
+        """
+    )
+    protected abstract suspend fun incrementTrigram(second: String, previous: String, next: String, language: String, now: Long)
+
+    @Transaction
+    open suspend fun record(second: String?, previous: String, next: String, language: String, now: Long) {
+        insertBigramIfAbsent(previous, next, language, now)
+        incrementBigram(previous, next, language, now)
+        if (second != null) {
+            insertTrigramIfAbsent(second, previous, next, language, now)
+            incrementTrigram(second, previous, next, language, now)
+        }
+    }
+
+    /** All known next words for [previousWord], highest count first. Fetched once per refresh, then looked up in memory. */
+    @Query("SELECT * FROM bigrams WHERE previousWord = :previousWord AND language = :language ORDER BY count DESC LIMIT :limit")
+    abstract suspend fun findByPreviousWord(previousWord: String, language: String, limit: Int): List<BigramEntity>
+
+    @Query(
+        """
+        SELECT * FROM trigrams WHERE secondPreviousWord = :second AND previousWord = :previous AND language = :language
+        ORDER BY count DESC LIMIT :limit
+        """
+    )
+    abstract suspend fun findByPreviousPair(second: String, previous: String, language: String, limit: Int): List<TrigramEntity>
+
+    @Query("DELETE FROM bigrams")
+    protected abstract suspend fun deleteAllBigrams()
+
+    @Query("DELETE FROM trigrams")
+    protected abstract suspend fun deleteAllTrigrams()
+
+    @Transaction
+    open suspend fun deleteAll() {
+        deleteAllBigrams()
+        deleteAllTrigrams()
+    }
 }

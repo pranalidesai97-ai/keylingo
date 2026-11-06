@@ -16,6 +16,16 @@
     <string name="settings_learning_enabled_desc">Show vocabulary hints above the keyboard while you type</string>
     <string name="settings_show_number_row">Number row</string>
     <string name="settings_show_number_row_desc">Show a permanent row of digits above the letter keys</string>
+    <string name="settings_autocorrect">Autocorrect</string>
+    <string name="settings_autocorrect_desc">Fix obvious typos, missing accents and apostrophes when you press space. Press backspace once to undo.</string>
+    <string name="settings_haptics">Vibrate on key press</string>
+    <string name="settings_haptics_desc">Short haptic feedback when a key is touched</string>
+    <string name="settings_personal_data">Personal learning data</string>
+    <string name="settings_personal_data_desc">Words and phrases KeyLingo has learned from your typing are stored only on this device.</string>
+    <string name="settings_personal_data_cleared">All learned words and phrases were deleted.</string>
+    <string name="settings_personal_data_clear">Delete learned words</string>
+    <string name="settings_personal_data_confirm_title">Delete learned words?</string>
+    <string name="settings_personal_data_confirm_text">KeyLingo will forget every word and word sequence it learned from you. Bundled dictionaries are not affected. This cannot be undone.</string>
     <string name="settings_language">Learning language</string>
     <string name="settings_dark_mode">Dark mode</string>
     <string name="settings_hint_size">Hint text size</string>
@@ -30,5 +40,5 @@
     <string name="learning_mode_advanced_title">Advanced</string>
     <string name="learning_mode_advanced_desc">Minimal hints, only for difficult or uncommon words</string>
     <string name="settings_about">About</string>
-    <string name="settings_about_desc">KeyLingo teaches you vocabulary as you type. Your keystrokes never leave this device.</string>
+    <string name="settings_about_desc">KeyLingo teaches you Spanish as you type. Everything runs offline: your keystrokes and learned words never leave this device.</string>
 </resources>

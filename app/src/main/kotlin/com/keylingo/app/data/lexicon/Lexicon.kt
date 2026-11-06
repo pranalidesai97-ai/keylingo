@@ -114,21 +114,31 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
             add(key[0]); add(key[1])
         }
         val out = ArrayList<Correction>()
+        val scratch = TypoDistance.Scratch()
+        val result = TypoDistance.ScanResult()
+        val wantPrefix = includeCompletions && key.length >= 3
+        // Second-letter filter: a plausible typo keeps the 2nd letter, hits a neighbouring key, transposes it with
+        // the 1st/3rd letter, or drops/doubles a letter (then the candidate's 3rd letter matches the typed 2nd).
+        val secondLetters: Set<Char> = buildSet {
+            addAll(TypoDistance.neighbourhood(key[1])); add(key[1]); add(key[0]); key.getOrNull(2)?.let { add(it) }
+        }
         for (letter in firstLetters) {
             val indices = byFirstLetter[letter] ?: continue
+            // Completions with a typo are only plausible when the first letter itself was typed right.
+            val prefixHere = wantPrefix && letter == key[0]
             for (idx in indices) {
                 val w = sorted[idx]
                 if (!w.suggestable || w.rank > maxCandidateRank) continue
                 val cand = keys[idx]
-                if (cand == key) continue
+                if (cand == key || cand.length < 2) continue
+                if (key.length >= 3 && cand[1] !in secondLetters && !(cand.length > 2 && cand[2] == key[1])) continue
                 val lenDiff = cand.length - key.length
-                var dist = Double.MAX_VALUE
+                val tryPrefix = prefixHere && lenDiff >= 1 && w.rank <= MAX_COMPLETION_RANK
+                if (lenDiff !in -2..2 && !tryPrefix) continue
+                TypoDistance.scan(key, cand, maxCost, tryPrefix, scratch, result)
+                var dist = result.whole
                 var prefix = false
-                if (lenDiff in -2..2) dist = TypoDistance.distance(key, cand, maxCost)
-                if (includeCompletions && lenDiff >= 1 && key.length >= 3) {
-                    val pd = TypoDistance.prefixDistance(key, cand, maxCost - 0.4)
-                    if (pd + 0.15 < dist) { dist = pd + 0.15; prefix = true }
-                }
+                if (tryPrefix && result.prefix + 0.15 < dist && result.prefix <= maxCost - 0.4) { dist = result.prefix + 0.15; prefix = true }
                 if (dist <= maxCost) out.add(Correction(w, dist, prefix))
             }
         }
@@ -139,6 +149,9 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
     fun score(c: Correction): Double = c.distance * 4.0 + kotlin.math.ln((c.word.rank + 10).toDouble())
 
     companion object {
+        /** Typo-tolerant completion is limited to reasonably common words (cost control; rare words still match exactly). */
+        const val MAX_COMPLETION_RANK = 30_000
+
         /** Parses the bundled TSV format: word, rank, flags ("n" = known but never suggested). */
         fun parseTsv(lines: Sequence<String>, foldAccents: Boolean): Lexicon {
             val words = ArrayList<LexiconWord>(70_000)

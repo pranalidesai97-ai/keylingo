@@ -53,57 +53,67 @@ object TypoDistance {
         else -> 1.0
     }
 
+    /** Result of one [scan]: distance to the whole candidate, and to its best-matching prefix. */
+    class ScanResult {
+        var whole = Double.MAX_VALUE
+        var prefix = Double.MAX_VALUE
+    }
+
+    /** Reusable DP rows, so scanning thousands of candidates per keystroke allocates nothing. */
+    class Scratch(capacity: Int = 64) {
+        var r0 = DoubleArray(capacity); var r1 = DoubleArray(capacity); var r2 = DoubleArray(capacity)
+        fun ensure(n: Int) {
+            if (r0.size < n) { r0 = DoubleArray(n); r1 = DoubleArray(n); r2 = DoubleArray(n) }
+        }
+    }
+
     /**
-     * Distance between [typed] and [candidate] (both lowercase). Returns a
-     * value > [maxCost] (not necessarily exact) once it is clear the true
-     * distance exceeds the bound.
+     * One dynamic-programming pass over [candidate] that yields both the
+     * distance to the whole word (when its length is within 2 of [typed]'s)
+     * and -- if [wantPrefix] -- the distance to the closest prefix whose
+     * length is within one of [typed]'s ("recie" vs "receive"). The last DP
+     * row holds the distance to every candidate prefix, so no extra passes
+     * or substrings are needed. Rows are abandoned once every cell exceeds
+     * [maxCost].
      */
-    fun distance(typed: String, candidate: String, maxCost: Double = 2.0): Double {
-        val n = typed.length; val m = candidate.length
-        if (abs(n - m) > maxCost / 0.35 + 1) return maxCost + 1
-        // Three rolling rows for the transposition lookback.
-        var prev2 = DoubleArray(m + 1)
-        var prev = DoubleArray(m + 1) { it * 0.9 }
-        var cur = DoubleArray(m + 1)
+    fun scan(typed: String, candidate: String, maxCost: Double, wantPrefix: Boolean, scratch: Scratch, out: ScanResult) {
+        out.whole = Double.MAX_VALUE; out.prefix = Double.MAX_VALUE
+        val n = typed.length
+        val wantWhole = abs(candidate.length - n) <= 2
+        if (!wantWhole && !wantPrefix) return
+        // Columns needed: the whole word, or just past the longest useful prefix.
+        val m = if (wantWhole) candidate.length else minOf(candidate.length, n + 1)
+        scratch.ensure(m + 1)
+        var prev2 = scratch.r0; var prev = scratch.r1; var cur = scratch.r2
+        for (j in 0..m) prev[j] = j * 0.9
         for (i in 1..n) {
             cur[0] = i * 0.9
             var rowMin = cur[0]
             val tc = typed[i - 1]
             for (j in 1..m) {
                 val cc = candidate[j - 1]
-                // Deleting a typed char that duplicates its neighbour ("helllo") is cheap.
-                val deletionCost = if (i >= 2 && typed[i - 2] == tc) 0.35 else 0.9
-                // Inserting a char the user failed to double ("adress") is cheap.
-                val insertionCost = if (j >= 2 && candidate[j - 2] == cc) 0.35 else 0.9
-                var best = min(
-                    prev[j] + deletionCost,
-                    min(cur[j - 1] + insertionCost, prev[j - 1] + substitutionCost(tc, cc))
-                )
-                if (i >= 2 && j >= 2 && tc == candidate[j - 2] && typed[i - 2] == cc && tc != cc) {
-                    best = min(best, prev2[j - 2] + 0.55)
-                }
+                val deletion = if (i >= 2 && typed[i - 2] == tc) 0.35 else 0.9
+                val insertion = if (j >= 2 && candidate[j - 2] == cc) 0.35 else 0.9
+                var best = min(prev[j] + deletion, min(cur[j - 1] + insertion, prev[j - 1] + substitutionCost(tc, cc)))
+                if (i >= 2 && j >= 2 && tc == candidate[j - 2] && typed[i - 2] == cc && tc != cc) best = min(best, prev2[j - 2] + 0.55)
                 cur[j] = best
                 if (best < rowMin) rowMin = best
             }
-            if (rowMin > maxCost) return maxCost + 1
+            if (rowMin > maxCost) return
             val tmp = prev2; prev2 = prev; prev = cur; cur = tmp
         }
-        return prev[m]
+        if (wantWhole) out.whole = prev[m]
+        if (wantPrefix) {
+            var best = Double.MAX_VALUE
+            for (len in maxOf(1, n - 1)..minOf(m, n + 1)) if (len < candidate.length && prev[len] < best) best = prev[len]
+            out.prefix = best
+        }
     }
 
-    /**
-     * Best distance between [typed] and any prefix of [candidate] whose
-     * length is within one character of [typed]'s -- i.e. "how far is what
-     * was typed from the beginning of this word", for completing a word
-     * whose already-typed prefix contains a typo ("recie" -> "receive").
-     */
-    fun prefixDistance(typed: String, candidate: String, maxCost: Double = 1.5): Double {
-        var best = maxCost + 1
-        for (len in (typed.length - 1)..(typed.length + 1)) {
-            if (len < 1 || len > candidate.length) continue
-            val d = distance(typed, candidate.substring(0, len), maxCost)
-            if (d < best) best = d
-        }
-        return best
+    /** Convenience single-pair distance (tests, one-off checks). */
+    fun distance(typed: String, candidate: String, maxCost: Double = 2.0): Double {
+        val out = ScanResult()
+        scan(typed, candidate, maxCost, wantPrefix = false, scratch = Scratch(), out = out)
+        return if (out.whole == Double.MAX_VALUE) maxCost + 1 else out.whole
     }
 }

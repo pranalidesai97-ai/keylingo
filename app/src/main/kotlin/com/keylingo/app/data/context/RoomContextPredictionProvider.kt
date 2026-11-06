@@ -7,50 +7,38 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Default [ContextPredictionProvider], backed by Room. [MAX_NEXT_WORDS]
- * bounds how many next-word candidates are ever fetched for one previous
- * word, keeping [nextWordCounts] cheap even for a previous word the user
- * has followed with many different words over time.
- */
+/** Room-backed personal bigram/trigram history. Reads are bounded by [MAX_NEXT_WORDS]. */
 @Singleton
 class RoomContextPredictionProvider @Inject constructor(
     private val dao: BigramDao
 ) : ContextPredictionProvider {
 
-    override suspend fun recordSequence(previousWord: String, nextWord: String, languageCode: String) {
+    override suspend fun recordSequence(previousWord: String, nextWord: String, languageCode: String, secondPreviousWord: String?) {
         val prev = previousWord.trim().lowercase()
         val next = nextWord.trim().lowercase()
         if (!WordEligibility.isEligibleWord(prev) || !WordEligibility.isEligibleWord(next)) return
-
-        withContext(Dispatchers.IO) {
-            val now = System.currentTimeMillis()
-            val existing = dao.find(prev, next, languageCode)
-            if (existing != null) {
-                dao.update(existing.copy(count = existing.count + 1, lastUsedAtEpochMillis = now))
-            } else {
-                dao.insert(
-                    BigramEntity(
-                        previousWord = prev,
-                        nextWord = next,
-                        language = languageCode,
-                        count = 1,
-                        lastUsedAtEpochMillis = now
-                    )
-                )
-            }
-        }
+        val second = secondPreviousWord?.trim()?.lowercase()?.takeIf { WordEligibility.isEligibleWord(it) }
+        withContext(Dispatchers.IO) { dao.record(second, prev, next, languageCode, System.currentTimeMillis()) }
     }
 
     override suspend fun nextWordCounts(previousWord: String, languageCode: String): Map<String, Int> {
         val prev = previousWord.trim().lowercase()
         if (prev.isEmpty()) return emptyMap()
-
         return withContext(Dispatchers.IO) {
-            dao.findByPreviousWord(prev, languageCode, MAX_NEXT_WORDS)
-                .associate { it.nextWord to it.count }
+            dao.findByPreviousWord(prev, languageCode, MAX_NEXT_WORDS).associate { it.nextWord to it.count }
         }
     }
+
+    override suspend fun nextWordCountsAfterPair(secondPreviousWord: String, previousWord: String, languageCode: String): Map<String, Int> {
+        val second = secondPreviousWord.trim().lowercase()
+        val prev = previousWord.trim().lowercase()
+        if (second.isEmpty() || prev.isEmpty()) return emptyMap()
+        return withContext(Dispatchers.IO) {
+            dao.findByPreviousPair(second, prev, languageCode, MAX_NEXT_WORDS).associate { it.nextWord to it.count }
+        }
+    }
+
+    override suspend fun clearAll() = withContext(Dispatchers.IO) { dao.deleteAll() }
 
     private companion object {
         const val MAX_NEXT_WORDS = 50

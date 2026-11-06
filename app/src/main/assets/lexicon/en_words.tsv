@@ -72,7 +72,7 @@ see	67
 why	68	
 I've	69	
 okay	69	
-OK	70	
+ok	70	
 yes	71	
 did	72	
 can't	73	
@@ -440,13 +440,13 @@ Saturday	404
 Sunday	405	
 January	406	
 February	407	
-March	408	
+march	408	
 April	409	
-May	410	
+may	410	
 June	411	
 won't	411	
 July	412	
-August	413	
+august	413	
 September	414	
 October	415	
 November	416	
@@ -468,6 +468,7 @@ whom	429
 whose	430	
 mother	431	
 father	432	
+French	433	
 child	433	
 children	434	
 person	435	
@@ -476,6 +477,7 @@ fire	437
 air	438	
 isn't	438	
 earth	439	
+German	440	
 sun	440	
 moon	441	
 star	442	
@@ -483,6 +485,7 @@ sky	443
 sea	444	
 ocean	445	
 river	446	
+Italian	447	
 aren't	447	
 mountain	447	
 room	448	
@@ -491,7 +494,7 @@ window	450
 wall	451	
 floor	452	
 roof	453	
-French	454	
+Portuguese	454	
 table	454	
 chair	455	
 bed	456	
@@ -500,7 +503,7 @@ meal	457
 bread	458	
 milk	459	
 city	460	
-German	461	
+Chinese	461	
 town	461	
 street	462	
 road	463	
@@ -509,7 +512,7 @@ train	465
 weren't	465	
 plane	466	
 bike	467	
-Italian	468	
+Japanese	468	
 teacher	468	
 student	469	
 book	470	
@@ -518,7 +521,7 @@ paper	472
 sell	473	
 haven't	474	
 price	474	
-Portuguese	475	
+American	475	
 cost	475	
 cheap	476	
 expensive	477	
@@ -526,7 +529,7 @@ hate	478
 angry	479	
 afraid	480	
 thirsty	481	
-Chinese	482	
+Mexican	482	
 small	482	
 hasn't	483	
 tall	483	
@@ -535,7 +538,7 @@ wide	485
 narrow	486	
 high	487	
 low	488	
-Japanese	489	
+British	489	
 deep	489	
 worse	490	
 worst	491	
@@ -544,7 +547,7 @@ true	492
 false	493	
 wet	494	
 dry	495	
-American	496	
+Canadian	496	
 dirty	496	
 young	497	
 difficult	498	
@@ -553,7 +556,7 @@ strong	500
 mustn't	501	
 weak	501	
 begin	502	
-Mexican	503	
+European	503	
 end	503	
 continue	504	
 speak	505	
@@ -561,7 +564,7 @@ lose	506
 hold	507	
 carry	508	
 jump	509	
-British	510	
+Latin	510	
 needn't	510	
 sit	510	
 stand	511	
@@ -570,7 +573,7 @@ fall	513
 rise	514	
 turn	515	
 move	516	
-Canadian	517	
+America	517	
 afternoon	517	
 evening	518	
 y'all	519	
@@ -579,7 +582,7 @@ color	520
 red	521	
 blue	522	
 green	523	
-European	524	
+Mexico	524	
 yellow	524	
 black	525	
 white	526	
@@ -588,7 +591,7 @@ ma'am	528
 orange	528	
 purple	529	
 pink	530	
-Latin	531	
+Spain	531	
 gray	531	
 number	532	
 three	533	
@@ -597,7 +600,7 @@ five	535
 six	536	
 o'clock	537	
 seven	537	
-America	538	
+Canada	538	
 eight	538	
 nine	539	
 ten	540	
@@ -605,7 +608,7 @@ hundred	541
 thousand	542	
 million	543	
 second	544	
-Mexico	545	
+England	545	
 third	545	
 body	546	
 head	547	
@@ -613,7 +616,7 @@ face	548
 eye	549	
 ear	550	
 nose	551	
-Spain	552	
+Europe	552	
 mouth	552	
 hand	553	
 arm	554	
@@ -621,7 +624,7 @@ leg	555
 foot	556	
 dog	557	
 cat	558	
-Canada	559	
+Christmas	559	
 bird	559	
 fish	560	
 animal	561	
@@ -629,7 +632,7 @@ tree	562
 flower	563	
 grass	564	
 leaf	565	
-England	566	
+Easter	566	
 sing	566	
 dance	567	
 sport	568	
@@ -637,7 +640,7 @@ ball	569
 team	570	
 win	571	
 computer	572	
-Europe	573	
+Halloween	573	
 internet	573	
 email	574	
 message	575	
@@ -645,7 +648,7 @@ country	576
 nation	577	
 government	578	
 law	579	
-Christmas	580	
+Thanksgiving	580	
 rule	580	
 power	581	
 business	582	
@@ -653,7 +656,7 @@ company	583
 market	584	
 trade	585	
 industry	586	
-Easter	587	
+Mr	587	
 factory	587	
 office	588	
 doctor	589	
@@ -661,7 +664,7 @@ hospital	590
 medicine	591	
 health	592	
 pain	593	
-Halloween	594	
+Mrs	594	
 hurt	594	
 light	595	
 dark	596	
@@ -669,7 +672,7 @@ bright	597
 shadow	598	
 shine	599	
 grow	600	
-Thanksgiving	601	
+Ms	601	
 become	601	
 remain	602	
 wish	603	
@@ -677,6 +680,7 @@ dream	604
 imagine	605	
 solution	606	
 cause	607	
+Dr	608	
 result	608	
 different	609	
 same	610	
@@ -684,7 +688,7 @@ similar	611
 equal	612	
 opposite	613	
 before	614	
-Mr	615	
+TV	615	
 during	615	
 above	616	
 below	617	
@@ -692,7 +696,7 @@ between	618
 among	619	
 sometimes	620	
 often	621	
-Mrs	622	
+USA	622	
 usually	622	
 rarely	623	
 everywhere	624	
@@ -700,7 +704,7 @@ somewhere	625
 nowhere	626	
 anywhere	627	
 yet	628	
-Ms	629	
+UK	629	
 necessary	629	
 possible	630	
 impossible	631	
@@ -708,7 +712,6 @@ certain	632
 explain	633	
 describe	634	
 build	635	
-Dr	636	
 create	636	
 design	637	
 develop	638	
@@ -723,7 +726,6 @@ quiet	646
 loud	647	
 silent	648	
 season	649	
-TV	650	
 spring	650	
 summer	651	
 autumn	652	
@@ -731,7 +733,6 @@ winter	653
 snow	654	
 wind	655	
 storm	656	
-USA	657	
 cloud	657	
 king	658	
 queen	659	
@@ -739,7 +740,6 @@ prince	660
 princess	661	
 soldier	662	
 war	663	
-UK	664	
 peace	664	
 army	665	
 paint	666	
@@ -4955,7 +4955,6 @@ bust	4875
 cage	4876	
 camp	4877	
 cans	4878	
-cant	4879	
 caps	4880	
 cars	4881	
 cast	4882	
@@ -5286,7 +5285,6 @@ wing	5206
 wipe	5207	
 wive	5208	
 wolf	5209	
-wont	5210	
 worm	5211	
 wren	5212	
 yawn	5213	
@@ -61548,3 +61546,5 @@ pls	61468
 covid	61469	
 chatbot	61470	
 vlog	61471	
+cant	61472	n
+wont	61473	n

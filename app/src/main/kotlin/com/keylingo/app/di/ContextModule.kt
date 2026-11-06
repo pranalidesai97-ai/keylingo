@@ -25,11 +25,9 @@ object ContextModule {
     @Provides
     @Singleton
     fun provideContextDatabase(@ApplicationContext context: Context): ContextDatabase {
-        return Room.databaseBuilder(
-            context,
-            ContextDatabase::class.java,
-            "keylingo_context.db"
-        ).build()
+        return Room.databaseBuilder(context, ContextDatabase::class.java, ContextDatabase.NAME)
+            .addMigrations(*ContextDatabase.ALL_MIGRATIONS)
+            .build()
     }
 
     @Provides

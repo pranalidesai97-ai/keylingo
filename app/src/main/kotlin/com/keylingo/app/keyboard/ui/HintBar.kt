@@ -1,6 +1,7 @@
 package com.keylingo.app.keyboard.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -18,60 +19,45 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.keylingo.app.data.settings.HintSizeOption
 import com.keylingo.app.domain.model.AutocompleteSuggestion
 import com.keylingo.app.domain.model.HintWord
+import com.keylingo.app.domain.model.LearningAssistance
+import com.keylingo.app.domain.model.SuggestionKind
 
 /**
- * Fixed height of a single suggestion row (autocomplete OR hints), sized
- * to comfortably fit a chip at [HintSizeOption.LARGE] (17sp text + 6dp
- * vertical padding on the chip + 4dp vertical padding on the row) with a
- * safety margin. This value is intentionally NOT derived from content or
- * from [HintSizeOption] -- see [HintBar]'s KDoc for why.
+ * Fixed height of one strip row, sized for a two-line hint chip at
+ * [HintSizeOption.LARGE]. Intentionally independent of content so the key
+ * grid below never moves (see [HintBar]).
  */
 private val SUGGESTION_ROW_HEIGHT = 46.dp
 
 /**
- * Renders the two suggestion rows above the keyboard:
- * - Autocomplete (top row): tappable English word completions for the
- *   word currently being typed. Tapping one replaces that word via
- *   [onAutocompleteSelected].
- * - Learning hints (bottom row): translations of the typed text. Purely
- *   a visual aid -- never written back into the message, not tappable.
+ * The two strips above the keys:
+ * - **Suggestions** (top): completions, corrections and next-word
+ *   predictions. The pending autocorrection is highlighted so the user
+ *   sees what Space will do; the literal typed word is shown in quotes so
+ *   it can always be kept.
+ * - **Learning** (bottom): the sentence translation (when trustworthy)
+ *   followed by word hints with their grammar note. Read-only: hints never
+ *   write into the message.
  *
- * ### Fixed-height layout, by design
- *
- * This composable's total height is a **constant** `SUGGESTION_ROW_HEIGHT * 2`,
- * regardless of whether 0, 1, or 2 rows have content. Both row slots are
- * always present in the composition -- an empty row is still measured and
- * laid out, just with no chips inside it -- rather than being
- * conditionally included/excluded or wrapped in a height-animating
- * `AnimatedVisibility`. That's a deliberate reversal of the previous
- * implementation, which wrapped the whole bar in `AnimatedVisibility` and
- * only rendered a row `if (list.isNotEmpty())`: both of those made this
- * composable's *measured height* vary between 0 (empty), one row's height
- * (only one list populated), and two rows' height (both populated) --
- * which is exactly why the keyboard grid below it in `KeyboardScreen`
- * visibly shifted position depending on suggestion state. The keyboard's
- * key geometry must never move; only the *content* of this fixed-size
- * strip may change.
- *
- * A consequence: the enter/exit fade+slide animation this bar previously
- * had is gone, since animating a row's height is exactly the thing this
- * fix removes. Content still simply appears/disappears; if a purely
- * cosmetic content-level fade is wanted later, it would need to animate
- * *opacity only*, inside the already-fixed-size row, never the row's own
- * size.
+ * Total height is constant (`SUGGESTION_ROW_HEIGHT * 2`) whatever the
+ * content -- both rows are always laid out -- so key geometry never shifts.
  */
 @Composable
 fun HintBar(
-    autocompleteSuggestions: List<AutocompleteSuggestion>,
-    hints: List<HintWord>,
+    suggestions: List<AutocompleteSuggestion>,
+    autoCorrection: AutocompleteSuggestion?,
+    assistance: LearningAssistance,
     hintSize: HintSizeOption,
-    onAutocompleteSelected: (AutocompleteSuggestion) -> Unit,
+    onSuggestionSelected: (AutocompleteSuggestion) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -81,27 +67,24 @@ fun HintBar(
             .background(MaterialTheme.colorScheme.background)
     ) {
         SuggestionRow {
-            autocompleteSuggestions.forEach { suggestion ->
-                AutocompleteChip(
+            suggestions.forEach { suggestion ->
+                SuggestionChip(
                     suggestion = suggestion,
+                    highlighted = autoCorrection != null && suggestion.word == autoCorrection.word && suggestion.kind != SuggestionKind.LITERAL,
                     hintSize = hintSize,
-                    onClick = onAutocompleteSelected
+                    onClick = onSuggestionSelected
                 )
             }
         }
         SuggestionRow {
-            hints.forEach { hint ->
-                HintChip(hint = hint, hintSize = hintSize)
+            assistance.sentence?.let { sentence ->
+                SentenceChip(text = sentence.translatedText, typingLanguage = assistance.typingLanguage, hintSize = hintSize)
             }
+            assistance.hints.forEach { hint -> HintChip(hint = hint, hintSize = hintSize) }
         }
     }
 }
 
-/**
- * One fixed-height row slot. Always occupies exactly [SUGGESTION_ROW_HEIGHT]
- * whether [content] adds zero, one, or many chips -- horizontal scrolling
- * handles overflow width, the fixed height is never affected by it.
- */
 @Composable
 private fun SuggestionRow(content: @Composable RowScope.() -> Unit) {
     Row(
@@ -117,27 +100,30 @@ private fun SuggestionRow(content: @Composable RowScope.() -> Unit) {
 }
 
 @Composable
-private fun AutocompleteChip(
+private fun SuggestionChip(
     suggestion: AutocompleteSuggestion,
+    highlighted: Boolean,
     hintSize: HintSizeOption,
     onClick: (AutocompleteSuggestion) -> Unit
 ) {
-    val fontSize = fontSizeFor(hintSize)
+    val colors = MaterialTheme.colorScheme
+    val label = if (suggestion.kind == SuggestionKind.LITERAL) "“${suggestion.word}”" else suggestion.word
     Row(
         modifier = Modifier
             .fillMaxHeight()
+            .widthIn(min = 56.dp)
+            .background(if (highlighted) colors.primaryContainer else colors.surfaceVariant, RoundedCornerShape(14.dp))
             .clickable { onClick(suggestion) }
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .semantics { contentDescription = if (highlighted) "Autocorrect to ${suggestion.word}" else "Suggestion ${suggestion.word}" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
         Text(
-            text = suggestion.word,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = fontSize,
+            text = label,
+            color = if (highlighted) colors.onPrimaryContainer else colors.onSurfaceVariant,
+            fontSize = fontSizeFor(hintSize),
+            fontWeight = if (highlighted) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -145,22 +131,52 @@ private fun AutocompleteChip(
 }
 
 @Composable
-private fun HintChip(hint: HintWord, hintSize: HintSizeOption) {
-    val fontSize = fontSizeFor(hintSize)
+private fun SentenceChip(text: String, typingLanguage: String, hintSize: HintSizeOption) {
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxHeight()
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .background(colors.primary, RoundedCornerShape(14.dp))
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .semantics { contentDescription = "Translation: $text" },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
+            text = if (typingLanguage == "en") "ES" else "EN",
+            color = colors.onPrimary.copy(alpha = 0.75f),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(end = 6.dp)
+        )
+        Text(text = text, color = colors.onPrimary, fontSize = fontSizeFor(hintSize), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun HintChip(hint: HintWord, hintSize: HintSizeOption) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .background(colors.surfaceVariant, RoundedCornerShape(14.dp))
+            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .semantics { contentDescription = "${hint.originalWord}: ${hint.translatedWord}, ${hint.formLabel}" },
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
             text = hint.translatedWord,
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = fontSize,
+            color = colors.primary,
+            fontSize = fontSizeFor(hintSize),
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = "${hint.originalWord} · ${hint.formLabel}",
+            color = colors.onSurfaceVariant,
+            fontSize = 10.sp,
+            lineHeight = 11.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -170,5 +186,5 @@ private fun HintChip(hint: HintWord, hintSize: HintSizeOption) {
 private fun fontSizeFor(hintSize: HintSizeOption) = when (hintSize) {
     HintSizeOption.SMALL -> 12.sp
     HintSizeOption.MEDIUM -> 14.sp
-    HintSizeOption.LARGE -> 17.sp
+    HintSizeOption.LARGE -> 16.sp
 }
