@@ -19,7 +19,9 @@
     <string name="settings_autocorrect">Autocorrect</string>
     <string name="settings_autocorrect_desc">Fix obvious typos, missing accents and apostrophes when you press space. Press backspace once to undo.</string>
     <string name="settings_haptics">Vibrate on key press</string>
-    <string name="settings_haptics_desc">Short haptic feedback when a key is touched</string>
+    <string name="settings_haptics_desc">Off by default. Keys always show a visual press effect.</string>
+    <string name="settings_sound">Sound on key press</string>
+    <string name="settings_sound_desc">Off by default. Plays at your system sound-effects volume.</string>
     <string name="settings_personal_data">Personal learning data</string>
     <string name="settings_personal_data_desc">Words and phrases KeyLingo has learned from your typing are stored only on this device.</string>
     <string name="settings_personal_data_cleared">All learned words and phrases were deleted.</string>

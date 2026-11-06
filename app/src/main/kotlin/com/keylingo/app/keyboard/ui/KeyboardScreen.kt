@@ -71,6 +71,8 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
         )
     }
 
+    val feedback = rememberKeyFeedback(uiState.settings.hapticsEnabled, uiState.settings.soundEnabled)
+
     KeyLingoTheme(darkTheme = isDarkTheme(uiState.settings.darkMode)) {
         Surface(color = MaterialTheme.colorScheme.background) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -98,7 +100,7 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
                             EmojiGrid(onEmoji = { onKeyAction(KeyAction.Symbol(it)) }, modifier = Modifier.weight(4f))
                         }
                         rows.forEach { row ->
-                            KeyRow(row, uiState, onKeyAction, popupController, Modifier.weight(1f))
+                            KeyRow(row, uiState, onKeyAction, popupController, feedback, Modifier.weight(1f))
                         }
                     }
                 }
@@ -114,6 +116,7 @@ private fun KeyRow(
     uiState: KeyboardUiState,
     onKeyAction: (KeyAction) -> Unit,
     popupController: AccentPopupController,
+    feedback: KeyFeedback,
     modifier: Modifier
 ) {
     val spaceLabel = if (uiState.typingLanguage == "es") "Español" else "English"
@@ -126,7 +129,7 @@ private fun KeyRow(
                 modifier = Modifier.weight(keyDef.weight),
                 enterAction = uiState.policy.enterAction,
                 spaceLabel = spaceLabel,
-                hapticsEnabled = uiState.settings.hapticsEnabled,
+                feedback = feedback,
                 accentPopup = popupController
             )
         }

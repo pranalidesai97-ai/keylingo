@@ -22,7 +22,10 @@ data class KeyLingoSettings(
     val learningMode: LearningMode = LearningMode.INTERMEDIATE,
     val showNumberRow: Boolean = true,
     val autocorrectEnabled: Boolean = true,
-    val hapticsEnabled: Boolean = true
+    /** Vibration on key press. OFF by default; independent of [soundEnabled]. */
+    val hapticsEnabled: Boolean = false,
+    /** Key-click sound. OFF by default; independent of [hapticsEnabled]. */
+    val soundEnabled: Boolean = false
 )
 
 private val Context.dataStore by preferencesDataStore(name = "keylingo_settings")
@@ -40,6 +43,7 @@ class SettingsDataStore @Inject constructor(
         val SHOW_NUMBER_ROW = booleanPreferencesKey("show_number_row")
         val AUTOCORRECT = booleanPreferencesKey("autocorrect_enabled")
         val HAPTICS = booleanPreferencesKey("haptics_enabled")
+        val SOUND = booleanPreferencesKey("sound_enabled")
     }
 
     val settingsFlow: Flow<KeyLingoSettings> = context.dataStore.data.map { prefs ->
@@ -54,7 +58,9 @@ class SettingsDataStore @Inject constructor(
                 ?: LearningMode.INTERMEDIATE,
             showNumberRow = prefs[Keys.SHOW_NUMBER_ROW] ?: true,
             autocorrectEnabled = prefs[Keys.AUTOCORRECT] ?: true,
-            hapticsEnabled = prefs[Keys.HAPTICS] ?: true
+            // Absent key = the user never chose: vibration stays off. An explicit choice is respected.
+            hapticsEnabled = prefs[Keys.HAPTICS] ?: false,
+            soundEnabled = prefs[Keys.SOUND] ?: false
         )
     }
 
@@ -88,5 +94,9 @@ class SettingsDataStore @Inject constructor(
 
     suspend fun setHapticsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.HAPTICS] = enabled }
+    }
+
+    suspend fun setSoundEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.SOUND] = enabled }
     }
 }

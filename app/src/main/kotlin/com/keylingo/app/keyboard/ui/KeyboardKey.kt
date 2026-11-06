@@ -1,6 +1,6 @@
 package com.keylingo.app.keyboard.ui
 
-import android.view.HapticFeedbackConstants
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -39,10 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
@@ -55,10 +55,6 @@ import com.keylingo.app.keyboard.EnterKeyAction
 import com.keylingo.app.keyboard.KeyAction
 import com.keylingo.app.keyboard.KeyboardLayoutProvider
 import com.keylingo.app.keyboard.ShiftState
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 /** Long-press-to-repeat tuning for Backspace. */
 private const val BACKSPACE_INITIAL_DELAY_MS = 350L
@@ -89,16 +85,16 @@ fun RowScope.KeyboardKey(
     modifier: Modifier = Modifier,
     enterAction: EnterKeyAction = EnterKeyAction.NEWLINE,
     spaceLabel: String = "",
-    hapticsEnabled: Boolean = true,
+    feedback: KeyFeedback? = null,
     accentPopup: AccentPopupController? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(targetValue = if (isPressed) 0.92f else 1f, animationSpec = tween(70), label = "keyPressScale")
-    val view = LocalView.current
+    // Visual press feedback (replaces vibration): a slight shrink plus a darker/lighter key face.
+    val scale by animateFloatAsState(targetValue = if (isPressed) 0.95f else 1f, animationSpec = tween(60), label = "keyPressScale")
     val currentOnClick by rememberUpdatedState(onClick)
     val currentShift by rememberUpdatedState(shiftState)
-    val haptics by rememberUpdatedState(hapticsEnabled)
+    val currentFeedback by rememberUpdatedState(feedback)
     val alternates = remember(action) { KeyboardLayoutProvider.alternatesFor(action) }
     val bounds = remember { arrayOf(Rect.Zero) }
 
@@ -113,36 +109,38 @@ fun RowScope.KeyboardKey(
         else -> colors.surface
     }
     val contentColor = if ((action is KeyAction.Shift && shiftState != ShiftState.OFF) || enterHighlighted) colors.onPrimary else colors.onSurface
-
-    fun tick() {
-        if (haptics) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-    }
+    val pressedOverlay = contentColor.copy(alpha = 0.16f)
+    val face by animateColorAsState(
+        targetValue = if (isPressed) pressedOverlay.compositeOver(background) else background,
+        animationSpec = tween(60), label = "keyPressColor"
+    )
 
     fun withShift(alt: String): KeyAction =
         if (action is KeyAction.Character) KeyAction.Character(alt.lowercase(), alt.uppercase()) else KeyAction.Symbol(alt)
 
     val gesture = if (action == KeyAction.Backspace) {
         Modifier.pointerInput(action) {
-            coroutineScope {
+            // One gesture loop, no helper coroutine: each repeat waits for "up" with a timeout, so lifting the
+            // finger (or the gesture being cancelled / sliding off the key) ends deletion on that very event.
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val press = PressInteraction.Press(down.position)
+                interactionSource.tryEmit(press)
+                currentFeedback?.onKeyDown(action)
+                currentOnClick(action) // immediate single delete, same as a tap
+                var wait = BACKSPACE_INITIAL_DELAY_MS
+                var repeats = 0
                 while (true) {
-                    val down = awaitPointerEventScope { awaitFirstDown() }
-                    val press = PressInteraction.Press(down.position)
-                    interactionSource.tryEmit(press)
-                    tick()
-                    currentOnClick(action)
-                    val repeatJob = launch {
-                        delay(BACKSPACE_INITIAL_DELAY_MS)
-                        var interval = BACKSPACE_REPEAT_INTERVAL_MS
-                        var repeats = 0
-                        while (isActive) {
-                            currentOnClick(action)
-                            if (++repeats == BACKSPACE_ACCELERATE_AFTER_REPEATS) interval = BACKSPACE_ACCELERATED_INTERVAL_MS
-                            delay(interval)
-                        }
+                    val outcome = withTimeoutOrNull(wait) {
+                        if (waitForUpOrCancellation() != null) GestureEnd.RELEASED else GestureEnd.CANCELLED
                     }
-                    val up = awaitPointerEventScope { waitForUpOrCancellation() }
-                    repeatJob.cancel()
-                    interactionSource.tryEmit(if (up != null) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+                    if (outcome != null) {
+                        interactionSource.tryEmit(if (outcome == GestureEnd.RELEASED) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+                        break
+                    }
+                    currentOnClick(action) // still held: repeat
+                    repeats++
+                    wait = if (repeats >= BACKSPACE_ACCELERATE_AFTER_REPEATS) BACKSPACE_ACCELERATED_INTERVAL_MS else BACKSPACE_REPEAT_INTERVAL_MS
                 }
             }
         }
@@ -152,7 +150,7 @@ fun RowScope.KeyboardKey(
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val press = PressInteraction.Press(down.position)
                 interactionSource.tryEmit(press)
-                tick()
+                currentFeedback?.onKeyDown(action)
                 val quickUp = withTimeoutOrNull(if (alternates.isEmpty()) Long.MAX_VALUE else ALTERNATES_DELAY_MS) { waitForUpOrCancellation() }
                 if (quickUp != null || alternates.isEmpty() || accentPopup == null) {
                     // Normal tap (or a cancelled gesture, in which case quickUp is null and nothing is typed).
@@ -171,7 +169,7 @@ fun RowScope.KeyboardKey(
                     if (!change.pressed) { committed = true; change.consume(); break }
                     val cell = anchor.width.coerceAtLeast(1f)
                     val index = ((change.position.x - down.position.x) / cell + 0.5f).toInt().coerceIn(0, alternates.size - 1)
-                    if (index != selected) { selected = index; accentPopup.select(index); tick() }
+                    if (index != selected) { selected = index; accentPopup.select(index) }
                     change.consume()
                 }
                 accentPopup.dismiss()
@@ -190,7 +188,7 @@ fun RowScope.KeyboardKey(
             .padding(3.dp)
             .onGloballyPositioned { bounds[0] = it.boundsInRoot() }
             .scale(scale)
-            .background(background, RoundedCornerShape(8.dp))
+            .background(face, RoundedCornerShape(8.dp))
             .then(gesture)
             // TalkBack: announce the key and let a double-tap type it (pointerInput alone exposes no click action).
             .semantics {
@@ -203,6 +201,8 @@ fun RowScope.KeyboardKey(
         KeyContent(action, shiftState, contentColor, enterAction, spaceLabel, hasAlternates = alternates.isNotEmpty())
     }
 }
+
+private enum class GestureEnd { RELEASED, CANCELLED }
 
 private fun describe(action: KeyAction, shift: ShiftState, enter: EnterKeyAction): String = when (action) {
     is KeyAction.Character -> if (shift != ShiftState.OFF) action.upper else action.lower

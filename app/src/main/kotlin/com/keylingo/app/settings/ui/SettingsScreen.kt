@@ -88,6 +88,14 @@ fun SettingsScreen(
             )
 
             Spacer(modifier = Modifier.height(20.dp))
+            ToggleRow(
+                title = stringResource(R.string.settings_sound),
+                description = stringResource(R.string.settings_sound_desc),
+                checked = settings.soundEnabled,
+                onToggle = viewModel::setSoundEnabled
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(20.dp))
 

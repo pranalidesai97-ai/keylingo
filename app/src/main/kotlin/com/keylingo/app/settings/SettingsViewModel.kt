@@ -61,6 +61,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsDataStore.setHapticsEnabled(enabled) }
     }
 
+    fun setSoundEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsDataStore.setSoundEnabled(enabled) }
+    }
+
     /** Deletes every word and word sequence KeyLingo has learned from this user. Bundled dictionaries are unaffected. */
     fun clearPersonalData(onDone: () -> Unit) {
         viewModelScope.launch {
