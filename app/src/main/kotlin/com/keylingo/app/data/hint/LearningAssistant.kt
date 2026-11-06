@@ -34,18 +34,29 @@ class LearningAssistant @Inject constructor(
     private val dispatchers: AppDispatchers
 ) : HintProvider {
 
-    override suspend fun assist(text: String, targetLanguage: String, learningMode: LearningMode, maxHints: Int?, typingLanguage: String?): LearningAssistance {
+    override suspend fun assist(
+        text: String, targetLanguage: String, learningMode: LearningMode, maxHints: Int?, typingLanguage: String?, checkGrammar: Boolean
+    ): LearningAssistance {
         if (text.isBlank()) return LearningAssistance.EMPTY
         val data = source.get() ?: return LearningAssistance.EMPTY
-        return withContext(dispatchers.compute) { analyze(data, text, learningMode, maxHints, typingLanguage) }
+        return withContext(dispatchers.compute) { analyze(data, text, learningMode, maxHints, typingLanguage, checkGrammar) }
     }
 
-    fun analyze(data: BundledLanguageData, text: String, learningMode: LearningMode, maxHints: Int?, typingLanguage: String? = null): LearningAssistance {
+    /**
+     * [text] may end with the word still being typed (no trailing space or
+     * punctuation): grammar ignores that word until it is finished.
+     */
+    fun analyze(
+        data: BundledLanguageData, text: String, learningMode: LearningMode, maxHints: Int?,
+        typingLanguage: String? = null, checkGrammar: Boolean = true
+    ): LearningAssistance {
         val sentence = text.trim()
         val language = typingLanguage ?: data.languageDetector.detect(sentence)
         val cap = maxHints ?: LearningModePolicy.defaultMaxHints(learningMode)
-        return if (language == "es") spanishAssistance(data, sentence, learningMode, cap)
-        else englishAssistance(data, sentence, learningMode, cap)
+        if (language == "es") return spanishAssistance(data, sentence, learningMode, cap)
+        val complete = text.isNotEmpty() && !text.last().isLetterOrDigit()
+        val grammar = if (checkGrammar) data.grammarChecker.check(text.trimStart(), complete) else null
+        return englishAssistance(data, sentence, learningMode, cap, grammar)
     }
 
     private class Candidate(val hint: HintWord, val order: Int, val posWeight: Int, val rank: Int, val cefr: CefrLevel)
@@ -59,8 +70,13 @@ class LearningAssistant @Inject constructor(
         return survivors.map { it.hint }
     }
 
-    private fun englishAssistance(data: BundledLanguageData, sentence: String, mode: LearningMode, cap: Int): LearningAssistance {
-        val result = data.translator.translate(sentence)
+    private fun englishAssistance(
+        data: BundledLanguageData, sentence: String, mode: LearningMode, cap: Int, grammar: com.keylingo.app.domain.model.GrammarSuggestion?
+    ): LearningAssistance {
+        // Translate what the user meant: if the source has a grammar error, translate the corrected sentence
+        // (and say so), so "Yesterday I go to the office" keeps its past tense in Spanish.
+        val source = grammar?.corrected?.trim() ?: sentence
+        val result = data.translator.translate(source)
         val candidates = result.segments.mapIndexedNotNull { index, seg ->
             val worthShowing = seg.isContent || (seg.formLabel == "subject" && seg.hintText.isNotEmpty())
             if (!worthShowing || seg.hintText.isBlank() || seg.sourceText.isBlank() || seg.confidence <= 0f) return@mapIndexedNotNull null
@@ -84,9 +100,34 @@ class LearningAssistant @Inject constructor(
         }
         val words = sentence.split(Regex("\\s+")).count { it.any(Char::isLetter) }
         val translation = if (result.text.isNotEmpty() && words >= 2 && result.coverage >= 0.999f) {
-            SentenceTranslation(sentence, result.text, "en", "es", result.coverage)
+            SentenceTranslation(source, result.text, "en", "es", result.coverage, fromCorrectedSource = grammar != null,
+                notes = grammarNotes(result.segments.map { it.formLabel }))
         } else null
-        return LearningAssistance(translation, trim(candidates, mode, cap), "en")
+        return LearningAssistance(translation, trim(candidates, mode, cap), "en", grammar)
+    }
+
+    /** Short explanations of the Spanish grammar a translation used, most instructive first. */
+    private fun grammarNotes(labels: List<String>): List<String> {
+        val notes = LinkedHashSet<String>()
+        for (l in labels) {
+            when {
+                l.startsWith("ir a") -> notes += "ir a + infinitive: near future (voy a llamar)"
+                l.startsWith("estar · ") && labels.contains("gerund") -> notes += "estar + gerund: action in progress"
+                l.startsWith("gustar") || l.startsWith("encantar") -> notes += "gustar: the thing liked is the subject (me gusta / me gustan)"
+                l.startsWith("tener que") -> notes += "tener que + infinitive: have to"
+                l.startsWith("haber · perfect") -> notes += "haber + participle: present perfect"
+                l.startsWith("acabar de") -> notes += "acabar de + infinitive: to have just done"
+                l.startsWith("tener ") && l.contains("=") -> notes += "Spanish uses tener for hunger, thirst, fear, age…"
+                l.startsWith("weather") -> notes += "Weather uses hacer: hace frío, hace calor"
+                l == "personal a" -> notes += "Personal “a” before a person who is the object"
+                l.startsWith("past ·") -> notes += "Preterite: a completed past action"
+                l.startsWith("imperfect") -> notes += "Imperfect: ongoing or habitual past"
+                l.startsWith("future ·") -> notes += "Future: infinitive + é/ás/á/emos/án"
+                l.startsWith("negative command") -> notes += "Negative commands use the subjunctive (no hables)"
+                l.startsWith("ser ·") || l.startsWith("estar ·") -> notes += "ser: identity/traits · estar: states/location"
+            }
+        }
+        return notes.take(2)
     }
 
     private val wordRegex = Regex("[\\p{L}']+")

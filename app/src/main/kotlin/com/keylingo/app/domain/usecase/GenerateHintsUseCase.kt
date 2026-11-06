@@ -18,9 +18,10 @@ class GenerateHintsUseCase @Inject constructor(
         targetLanguage: String,
         learningMode: LearningMode,
         maxHints: Int? = null,
-        typingLanguage: String? = null
+        typingLanguage: String? = null,
+        checkGrammar: Boolean = true
     ): LearningAssistance {
         if (sentence.isBlank()) return LearningAssistance.EMPTY
-        return hintProvider.assist(sentence, targetLanguage, learningMode, maxHints, typingLanguage)
+        return hintProvider.assist(sentence, targetLanguage, learningMode, maxHints, typingLanguage, checkGrammar)
     }
 }

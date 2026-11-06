@@ -86,13 +86,15 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     val onSuggestion = remember(viewModel) { viewModel::onAutocompleteSelected }
+                    val onGrammar = remember(viewModel) { viewModel::onGrammarSuggestionApplied }
                     val onKeyAction = remember(viewModel) { viewModel::onKeyAction }
                     HintBar(
                         suggestions = uiState.suggestions,
                         autoCorrection = uiState.autoCorrection,
                         assistance = uiState.assistance,
                         hintSize = uiState.settings.hintSize,
-                        onSuggestionSelected = onSuggestion
+                        onSuggestionSelected = onSuggestion,
+                        onGrammarApplied = onGrammar
                     )
                     val rows = remember(uiState.mode, uiState.settings.showNumberRow) {
                         KeyboardLayoutProvider.rowsFor(uiState.mode, uiState.settings.showNumberRow)

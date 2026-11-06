@@ -31,6 +31,9 @@ data class TextContext(val before: String, val after: String = "") {
     val previousWord: String? get() = previousWords.lastOrNull()
     val secondPreviousWord: String? get() = previousWords.getOrNull(previousWords.size - 2)
 
+    /** Like [currentSentence] but keeping trailing whitespace/punctuation, so callers can tell whether the last word is finished. */
+    val currentSentenceRaw: String by lazy { before.substring(lastSentenceBoundary(before)).trimStart() }
+
     /** The sentence being typed (text after the last . ! ? or newline), used for hints and translation. */
     val currentSentence: String by lazy { before.substring(lastSentenceBoundary(before)).trim() }
 

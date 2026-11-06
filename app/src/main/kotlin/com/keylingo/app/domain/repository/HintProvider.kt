@@ -23,7 +23,9 @@ interface HintProvider {
         learningMode: LearningMode,
         maxHints: Int? = null,
         /** "en"/"es" when the user forced a typing language; null = detect. */
-        typingLanguage: String? = null
+        typingLanguage: String? = null,
+        /** Offer grammar corrections (and translate the corrected sentence when there is one). */
+        checkGrammar: Boolean = true
     ): LearningAssistance
 
     /** Convenience for callers that only need word hints. */

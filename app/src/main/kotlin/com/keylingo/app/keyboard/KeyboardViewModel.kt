@@ -317,6 +317,31 @@ class KeyboardViewModel(
         scheduleRefresh(immediate = true)
     }
 
+    /**
+     * The user tapped the grammar suggestion: replace the sentence before the
+     * cursor with the corrected one -- only if the text there is still exactly
+     * what was checked (never guess at a changed field).
+     */
+    fun onGrammarSuggestionApplied(suggestion: com.keylingo.app.domain.model.GrammarSuggestion) {
+        lastOwnEditAt = clock()
+        val before = textConnection.textBeforeCursor(CONTEXT_WINDOW)
+        val original = suggestion.original
+        // The checked sentence may be followed by the space typed after it ("I is tired. |").
+        val trailing = before.length - before.trimEnd().length
+        val target = before.dropLast(trailing)
+        if (!target.endsWith(original)) return
+        val tail = before.takeLast(trailing)
+        textConnection.beginBatchEdit()
+        textConnection.deleteCharactersBackward(original.length + trailing)
+        textConnection.commitText(suggestion.corrected + tail)
+        textConnection.endBatchEdit()
+        lastCorrection = null
+        phantomSpace = false
+        _uiState.update { it.copy(assistance = it.assistance.copy(grammar = null)) }
+        updateAutoShift()
+        scheduleRefresh(immediate = true)
+    }
+
     // ------------------------------------------------------------ shift / mode
 
     private fun setMode(mode: KeyboardMode) = _uiState.update { it.copy(mode = mode) }
@@ -417,19 +442,26 @@ class KeyboardViewModel(
 
     private suspend fun refreshHints() {
         val s = state
-        if (!s.settings.learningEnabled || !policy.allowLearningHints) {
+        val wantLearning = s.settings.learningEnabled
+        val wantGrammar = s.settings.grammarEnabled
+        if ((!wantLearning && !wantGrammar) || !policy.allowLearningHints) {
             if (s.assistance != LearningAssistance.EMPTY) _uiState.update { it.copy(assistance = LearningAssistance.EMPTY) }
             return
         }
         val ctx = context()
         // Keep showing the sentence just finished ("I am tired." ) until the next one starts.
-        val sentence = ctx.currentSentence.ifEmpty {
+        val sentence = ctx.currentSentenceRaw.ifBlank {
             val head = ctx.before.trimEnd()
             val end = head.length
             val start = TextContext.lastSentenceBoundary(head.dropLast(1))
             if (end > 0) head.substring(start, end).trim() else ""
         }
-        val assistance = generateHintsUseCase(sentence, languagePack.languageCode, s.settings.learningMode, typingLanguage = s.settings.typingLanguage.code)
+        var assistance = generateHintsUseCase(
+            sentence, languagePack.languageCode, s.settings.learningMode,
+            typingLanguage = s.settings.typingLanguage.code, checkGrammar = wantGrammar
+        )
+        if (!wantLearning) assistance = assistance.copy(sentence = null, hints = emptyList())
+        else if (!s.settings.sentenceTranslationEnabled) assistance = assistance.copy(sentence = null)
         if (state.assistance != assistance) _uiState.update { it.copy(assistance = assistance) }
     }
 

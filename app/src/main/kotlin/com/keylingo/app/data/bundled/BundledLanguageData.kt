@@ -1,6 +1,7 @@
 package com.keylingo.app.data.bundled
 
 import com.keylingo.app.data.dictionary.BundledDictionary
+import com.keylingo.app.data.grammar.EnglishGrammarChecker
 import com.keylingo.app.data.language.TypingLanguageDetector
 import com.keylingo.app.data.lexicon.Lexicon
 import com.keylingo.app.data.lexicon.LexiconWord
@@ -47,6 +48,7 @@ class BundledLanguageData(
     val translator = EnglishToSpanishTranslator(dictionary, idioms)
     val glosser = SpanishToEnglishGlosser(dictionary)
     val languageDetector = TypingLanguageDetector(englishLexicon, spanishLexicon)
+    val grammarChecker = EnglishGrammarChecker(englishLexicon, dictionary)
 
     fun lexiconFor(languageCode: String): Lexicon = if (languageCode == "es") spanishLexicon else englishLexicon
     fun nextWordsFor(languageCode: String): SeedNextWords = if (languageCode == "es") spanishNextWords else englishNextWords

@@ -248,4 +248,32 @@ class KeyboardViewModelTest {
         assertEquals("es", h.state.typingLanguage)
         assertTrue(h.state.suggestions.map { it.word }.toString(), h.state.suggestions.any { it.word.equals("también", ignoreCase = true) })
     }
+
+    @Test fun grammarIsSuggestedNotAppliedAndTranslationKeepsTheIntendedTense() = runTest {
+        val h = harness()
+        h.type("Yesterday I go to the office. ")
+        assertEquals("Yesterday I go to the office. ", h.editor.text) // never changed silently
+        val grammar = h.state.assistance.grammar
+        assertEquals("Yesterday I went to the office.", grammar?.corrected)
+        assertEquals("Ayer fui a la oficina.", h.state.assistance.sentence?.translatedText)
+        assertTrue(h.state.assistance.sentence!!.fromCorrectedSource)
+        h.vm.onGrammarSuggestionApplied(grammar!!); testScheduler.advanceUntilIdle()
+        assertEquals("Yesterday I went to the office. ", h.editor.text)
+        assertNull(h.state.assistance.grammar)
+    }
+
+    @Test fun grammarWaitsUntilTheWordIsFinished() = runTest {
+        val h = harness()
+        h.type("She go")
+        assertNull(h.state.assistance.grammar)
+        h.type(" to office ")
+        assertEquals("She goes to the office", h.state.assistance.grammar?.corrected?.trim())
+    }
+
+    @Test fun grammarSuggestionsCanBeTurnedOff() = runTest {
+        val h = harness(settings = KeyLingoSettings(grammarEnabled = false))
+        h.type("Yesterday I go to the office. ")
+        assertNull(h.state.assistance.grammar)
+        assertEquals("Ayer voy a la oficina.", h.state.assistance.sentence?.translatedText) // literal translation of what was typed
+    }
 }

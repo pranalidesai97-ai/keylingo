@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.keylingo.app.data.settings.HintSizeOption
 import com.keylingo.app.domain.model.AutocompleteSuggestion
+import com.keylingo.app.domain.model.GrammarSuggestion
 import com.keylingo.app.domain.model.HintWord
 import com.keylingo.app.domain.model.LearningAssistance
 import com.keylingo.app.domain.model.SuggestionKind
@@ -58,7 +59,8 @@ fun HintBar(
     assistance: LearningAssistance,
     hintSize: HintSizeOption,
     onSuggestionSelected: (AutocompleteSuggestion) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onGrammarApplied: (GrammarSuggestion) -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -77,8 +79,15 @@ fun HintBar(
             }
         }
         SuggestionRow {
+            assistance.grammar?.let { grammar -> GrammarChip(grammar, hintSize, onGrammarApplied) }
             assistance.sentence?.let { sentence ->
-                SentenceChip(text = sentence.translatedText, typingLanguage = assistance.typingLanguage, hintSize = hintSize)
+                SentenceChip(
+                    text = sentence.translatedText, typingLanguage = assistance.typingLanguage, hintSize = hintSize,
+                    caption = when {
+                        sentence.fromCorrectedSource -> "from corrected sentence"
+                        else -> sentence.notes.firstOrNull()
+                    }
+                )
             }
             assistance.hints.forEach { hint -> HintChip(hint = hint, hintSize = hintSize) }
         }
@@ -130,15 +139,40 @@ private fun SuggestionChip(
     }
 }
 
+/** Suggested correction of the sentence. Tapping applies it; nothing changes otherwise. */
 @Composable
-private fun SentenceChip(text: String, typingLanguage: String, hintSize: HintSizeOption) {
+private fun GrammarChip(grammar: GrammarSuggestion, hintSize: HintSizeOption, onApply: (GrammarSuggestion) -> Unit) {
+    val colors = LocalKeyboardColors.current
+    Row(
+        modifier = Modifier
+            .fillMaxHeight()
+            .background(colors.accent, RoundedCornerShape(14.dp))
+            .clickable { onApply(grammar) }
+            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .semantics { contentDescription = "Grammar suggestion: ${grammar.corrected}. ${grammar.issues.firstOrNull()?.message.orEmpty()}" },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("✓", color = colors.onAccent, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 6.dp))
+        Column(verticalArrangement = Arrangement.Center) {
+            Text(grammar.corrected.trim(), color = colors.onAccent, fontSize = fontSizeFor(hintSize), lineHeight = fontSizeFor(hintSize) * 1.15f,
+                fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                grammar.issues.joinToString(" · ") { it.message }.let { if (grammar.issues.size > 1) "${grammar.issues.size} fixes: $it" else it },
+                color = colors.onAccent.copy(alpha = 0.85f), fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun SentenceChip(text: String, typingLanguage: String, hintSize: HintSizeOption, caption: String? = null) {
     val colors = LocalKeyboardColors.current
     Row(
         modifier = Modifier
             .fillMaxHeight()
             .background(colors.translationChip, RoundedCornerShape(14.dp))
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .semantics { contentDescription = "Translation: $text" },
+            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .semantics { contentDescription = "Translation: $text" + (caption?.let { ". $it" } ?: "") },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -148,7 +182,12 @@ private fun SentenceChip(text: String, typingLanguage: String, hintSize: HintSiz
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(end = 6.dp)
         )
-        Text(text = text, color = colors.onTranslationChip, fontSize = fontSizeFor(hintSize), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(verticalArrangement = Arrangement.Center) {
+            Text(text = text, color = colors.onTranslationChip, fontSize = fontSizeFor(hintSize), lineHeight = fontSizeFor(hintSize) * 1.15f,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (caption != null) Text(caption, color = colors.onTranslationChip.copy(alpha = 0.8f), fontSize = 10.sp, lineHeight = 12.sp,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 

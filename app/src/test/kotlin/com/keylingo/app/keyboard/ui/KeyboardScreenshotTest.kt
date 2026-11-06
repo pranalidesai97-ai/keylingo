@@ -80,6 +80,29 @@ class KeyboardScreenshotTest {
         assertEquals("keyboard height must not depend on the theme", 1, heights.size)
     }
 
+    @Test fun renderGrammarRow() = renderRow("grammar", "Yesterday I go to the market. ")
+    @Test fun renderTranslationRow() = renderRow("translation", "I am going to watch a movie with my sister ")
+
+    private fun renderRow(name: String, text: String) {
+        val settings = MutableStateFlow(KeyLingoSettings())
+        val learned = FakeLearnedVocabulary(); val ctx = FakeContextPrediction()
+        run {
+            val vm = KeyboardViewModel(
+                GenerateHintsUseCase(realHintProvider()), GenerateAutocompleteSuggestionsUseCase(realAutocompleteProvider(), learned, ctx),
+                learned, ctx, realLanguageDetector(), settings, SpanishLanguagePack(), FakeEditor(text),
+                CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+            )
+            vm.onStartInput(InputFieldPolicy.DEFAULT, restarting = false)
+            Thread.sleep(400)
+            compose.setContent { Box(Modifier.width(411.dp)) { KeyboardScreen(vm) } }
+            compose.waitForIdle(); Thread.sleep(300); compose.waitForIdle()
+            val root = compose.activity.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
+            val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+            root.draw(Canvas(bitmap))
+            File(outDir, "row-$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+    }
+
     @Test fun renderThemePicker() {
         compose.setContent {
             com.keylingo.app.ui.theme.KeyLingoTheme(darkTheme = false) {

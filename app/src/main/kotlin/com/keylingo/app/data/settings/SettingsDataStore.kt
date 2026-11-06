@@ -42,7 +42,11 @@ data class KeyLingoSettings(
     val themePreset: KeyboardThemePreset = KeyboardThemePreset.SUNLIGHT_YELLOW,
     /** Accent colour (ARGB) used by [KeyboardThemePreset.CUSTOM]. */
     val customAccentArgb: Int = DEFAULT_CUSTOM_ACCENT,
-    val typingLanguage: TypingLanguageOption = TypingLanguageOption.AUTO
+    val typingLanguage: TypingLanguageOption = TypingLanguageOption.AUTO,
+    /** Grammar suggestions in the learning row; independent of [learningEnabled]. */
+    val grammarEnabled: Boolean = true,
+    /** Show the whole-sentence translation chip (word hints are controlled by [learningEnabled]). */
+    val sentenceTranslationEnabled: Boolean = true
 ) {
     companion object {
         const val DEFAULT_CUSTOM_ACCENT: Int = 0xFF2E9E8F.toInt()
@@ -68,6 +72,8 @@ class SettingsDataStore @Inject constructor(
         val THEME = stringPreferencesKey("theme_preset")
         val CUSTOM_ACCENT = intPreferencesKey("custom_accent_argb")
         val TYPING_LANGUAGE = stringPreferencesKey("typing_language")
+        val GRAMMAR = booleanPreferencesKey("grammar_enabled")
+        val SENTENCE_TRANSLATION = booleanPreferencesKey("sentence_translation_enabled")
     }
 
     val settingsFlow: Flow<KeyLingoSettings> = context.dataStore.data.map { prefs ->
@@ -89,7 +95,9 @@ class SettingsDataStore @Inject constructor(
                 ?: KeyboardThemePreset.SUNLIGHT_YELLOW,
             customAccentArgb = prefs[Keys.CUSTOM_ACCENT] ?: KeyLingoSettings.DEFAULT_CUSTOM_ACCENT,
             typingLanguage = prefs[Keys.TYPING_LANGUAGE]?.let { runCatching { TypingLanguageOption.valueOf(it) }.getOrNull() }
-                ?: TypingLanguageOption.AUTO
+                ?: TypingLanguageOption.AUTO,
+            grammarEnabled = prefs[Keys.GRAMMAR] ?: true,
+            sentenceTranslationEnabled = prefs[Keys.SENTENCE_TRANSLATION] ?: true
         )
     }
 
@@ -127,6 +135,14 @@ class SettingsDataStore @Inject constructor(
 
     suspend fun setSoundEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.SOUND] = enabled }
+    }
+
+    suspend fun setGrammarEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.GRAMMAR] = enabled }
+    }
+
+    suspend fun setSentenceTranslationEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.SENTENCE_TRANSLATION] = enabled }
     }
 
     suspend fun setTypingLanguage(option: TypingLanguageOption) {

@@ -12,7 +12,11 @@ data class SentenceTranslation(
     val translatedText: String,
     val sourceLanguage: String,
     val targetLanguage: String,
-    val confidence: Float
+    val confidence: Float,
+    /** True when the translation was made from the grammar-corrected sentence, preserving the intended meaning. */
+    val fromCorrectedSource: Boolean = false,
+    /** Short notes on the grammar used ("ir a + infinitive: near future"). */
+    val notes: List<String> = emptyList()
 )
 
 /**
@@ -23,7 +27,9 @@ data class SentenceTranslation(
 data class LearningAssistance(
     val sentence: SentenceTranslation?,
     val hints: List<HintWord>,
-    val typingLanguage: String
+    val typingLanguage: String,
+    /** A suggested correction of the source sentence (English only), never applied automatically. */
+    val grammar: GrammarSuggestion? = null
 ) {
     companion object {
         val EMPTY = LearningAssistance(sentence = null, hints = emptyList(), typingLanguage = "en")
