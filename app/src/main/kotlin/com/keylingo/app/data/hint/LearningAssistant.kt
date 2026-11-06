@@ -34,15 +34,15 @@ class LearningAssistant @Inject constructor(
     private val dispatchers: AppDispatchers
 ) : HintProvider {
 
-    override suspend fun assist(text: String, targetLanguage: String, learningMode: LearningMode, maxHints: Int?): LearningAssistance {
+    override suspend fun assist(text: String, targetLanguage: String, learningMode: LearningMode, maxHints: Int?, typingLanguage: String?): LearningAssistance {
         if (text.isBlank()) return LearningAssistance.EMPTY
         val data = source.get() ?: return LearningAssistance.EMPTY
-        return withContext(dispatchers.compute) { analyze(data, text, learningMode, maxHints) }
+        return withContext(dispatchers.compute) { analyze(data, text, learningMode, maxHints, typingLanguage) }
     }
 
-    fun analyze(data: BundledLanguageData, text: String, learningMode: LearningMode, maxHints: Int?): LearningAssistance {
+    fun analyze(data: BundledLanguageData, text: String, learningMode: LearningMode, maxHints: Int?, typingLanguage: String? = null): LearningAssistance {
         val sentence = text.trim()
-        val language = data.languageDetector.detect(sentence)
+        val language = typingLanguage ?: data.languageDetector.detect(sentence)
         val cap = maxHints ?: LearningModePolicy.defaultMaxHints(learningMode)
         return if (language == "es") spanishAssistance(data, sentence, learningMode, cap)
         else englishAssistance(data, sentence, learningMode, cap)

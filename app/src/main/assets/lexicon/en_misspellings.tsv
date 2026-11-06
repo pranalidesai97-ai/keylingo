@@ -1,0 +1,113 @@
+# Common English misspellings -> correction. Authored for KeyLingo.
+# Used for cases edit distance cannot decide: split words ("alot" -> "a lot"),
+# ties between real words ("wich": which/with/wish), and misspellings of rare
+# real words ("wether"). Applied as an autocorrection only when the typed word
+# is not in the user's learned vocabulary and not rejected this session.
+alot	a lot
+infront	in front
+eachother	each other
+aswell	as well
+incase	in case
+everytime	every time
+thankyou	thank you
+noone	no one
+atleast	at least
+ofcourse	of course
+alittle	a little
+abit	a bit
+inbetween	in between
+nevermind	never mind
+wich	which
+wether	whether
+untill	until
+thier	their
+recieve	receive
+recieved	received
+beleive	believe
+belive	believe
+goverment	government
+enviroment	environment
+definatly	definitely
+defintely	definitely
+definately	definitely
+tommorrow	tomorrow
+tommorow	tomorrow
+tomorow	tomorrow
+truely	truly
+publically	publicly
+accomodate	accommodate
+acheive	achieve
+adress	address
+begining	beginning
+calender	calendar
+collegue	colleague
+comming	coming
+concious	conscious
+embarass	embarrass
+existance	existence
+finaly	finally
+foriegn	foreign
+freind	friend
+gaurd	guard
+happend	happened
+independant	independent
+knowlege	knowledge
+libary	library
+maintainance	maintenance
+neccessary	necessary
+necesary	necessary
+occassion	occasion
+occured	occurred
+posession	possession
+prefered	preferred
+recomend	recommend
+refered	referred
+relevent	relevant
+rember	remember
+sentance	sentence
+seperate	separate
+succesful	successful
+suprise	surprise
+tounge	tongue
+whereever	wherever
+writting	writing
+becuase	because
+becasue	because
+beacuse	because
+wierd	weird
+greatful	grateful
+arguement	argument
+basicly	basically
+buisness	business
+cemetary	cemetery
+commited	committed
+completly	completely
+dissapoint	disappoint
+dissapointed	disappointed
+excercise	exercise
+fourty	forty
+grammer	grammar
+harrass	harass
+immediatly	immediately
+interupt	interrupt
+iresistible	irresistible
+lisence	license
+mispell	misspell
+noticable	noticeable
+persue	pursue
+probaly	probably
+probally	probably
+realy	really
+reccomend	recommend
+resturant	restaurant
+rythm	rhythm
+sincerly	sincerely
+speach	speech
+strenght	strength
+tomatos	tomatoes
+potatos	potatoes
+wednsday	Wednesday
+wendsday	Wednesday
+febuary	February
+youre	you're
+theyre	they're

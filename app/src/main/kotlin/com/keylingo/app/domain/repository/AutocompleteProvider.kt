@@ -25,6 +25,9 @@ interface AutocompleteProvider {
     /** Correctly spelled variants sharing the same letters: "dont" -> ["don't"], "esta" -> ["está", "esta"]. */
     suspend fun spellingVariants(word: String, languageCode: String = "en"): List<String>
 
+    /** A curated correction for a well-known misspelling ("alot" -> "a lot"), or null. */
+    suspend fun knownMisspelling(word: String, languageCode: String = "en"): String? = null
+
     /** Bundled cold-start continuations of [previousWord], most likely first. */
     suspend fun seedNextWords(previousWord: String, languageCode: String = "en"): List<String>
 

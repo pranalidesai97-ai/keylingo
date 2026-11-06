@@ -46,6 +46,9 @@ class BundledAutocompleteProvider @Inject constructor(
             data.lexiconFor(languageCode).findByKey(word).filter { it.suggestable }.sortedBy { it.rank }.map { it.display }
         }
 
+    override suspend fun knownMisspelling(word: String, languageCode: String): String? =
+        if (languageCode != "en") null else withData(null) { it.englishMisspellings[word.lowercase()] }
+
     override suspend fun seedNextWords(previousWord: String, languageCode: String): List<String> =
         withData(emptyList()) { it.nextWordsFor(languageCode).after(previousWord) }
 

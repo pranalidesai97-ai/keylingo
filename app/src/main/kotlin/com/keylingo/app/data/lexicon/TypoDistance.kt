@@ -86,11 +86,17 @@ object TypoDistance {
         scratch.ensure(m + 1)
         var prev2 = scratch.r0; var prev = scratch.r1; var cur = scratch.r2
         for (j in 0..m) prev[j] = j * 0.9
+        // Ukkonen band: a cell further than `band` from the diagonal costs at least band * 0.35 > maxCost.
+        val band = (maxCost / 0.35).toInt() + 1
         for (i in 1..n) {
             cur[0] = i * 0.9
             var rowMin = cur[0]
             val tc = typed[i - 1]
-            for (j in 1..m) {
+            val from = maxOf(1, i - band)
+            val to = minOf(m, i + band)
+            if (from > 1) cur[from - 1] = Double.MAX_VALUE / 4
+            if (to < m) cur[to + 1] = Double.MAX_VALUE / 4
+            for (j in from..to) {
                 val cc = candidate[j - 1]
                 val deletion = if (i >= 2 && typed[i - 2] == tc) 0.35 else 0.9
                 val insertion = if (j >= 2 && candidate[j - 2] == cc) 0.35 else 0.9

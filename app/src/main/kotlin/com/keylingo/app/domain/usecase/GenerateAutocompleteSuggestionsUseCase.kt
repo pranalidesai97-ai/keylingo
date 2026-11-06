@@ -157,19 +157,32 @@ class GenerateAutocompleteSuggestionsUseCase @Inject constructor(
 
         // 4. Keyboard-aware typo corrections (only worth computing for 2+ letters).
         val corrections = if (prefix.length >= 2) autocompleteProvider.corrections(prefix, lang, 4, includeCompletions = true) else emptyList()
+        // When real completions of what was typed exist, only very close whole-word corrections may
+        // join them -- otherwise "tomor" would show "tome", "timer", "toot" next to "tomorrow".
+        val hasCompletions = candidates.values.any { it.kind == SuggestionKind.COMPLETION && !it.word.equals(prefix, ignoreCase = true) }
         for (c in corrections) {
+            if (hasCompletions && !c.isCompletion && c.distance > CLOSE_TYPO_DISTANCE) continue
             val score = frequencyScore(c.frequencyRank) + contextBonus(c.word) - DISTANCE_PENALTY * c.distance -
                 if (knownTyped) KNOWN_WORD_CORRECTION_PENALTY else 0.0
             offer(c.word, score, if (c.isCompletion) SuggestionKind.COMPLETION else SuggestionKind.CORRECTION, c.frequencyRank)
         }
+
+        // 5. Curated misspellings ("alot" -> "a lot", "wich" -> "which").
+        val curated = if (!learnedTyped) autocompleteProvider.knownMisspelling(prefix, lang) else null
+        if (curated != null) offer(curated, frequencyScore(1) + VARIANT_BONUS, SuggestionKind.CORRECTION, 0)
 
         // ---- autocorrect decision
         var autoCorrection: AutocompleteSuggestion? = null
         val eligible = request.allowAutoCorrect && !rejected && prefix.none { it.isDigit() } &&
             prefix.drop(1).none { it.isUpperCase() } // leave iPhone, McDonald, ALLCAPS alone
         if (eligible) {
+            if (curated != null) {
+                autoCorrection = AutocompleteSuggestion(matchCase(curated, prefix), 0, SuggestionKind.CORRECTION, lang)
+            }
             val caseFix = variants.firstOrNull { it.equals(prefix, ignoreCase = true) && it.any(Char::isUpperCase) && prefix.all { ch -> !ch.isUpperCase() } }
-            if (knownTyped) {
+            if (autoCorrection != null) {
+                // curated correction already chosen
+            } else if (knownTyped) {
                 // Known word: only fix obligatory capitalisation ("i" -> "I", "monday" -> "Monday"), or a very rare
                 // dictionary word shadowing a very common contraction ("cant" -> "can't", "wont" -> "won't").
                 if (caseFix != null && !learnedTyped) autoCorrection = AutocompleteSuggestion(caseFix, 0, SuggestionKind.CORRECTION, lang)
@@ -215,6 +228,20 @@ class GenerateAutocompleteSuggestionsUseCase @Inject constructor(
             // Always let the user keep exactly what they typed.
             ranked.removeAll { it.word == prefix }
             ranked.add(1.coerceAtMost(ranked.size), AutocompleteSuggestion(prefix, 0, SuggestionKind.LITERAL, lang))
+        }
+        // If what was typed is the beginning of a real word, its best completion always gets a visible slot
+        // (top three), even when close typo corrections outscore it ("madr" -> made, …, Madrid).
+        val bestCompletion = candidates.values
+            .filter { it.kind == SuggestionKind.COMPLETION && !it.word.equals(prefix, ignoreCase = true) && it.word.lowercase().startsWith(lowerPrefix) }
+            .maxByOrNull { it.score }
+        if (bestCompletion != null) {
+            val display = matchCase(bestCompletion.word, prefix)
+            val index = ranked.indexOfFirst { it.word == display }
+            val slot = if (autoCorrection != null) 2 else 1
+            if (index > slot) {
+                val item = ranked.removeAt(index)
+                ranked.add(slot.coerceAtMost(ranked.size), item)
+            }
         }
         return SuggestionResult(ranked.take(request.maxSuggestions), autoCorrection)
     }
@@ -262,5 +289,7 @@ class GenerateAutocompleteSuggestionsUseCase @Inject constructor(
         private const val MAX_AUTOCORRECT_RANK = 25_000
         private const val RARE_WORD_RANK = 30_000
         private const val COMMON_VARIANT_RANK = 2_000
+        /** Adjacent-key slip or transposition: close enough to show beside real completions. */
+        private const val CLOSE_TYPO_DISTANCE = 0.6
     }
 }

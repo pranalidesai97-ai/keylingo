@@ -131,4 +131,37 @@ class GenerateAutocompleteSuggestionsUseCaseTest {
         val words = suggest("ca", previous = "the").suggestions.map { it.word }
         assertFalse(words.contains("zebra"))
     }
+
+    @Test fun curatedMisspellingsCoverWhatEditDistanceCannot() = runTest {
+        assertEquals("a lot", autocorrectOf("alot"))
+        assertEquals("which", autocorrectOf("wich"))
+        assertEquals("in front", autocorrectOf("infront"))
+        assertEquals("tomorrow", autocorrectOf("tomorow"))
+        assertEquals("Wednesday", autocorrectOf("wednsday"))
+    }
+
+    @Test fun noUnrelatedTyposNextToRealCompletions() = runTest {
+        val words = suggest("tomor").suggestions.map { it.word }
+        assertEquals("tomorrow", words.first())
+        assertFalse(words.toString(), words.any { it in setOf("tome", "timer", "toot") })
+    }
+
+    @Test fun commonProperNounsAndLessFrequentWordsAreAvailable() = runTest {
+        for ((prefix, expected) in listOf("madr" to "Madrid", "whatsa" to "WhatsApp", "rechar" to "recharge", "wil" to "will")) {
+            val words = suggest(prefix).suggestions.map { it.word }
+            assertTrue("$prefix -> $words (expected $expected in the top three)", words.take(3).contains(expected)) // "will" stays lowercase although also a name
+        }
+    }
+
+    @Test fun rareButRealWordsAreNotCorrected() = runTest {
+        for (word in listOf("quixotic", "sesquipedalian", "petrichor", "defenestrate")) {
+            assertNull("must not autocorrect '$word'", autocorrectOf(word))
+        }
+    }
+
+    @Test fun misspelledSpanishInSpanishModeGetsSpanishCandidatesOnly() = runTest {
+        val words = suggest("graciaz", "es").suggestions.map { it.word }
+        assertTrue(words.toString(), words.contains("gracias"))
+        assertTrue(words.toString(), words.none { it in setOf("grace", "gracious", "grazing") })
+    }
 }

@@ -6,6 +6,7 @@ import com.keylingo.app.data.settings.DarkModeOption
 import com.keylingo.app.data.settings.HintSizeOption
 import com.keylingo.app.data.settings.KeyLingoSettings
 import com.keylingo.app.data.settings.KeyboardThemePreset
+import com.keylingo.app.data.settings.TypingLanguageOption
 import com.keylingo.app.data.settings.SettingsDataStore
 import com.keylingo.app.domain.model.LearningMode
 import com.keylingo.app.domain.repository.ContextPredictionProvider
@@ -60,6 +61,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setHapticsEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsDataStore.setHapticsEnabled(enabled) }
+    }
+
+    fun setTypingLanguage(option: TypingLanguageOption) {
+        viewModelScope.launch { settingsDataStore.setTypingLanguage(option) }
     }
 
     fun setThemePreset(preset: KeyboardThemePreset) {

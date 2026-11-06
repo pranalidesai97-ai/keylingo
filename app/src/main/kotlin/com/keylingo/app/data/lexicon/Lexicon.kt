@@ -24,7 +24,10 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
     private val sorted: Array<LexiconWord>
     private val keys: Array<String>
     private val exact: Map<String, LexiconWord>
-    private val byFirstLetter: Map<Char, IntArray>
+    /** Suggestable words keyed by (first letter, length): whole-word typo candidates are only ever within +-2 letters. */
+    private val byLetterAndLength: Map<Long, IntArray>
+    /** Common suggestable words (rank <= [MAX_COMPLETION_RANK]) per first letter, for typo'd completions. */
+    private val completionsByLetter: Map<Char, IntArray>
 
     init {
         val dedup = LinkedHashMap<String, LexiconWord>()
@@ -37,8 +40,10 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
         keys = Array(pairs.size) { pairs[it].first }
         sorted = Array(pairs.size) { pairs[it].second }
         exact = dedup
-        byFirstLetter = keys.indices.groupBy { keys[it].firstOrNull() ?: ' ' }
-            .mapValues { (_, list) -> list.toIntArray() }
+        val suggestable = keys.indices.filter { sorted[it].suggestable && keys[it].length >= 2 }
+        byLetterAndLength = suggestable.groupBy { bucket(keys[it][0], keys[it].length) }.mapValues { (_, l) -> l.toIntArray() }
+        completionsByLetter = suggestable.filter { sorted[it].rank <= MAX_COMPLETION_RANK }
+            .groupBy { keys[it][0] }.mapValues { (_, l) -> l.toIntArray() }
     }
 
     val size: Int get() = sorted.size
@@ -107,10 +112,12 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
         val maxCost = when {
             key.length <= 3 -> 0.95
             key.length <= 6 -> 1.45
-            else -> 2.0
+            else -> 1.7
         }
+        // Short words: the first letter may be a neighbouring-key slip. Long words: first-letter slips are
+        // rare and expensive to search, so only the typed first letter (or a 1st/2nd-letter swap) is scanned.
         val firstLetters = buildSet {
-            addAll(TypoDistance.neighbourhood(key[0]))
+            if (key.length <= 6) addAll(TypoDistance.neighbourhood(key[0]))
             add(key[0]); add(key[1])
         }
         val out = ArrayList<Correction>()
@@ -122,31 +129,37 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
         val secondLetters: Set<Char> = buildSet {
             addAll(TypoDistance.neighbourhood(key[1])); add(key[1]); add(key[0]); key.getOrNull(2)?.let { add(it) }
         }
+        fun consider(idx: Int, allowPrefix: Boolean) {
+            val w = sorted[idx]
+            if (w.rank > maxCandidateRank) return
+            val cand = keys[idx]
+            if (cand == key) return
+            if (key.length >= 3 && cand[1] !in secondLetters && !(cand.length > 2 && cand[2] == key[1])) return
+            val tryPrefix = allowPrefix && cand.length > key.length && w.rank <= MAX_COMPLETION_RANK
+            TypoDistance.scan(key, cand, maxCost, tryPrefix, scratch, result)
+            var dist = result.whole
+            var prefix = false
+            if (tryPrefix && result.prefix + 0.15 < dist && result.prefix <= maxCost - 0.4) { dist = result.prefix + 0.15; prefix = true }
+            if (dist <= maxCost) out.add(Correction(w, dist, prefix))
+        }
         for (letter in firstLetters) {
-            val indices = byFirstLetter[letter] ?: continue
             // Completions with a typo are only plausible when the first letter itself was typed right.
             val prefixHere = wantPrefix && letter == key[0]
-            for (idx in indices) {
-                val w = sorted[idx]
-                if (!w.suggestable || w.rank > maxCandidateRank) continue
-                val cand = keys[idx]
-                if (cand == key || cand.length < 2) continue
-                if (key.length >= 3 && cand[1] !in secondLetters && !(cand.length > 2 && cand[2] == key[1])) continue
-                val lenDiff = cand.length - key.length
-                val tryPrefix = prefixHere && lenDiff >= 1 && w.rank <= MAX_COMPLETION_RANK
-                if (lenDiff !in -2..2 && !tryPrefix) continue
-                TypoDistance.scan(key, cand, maxCost, tryPrefix, scratch, result)
-                var dist = result.whole
-                var prefix = false
-                if (tryPrefix && result.prefix + 0.15 < dist && result.prefix <= maxCost - 0.4) { dist = result.prefix + 0.15; prefix = true }
-                if (dist <= maxCost) out.add(Correction(w, dist, prefix))
+            for (len in (key.length - 2).coerceAtLeast(2)..(key.length + 2)) {
+                byLetterAndLength[bucket(letter, len)]?.forEach { consider(it, prefixHere) }
             }
+        }
+        if (wantPrefix) {
+            // Longer words (beyond the +-2 window) can only be typo'd completions of what was typed so far.
+            completionsByLetter[key[0]]?.forEach { idx -> if (keys[idx].length > key.length + 2) consider(idx, true) }
         }
         return out.sortedWith(compareBy({ score(it) }, { it.word.rank })).take(limit)
     }
 
     /** Combined closeness + frequency: one edit is worth roughly a 100x frequency difference. */
     fun score(c: Correction): Double = c.distance * 4.0 + kotlin.math.ln((c.word.rank + 10).toDouble())
+
+    private fun bucket(letter: Char, length: Int): Long = (letter.code.toLong() shl 16) or length.toLong()
 
     companion object {
         /** Typo-tolerant completion is limited to reasonably common words (cost control; rare words still match exactly). */

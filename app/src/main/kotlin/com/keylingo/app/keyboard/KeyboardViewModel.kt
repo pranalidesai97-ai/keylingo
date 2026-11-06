@@ -388,7 +388,7 @@ class KeyboardViewModel(
             return
         }
         val ctx = context()
-        val language = languageDetector.detect(ctx.currentSentence.ifEmpty { ctx.currentWord })
+        val language = state.settings.typingLanguage.code ?: languageDetector.detect(ctx.currentSentence.ifEmpty { ctx.currentWord })
         val prefix = if (ctx.cursorInsideWord) "" else ctx.currentWord
         // Predict the next word only right after a space (not straight after "word," or mid-punctuation).
         val canPredict = prefix.isNotEmpty() || ctx.before.isEmpty() || ctx.before.last().isWhitespace()
@@ -429,7 +429,7 @@ class KeyboardViewModel(
             val start = TextContext.lastSentenceBoundary(head.dropLast(1))
             if (end > 0) head.substring(start, end).trim() else ""
         }
-        val assistance = generateHintsUseCase(sentence, languagePack.languageCode, s.settings.learningMode)
+        val assistance = generateHintsUseCase(sentence, languagePack.languageCode, s.settings.learningMode, typingLanguage = s.settings.typingLanguage.code)
         if (state.assistance != assistance) _uiState.update { it.copy(assistance = assistance) }
     }
 

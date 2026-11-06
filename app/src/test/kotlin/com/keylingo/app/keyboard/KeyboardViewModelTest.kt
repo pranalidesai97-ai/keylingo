@@ -241,4 +241,11 @@ class KeyboardViewModelTest {
         assertTrue(h.state.hints.isEmpty())
         assertNotNull(h.state.suggestions.firstOrNull()) // typing assistance is independent of the learning row
     }
+
+    @Test fun forcedSpanishModeSkipsDetection() = runTest {
+        val h = harness(settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH))
+        h.type("tambi")
+        assertEquals("es", h.state.typingLanguage)
+        assertTrue(h.state.suggestions.map { it.word }.toString(), h.state.suggestions.any { it.word.equals("también", ignoreCase = true) })
+    }
 }

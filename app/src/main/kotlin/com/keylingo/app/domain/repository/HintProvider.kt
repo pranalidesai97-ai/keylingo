@@ -21,7 +21,9 @@ interface HintProvider {
         text: String,
         targetLanguage: String,
         learningMode: LearningMode,
-        maxHints: Int? = null
+        maxHints: Int? = null,
+        /** "en"/"es" when the user forced a typing language; null = detect. */
+        typingLanguage: String? = null
     ): LearningAssistance
 
     /** Convenience for callers that only need word hints. */

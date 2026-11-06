@@ -40,7 +40,9 @@ class BundledLanguageData(
     val dictionary: BundledDictionary,
     val idioms: List<Idiom>,
     val englishNextWords: SeedNextWords,
-    val spanishNextWords: SeedNextWords
+    val spanishNextWords: SeedNextWords,
+    /** Curated English misspelling -> correction (lowercase keys), see lexicon/en_misspellings.tsv. */
+    val englishMisspellings: Map<String, String> = emptyMap()
 ) {
     val translator = EnglishToSpanishTranslator(dictionary, idioms)
     val glosser = SpanishToEnglishGlosser(dictionary)
@@ -55,6 +57,7 @@ class BundledLanguageData(
         const val IDIOMS = "dictionary/idioms_en_es.tsv"
         const val EN_NEXT_WORDS = "prediction/en_next_words.tsv"
         const val ES_NEXT_WORDS = "prediction/es_next_words.tsv"
+        const val EN_MISSPELLINGS = "lexicon/en_misspellings.tsv"
 
         /** Spanish function words with approximate frequency ranks (they are not dictionary headwords). */
         private val spanishCore = listOf(
@@ -87,7 +90,10 @@ class BundledLanguageData(
                 dictionary = dictionary,
                 idioms = idioms,
                 englishNextWords = SeedNextWords.parseTsv(read(EN_NEXT_WORDS)),
-                spanishNextWords = SeedNextWords.parseTsv(read(ES_NEXT_WORDS))
+                spanishNextWords = SeedNextWords.parseTsv(read(ES_NEXT_WORDS)),
+                englishMisspellings = read(EN_MISSPELLINGS).filter { it.isNotBlank() && !it.startsWith("#") }
+                    .mapNotNull { line -> line.split('\t').takeIf { it.size >= 2 }?.let { it[0].trim().lowercase() to it[1].trim() } }
+                    .toMap()
             )
         }
 

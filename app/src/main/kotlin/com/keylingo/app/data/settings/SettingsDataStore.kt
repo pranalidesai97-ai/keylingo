@@ -20,6 +20,9 @@ enum class HintSizeOption { SMALL, MEDIUM, LARGE }
  * dark-mode setting follows the system; every preset has light and dark
  * variants. [CUSTOM] derives the palette from [KeyLingoSettings.customAccentArgb].
  */
+/** Which language the user is typing. AUTO detects it per sentence; the others force it (and skip detection). */
+enum class TypingLanguageOption(val code: String?) { AUTO(null), ENGLISH("en"), SPANISH("es") }
+
 enum class KeyboardThemePreset(val prefersDark: Boolean = false) {
     SUNLIGHT_YELLOW, LAVENDER_PURPLE, DARK_VIOLET(prefersDark = true), MINT_GREEN, OCEAN_BLUE, BLUSH_PINK, CUSTOM
 }
@@ -38,7 +41,8 @@ data class KeyLingoSettings(
     val soundEnabled: Boolean = false,
     val themePreset: KeyboardThemePreset = KeyboardThemePreset.SUNLIGHT_YELLOW,
     /** Accent colour (ARGB) used by [KeyboardThemePreset.CUSTOM]. */
-    val customAccentArgb: Int = DEFAULT_CUSTOM_ACCENT
+    val customAccentArgb: Int = DEFAULT_CUSTOM_ACCENT,
+    val typingLanguage: TypingLanguageOption = TypingLanguageOption.AUTO
 ) {
     companion object {
         const val DEFAULT_CUSTOM_ACCENT: Int = 0xFF2E9E8F.toInt()
@@ -63,6 +67,7 @@ class SettingsDataStore @Inject constructor(
         val SOUND = booleanPreferencesKey("sound_enabled")
         val THEME = stringPreferencesKey("theme_preset")
         val CUSTOM_ACCENT = intPreferencesKey("custom_accent_argb")
+        val TYPING_LANGUAGE = stringPreferencesKey("typing_language")
     }
 
     val settingsFlow: Flow<KeyLingoSettings> = context.dataStore.data.map { prefs ->
@@ -82,7 +87,9 @@ class SettingsDataStore @Inject constructor(
             soundEnabled = prefs[Keys.SOUND] ?: false,
             themePreset = prefs[Keys.THEME]?.let { runCatching { KeyboardThemePreset.valueOf(it) }.getOrNull() }
                 ?: KeyboardThemePreset.SUNLIGHT_YELLOW,
-            customAccentArgb = prefs[Keys.CUSTOM_ACCENT] ?: KeyLingoSettings.DEFAULT_CUSTOM_ACCENT
+            customAccentArgb = prefs[Keys.CUSTOM_ACCENT] ?: KeyLingoSettings.DEFAULT_CUSTOM_ACCENT,
+            typingLanguage = prefs[Keys.TYPING_LANGUAGE]?.let { runCatching { TypingLanguageOption.valueOf(it) }.getOrNull() }
+                ?: TypingLanguageOption.AUTO
         )
     }
 
@@ -120,6 +127,10 @@ class SettingsDataStore @Inject constructor(
 
     suspend fun setSoundEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.SOUND] = enabled }
+    }
+
+    suspend fun setTypingLanguage(option: TypingLanguageOption) {
+        context.dataStore.edit { it[Keys.TYPING_LANGUAGE] = option.name }
     }
 
     suspend fun setThemePreset(preset: KeyboardThemePreset) {

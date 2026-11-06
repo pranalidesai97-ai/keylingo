@@ -26,8 +26,10 @@ import json
 import re
 import sys
 
-SUGGEST_LEVELS = (10, 20, 35)
-KNOWN_ONLY_LEVELS = (40, 50)
+# 10-60 are ordinary dictionary vocabulary (60 = "large" dictionary): suggestable, ranked by tier.
+# 70 adds rare/obsolete/technical words: recognised (never autocorrected) but not proactively suggested.
+SUGGEST_LEVELS = (10, 20, 35, 40, 50, 55, 60)
+KNOWN_ONLY_LEVELS = (70,)
 
 CONTRACTIONS = [
     "I'm", "I've", "I'll", "I'd", "you're", "you've", "you'll", "you'd", "he's", "he'll", "he'd",
@@ -57,6 +59,37 @@ MODERN = [
     "emojis", "hashtag", "playlist", "covid", "vaccine", "zoom", "google", "googled",
     "screenshot", "screenshots", "chatbot", "blog", "blogs", "vlog", "spam", "inbox",
 ]
+# Common proper nouns. Added only when the lowercase form is not already a word
+# (so "will", "mark", "china", "turkey" keep their ordinary lowercase meaning).
+PROPER_NOUNS = """
+Africa Asia Europe America Australia Antarctica Argentina Bolivia Brazil Chile Colombia Ecuador Paraguay Peru Uruguay
+Venezuela Cuba Guatemala Honduras Nicaragua Panama Salvador Costa Rica Dominican Puerto Rico Jamaica Haiti Bahamas
+Ireland Scotland Wales Britain France Germany Italy Portugal Netherlands Belgium Switzerland Austria Sweden Norway
+Denmark Finland Iceland Poland Russia Ukraine Greece Hungary Romania Bulgaria Croatia Serbia Czech Slovakia
+Egypt Morocco Nigeria Kenya Ethiopia Ghana Israel Iran Iraq Syria Lebanon Jordan Saudi Arabia Qatar Dubai Emirates
+India Pakistan Bangladesh Nepal Thailand Vietnam Cambodia Indonesia Malaysia Singapore Philippines Japan Korea
+Taiwan Mongolia Zealand Fiji London Paris Madrid Barcelona Seville Valencia Lisbon Rome Milan Venice Berlin Munich
+Amsterdam Brussels Vienna Prague Dublin Edinburgh Moscow Istanbul Athens Cairo Tokyo Beijing Shanghai Seoul Delhi
+Mumbai Bangkok Sydney Melbourne Toronto Montreal Vancouver Chicago Boston Houston Dallas Austin Miami Atlanta
+Seattle Denver Phoenix Vegas Angeles Francisco Diego Orleans Philadelphia Washington Manhattan Brooklyn Bogota Lima
+Santiago Caracas Havana Quito Monterrey Guadalajara Cancun Tijuana Acapulco Texas California Florida Arizona Nevada
+Oregon Colorado Utah Ohio Michigan Illinois Georgia Virginia Carolina Tennessee Kentucky Alabama Louisiana Oklahoma
+Kansas Nebraska Iowa Minnesota Wisconsin Indiana Missouri Arkansas Mississippi Montana Wyoming Idaho Alaska Hawaii
+Maine Vermont Massachusetts Connecticut Jersey Pennsylvania Maryland Delaware Dakota
+James John Robert Michael William David Richard Joseph Thomas Charles Christopher Daniel Matthew Anthony Andrew
+Joshua Kevin Brian George Edward Ryan Jacob Nicholas Jonathan Justin Brandon Benjamin Samuel Alexander Patrick
+Jose Juan Carlos Luis Miguel Jorge Pedro Alejandro Diego Javier Fernando Ricardo Manuel Antonio Francisco Mary
+Patricia Jennifer Linda Elizabeth Barbara Susan Jessica Sarah Karen Nancy Lisa Margaret Sandra Ashley Emily Michelle
+Amanda Melissa Stephanie Rebecca Laura Emma Olivia Sophia Isabella Mia Charlotte Amelia Hannah Maria Ana Sofia
+Lucia Carmen Isabel Elena Paula Valentina Camila Gabriela Daniela Andrea Fernanda Natalia Alejandra Mariana Rosa
+Google Gmail YouTube WhatsApp Instagram Facebook Twitter TikTok Snapchat Netflix Spotify Amazon Apple iPhone iPad
+Android Samsung Microsoft Windows Excel PowerPoint Outlook LinkedIn Uber Airbnb Zoom Skype Telegram PayPal Venmo
+Starbucks McDonald's Walmart Target Costco IKEA Disney Pixar Marvel Netflix Wikipedia ChatGPT Bluetooth
+Monday Christmas Hanukkah Ramadan Diwali Valentine Halloween Easter Thanksgiving
+"""
+
+PROPER_NOUN_BASE_RANK = 12000
+
 # Recognised (so they are never "corrected"), but never offered proactively.
 NO_SUGGEST = {
     "fuck", "fucking", "fucked", "fucker", "shit", "shitty", "bitch", "bitches", "bastard",
@@ -106,6 +139,9 @@ def main(package_dir, curated_path, out_path):
         entries[key] = (word, rank, "")
     for word in MODERN:
         entries.setdefault(word.lower(), (word, None, ""))
+    proper = []
+    for word in PROPER_NOUNS.split():
+        proper.append(word)
 
     tiered = sorted(
         load_levels(package_dir, SUGGEST_LEVELS) + load_levels(package_dir, KNOWN_ONLY_LEVELS),
@@ -123,6 +159,13 @@ def main(package_dir, curated_path, out_path):
         display = entries[key][0] if key in entries else word
         entries[key] = (display, next_rank, flags)
         next_rank += 1
+
+    # Proper nouns go after the ordinary vocabulary, and only where no ordinary word exists.
+    for i, word in enumerate(proper):
+        key = word.lower()
+        if key not in entries:
+            # Mid-frequency band: names are typed often but should not outrank everyday words.
+            entries[key] = (word, PROPER_NOUN_BASE_RANK + i * 3, "")
 
     for key, (display, rank, flags) in list(entries.items()):
         if rank is None:  # modern words not present anywhere else
