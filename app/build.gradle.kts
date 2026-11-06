@@ -60,7 +60,25 @@ android {
         getByName("main") {
             kotlin.srcDirs("src/main/kotlin")
         }
+        getByName("test") {
+            kotlin.srcDirs("src/test/kotlin")
+        }
     }
+
+    testOptions {
+        unitTests {
+            // Unit tests read the real bundled data from src/main/assets and
+            // never touch Android framework classes beyond default stubs.
+            isReturnDefaultValues = true
+            isIncludeAndroidResources = true
+        }
+    }
+}
+
+ksp {
+    // Exported Room schemas (app/schemas/) are committed so every future
+    // change to the user-data databases is reviewable and migration-tested.
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -108,6 +126,7 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }

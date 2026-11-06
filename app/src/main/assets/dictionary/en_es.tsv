@@ -1,0 +1,1027 @@
+# KeyLingo English->Spanish lemma dictionary. UTF-8, tab-separated.
+# columns: english_lemma  spanish  pos(noun|verb|adj|adv|pron|prep|conj|other)  gender(m|f|mf, +p = plural-only; nouns only)
+# Verbs are infinitives; nouns/adjectives are singular masculine base forms.
+# Conjugations, plurals and agreement are generated at runtime -- never store inflected rows here.
+i	yo	pron	
+you	tú	pron	
+he	él	pron	
+she	ella	pron	
+we	nosotros	pron	
+they	ellos	pron	
+me	me	pron	
+him	él	pron	
+her	ella	pron	
+us	nosotros	pron	
+them	ellos	pron	
+my	mi	pron	
+your	tu	pron	
+his	su	pron	
+our	nuestro	pron	
+their	su	pron	
+who	quién	pron	
+what	qué	pron	
+where	dónde	pron	
+when	cuándo	pron	
+why	por qué	pron	
+how	cómo	pron	
+go	ir	verb	
+be	ser	verb	
+have	tener	verb	
+do	hacer	verb	
+eat	comer	verb	
+drink	beber	verb	
+sleep	dormir	verb	
+run	correr	verb	
+walk	caminar	verb	
+talk	hablar	verb	
+speak	hablar	verb	
+read	leer	verb	
+write	escribir	verb	
+study	estudiar	verb	
+learn	aprender	verb	
+teach	enseñar	verb	
+work	trabajar	verb	
+play	jugar	verb	
+want	querer	verb	
+need	necesitar	verb	
+like	gustar	verb	
+love	amar	verb	
+hate	odiar	verb	
+know	saber	verb	
+think	pensar	verb	
+see	ver	verb	
+look	mirar	verb	
+watch	ver	verb	
+hear	oír	verb	
+listen	escuchar	verb	
+feel	sentir	verb	
+come	venir	verb	
+leave	salir	verb	
+arrive	llegar	verb	
+return	regresar	verb	
+stay	quedarse	verb	
+live	vivir	verb	
+buy	comprar	verb	
+sell	vender	verb	
+pay	pagar	verb	
+cost	costar	verb	
+open	abrir	verb	
+close	cerrar	verb	
+start	empezar	verb	
+finish	terminar	verb	
+stop	parar	verb	
+help	ayudar	verb	
+ask	preguntar	verb	
+answer	responder	verb	
+understand	entender	verb	
+wait	esperar	verb	
+remember	recordar	verb	
+forget	olvidar	verb	
+believe	creer	verb	
+hope	esperar	verb	
+try	intentar	verb	
+use	usar	verb	
+make	hacer	verb	
+take	tomar	verb	
+give	dar	verb	
+get	conseguir	verb	
+put	poner	verb	
+bring	traer	verb	
+send	enviar	verb	
+call	llamar	verb	
+meet	conocer	verb	
+find	encontrar	verb	
+lose	perder	verb	
+win	ganar	verb	
+build	construir	verb	
+break	romper	verb	
+clean	limpiar	verb	
+cook	cocinar	verb	
+drive	conducir	verb	
+fly	volar	verb	
+sing	cantar	verb	
+dance	bailar	verb	
+draw	dibujar	verb	
+swim	nadar	verb	
+smile	sonreír	verb	
+laugh	reír	verb	
+cry	llorar	verb	
+shout	gritar	verb	
+kiss	besar	verb	
+hug	abrazar	verb	
+jump	saltar	verb	
+sit	sentarse	verb	
+stand	estar de pie	verb	
+wake	despertar	verb	
+wear	llevar	verb	
+carry	cargar	verb	
+push	empujar	verb	
+pull	tirar	verb	
+throw	lanzar	verb	
+catch	atrapar	verb	
+show	mostrar	verb	
+hide	esconder	verb	
+visit	visitar	verb	
+travel	viajar	verb	
+fix	arreglar	verb	
+save	guardar	verb	
+spend	gastar	verb	
+share	compartir	verb	
+plan	planear	verb	
+choose	elegir	verb	
+decide	decidir	verb	
+agree	estar de acuerdo	verb	
+explain	explicar	verb	
+promise	prometer	verb	
+worry	preocuparse	verb	
+relax	relajarse	verb	
+rest	descansar	verb	
+grow	crecer	verb	
+change	cambiar	verb	
+continue	continuar	verb	
+follow	seguir	verb	
+lead	dirigir	verb	
+join	unirse	verb	
+invite	invitar	verb	
+marry	casarse	verb	
+die	morir	verb	
+kill	matar	verb	
+fight	pelear	verb	
+protect	proteger	verb	
+attack	atacar	verb	
+defend	defender	verb	
+home	casa	noun	f
+house	casa	noun	f
+apartment	apartamento	noun	m
+school	escuela	noun	f
+university	universidad	noun	f
+teacher	maestro	noun	mf
+student	estudiante	noun	mf
+book	libro	noun	m
+pen	bolígrafo	noun	m
+pencil	lápiz	noun	m
+paper	papel	noun	m
+table	mesa	noun	f
+chair	silla	noun	f
+door	puerta	noun	f
+window	ventana	noun	f
+wall	pared	noun	f
+floor	piso	noun	m
+roof	techo	noun	m
+kitchen	cocina	noun	f
+bathroom	baño	noun	m
+bedroom	dormitorio	noun	m
+garden	jardín	noun	m
+car	carro	noun	m
+bus	autobús	noun	m
+train	tren	noun	m
+plane	avión	noun	m
+bicycle	bicicleta	noun	f
+road	camino	noun	m
+street	calle	noun	f
+city	ciudad	noun	f
+country	país	noun	m
+world	mundo	noun	m
+water	agua	noun	f
+fire	fuego	noun	m
+air	aire	noun	m
+earth	tierra	noun	f
+sun	sol	noun	m
+moon	luna	noun	f
+star	estrella	noun	f
+sky	cielo	noun	m
+rain	lluvia	noun	f
+snow	nieve	noun	f
+wind	viento	noun	m
+cloud	nube	noun	f
+mountain	montaña	noun	f
+river	río	noun	m
+lake	lago	noun	m
+sea	mar	noun	m
+ocean	océano	noun	m
+beach	playa	noun	f
+forest	bosque	noun	m
+tree	árbol	noun	m
+flower	flor	noun	f
+grass	césped	noun	m
+animal	animal	noun	m
+dog	perro	noun	m
+cat	gato	noun	m
+bird	pájaro	noun	m
+fish	pescado	noun	m
+horse	caballo	noun	m
+food	comida	noun	f
+bread	pan	noun	m
+rice	arroz	noun	m
+meat	carne	noun	f
+chicken	pollo	noun	m
+fruit	fruta	noun	f
+apple	manzana	noun	f
+orange	naranja	noun	f
+banana	plátano	noun	m
+vegetable	verdura	noun	f
+milk	leche	noun	f
+cheese	queso	noun	m
+egg	huevo	noun	m
+sugar	azúcar	noun	m
+salt	sal	noun	f
+coffee	café	noun	m
+tea	té	noun	m
+juice	jugo	noun	m
+breakfast	desayuno	noun	m
+lunch	almuerzo	noun	m
+dinner	cena	noun	f
+restaurant	restaurante	noun	m
+family	familia	noun	f
+mother	madre	noun	f
+father	padre	noun	m
+son	hijo	noun	m
+daughter	hija	noun	f
+brother	hermano	noun	m
+sister	hermana	noun	f
+grandmother	abuela	noun	f
+grandfather	abuelo	noun	m
+friend	amigo	noun	mf
+neighbor	vecino	noun	mf
+husband	esposo	noun	m
+wife	esposa	noun	f
+baby	bebé	noun	mf
+child	niño	noun	mf
+man	hombre	noun	m
+woman	mujer	noun	f
+people	gente	noun	f
+person	persona	noun	f
+job	trabajo	noun	m
+office	oficina	noun	f
+company	empresa	noun	f
+money	dinero	noun	m
+bank	banco	noun	m
+price	precio	noun	m
+store	tienda	noun	f
+market	mercado	noun	m
+business	negocio	noun	m
+time	tiempo	noun	m
+day	día	noun	m
+night	noche	noun	f
+morning	mañana	noun	f
+afternoon	tarde	noun	f
+evening	noche	noun	f
+week	semana	noun	f
+month	mes	noun	m
+year	año	noun	m
+hour	hora	noun	f
+minute	minuto	noun	m
+second	segundo	noun	m
+weekend	fin de semana	noun	m
+holiday	feriado	noun	m
+party	fiesta	noun	f
+birthday	cumpleaños	noun	m
+gift	regalo	noun	m
+game	juego	noun	m
+music	música	noun	f
+song	canción	noun	f
+movie	película	noun	f
+television	televisión	noun	f
+phone	teléfono	noun	m
+computer	computadora	noun	f
+internet	internet	noun	m
+photo	foto	noun	f
+picture	imagen	noun	f
+letter	carta	noun	f
+email	correo electrónico	noun	m
+news	noticias	noun	fp
+question	pregunta	noun	f
+problem	problema	noun	m
+solution	solución	noun	f
+idea	idea	noun	f
+plan	plan	noun	m
+reason	razón	noun	f
+way	manera	noun	f
+place	lugar	noun	m
+thing	cosa	noun	f
+word	palabra	noun	f
+language	idioma	noun	m
+name	nombre	noun	m
+number	número	noun	m
+color	color	noun	m
+light	luz	noun	f
+sound	sonido	noun	m
+voice	voz	noun	f
+hand	mano	noun	f
+foot	pie	noun	f
+head	cabeza	noun	f
+eye	ojo	noun	m
+ear	oreja	noun	f
+mouth	boca	noun	f
+nose	nariz	noun	f
+heart	corazón	noun	m
+body	cuerpo	noun	m
+face	cara	noun	f
+hair	cabello	noun	m
+arm	brazo	noun	m
+leg	pierna	noun	f
+health	salud	noun	m
+doctor	médico	noun	mf
+hospital	hospital	noun	m
+medicine	medicina	noun	f
+pain	dolor	noun	m
+happiness	felicidad	noun	f
+fear	miedo	noun	m
+anger	enojo	noun	m
+dream	sueño	noun	m
+truth	verdad	noun	f
+lie	mentira	noun	f
+war	guerra	noun	f
+peace	paz	noun	f
+government	gobierno	noun	m
+law	ley	noun	f
+history	historia	noun	f
+science	ciencia	noun	f
+art	arte	noun	m
+good	bueno	adj	
+bad	malo	adj	
+big	grande	adj	
+small	pequeño	adj	
+happy	feliz	adj	
+sad	triste	adj	
+beautiful	hermoso	adj	
+ugly	feo	adj	
+new	nuevo	adj	
+old	viejo	adj	
+young	joven	adj	
+fast	rápido	adj	
+slow	lento	adj	
+hot	caliente	adj	
+cold	frío	adj	
+warm	cálido	adj	
+easy	fácil	adj	
+difficult	difícil	adj	
+hard	difícil	adj	
+important	importante	adj	
+interesting	interesante	adj	
+boring	aburrido	adj	
+funny	gracioso	adj	
+serious	serio	adj	
+strong	fuerte	adj	
+weak	débil	adj	
+rich	rico	adj	
+poor	pobre	adj	
+tall	alto	adj	
+short	bajo	adj	
+long	largo	adj	
+wide	ancho	adj	
+narrow	estrecho	adj	
+heavy	pesado	adj	
+dirty	sucio	adj	
+full	lleno	adj	
+empty	vacío	adj	
+closed	cerrado	adj	
+early	temprano	adj	
+late	tarde	adj	
+near	cerca	adj	
+far	lejos	adj	
+high	alto	adj	
+low	bajo	adj	
+dark	oscuro	adj	
+bright	brillante	adj	
+quiet	tranquilo	adj	
+loud	ruidoso	adj	
+safe	seguro	adj	
+dangerous	peligroso	adj	
+healthy	saludable	adj	
+sick	enfermo	adj	
+tired	cansado	adj	
+hungry	hambriento	adj	
+thirsty	sediento	adj	
+angry	enojado	adj	
+scared	asustado	adj	
+surprised	sorprendido	adj	
+excited	emocionado	adj	
+bored	aburrido	adj	
+nervous	nervioso	adj	
+calm	tranquilo	adj	
+busy	ocupado	adj	
+free	libre	adj	
+expensive	caro	adj	
+cheap	barato	adj	
+special	especial	adj	
+normal	normal	adj	
+different	diferente	adj	
+same	mismo	adj	
+true	verdadero	adj	
+false	falso	adj	
+possible	posible	adj	
+impossible	imposible	adj	
+necessary	necesario	adj	
+ready	listo	adj	
+sure	seguro	adj	
+famous	famoso	adj	
+popular	popular	adj	
+modern	moderno	adj	
+traditional	tradicional	adj	
+simple	simple	adj	
+complicated	complicado	adj	
+clear	claro	adj	
+perfect	perfecto	adj	
+wonderful	maravilloso	adj	
+terrible	terrible	adj	
+amazing	increíble	adj	
+delicious	delicioso	adj	
+fresh	fresco	adj	
+sweet	dulce	adj	
+bitter	amargo	adj	
+spicy	picante	adj	
+soft	suave	adj	
+smart	inteligente	adj	
+kind	amable	adj	
+polite	cortés	adj	
+honest	honesto	adj	
+brave	valiente	adj	
+shy	tímido	adj	
+friendly	amistoso	adj	
+generous	generoso	adj	
+patient	paciente	adj	
+quickly	rápidamente	adv	
+slowly	lentamente	adv	
+always	siempre	adv	
+never	nunca	adv	
+sometimes	a veces	adv	
+often	a menudo	adv	
+usually	usualmente	adv	
+today	hoy	adv	
+tomorrow	mañana	adv	
+yesterday	ayer	adv	
+here	aquí	adv	
+there	allí	adv	
+now	ahora	adv	
+later	después	adv	
+soon	pronto	adv	
+already	ya	adv	
+still	todavía	adv	
+also	también	adv	
+only	solo	adv	
+really	realmente	adv	
+actually	en realidad	adv	
+probably	probablemente	adv	
+maybe	tal vez	adv	
+together	juntos	adv	
+alone	solo	adv	
+carefully	cuidadosamente	adv	
+easily	fácilmente	adv	
+finally	finalmente	adv	
+suddenly	de repente	adv	
+please	por favor	adv	
+thank	agradecer	verb	
+thanks	gracias	other	
+sorry	lo siento	other	
+excuse	disculpar	verb	
+welcome	bienvenido	adj	
+yes	sí	adv	
+no	no	adv	
+red	rojo	adj	
+blue	azul	adj	
+green	verde	adj	
+yellow	amarillo	adj	
+black	negro	adj	
+white	blanco	adj	
+brown	marrón	adj	
+gray	gris	adj	
+purple	morado	adj	
+monday	lunes	noun	m
+tuesday	martes	noun	m
+wednesday	miércoles	noun	m
+thursday	jueves	noun	m
+friday	viernes	noun	m
+saturday	sábado	noun	m
+sunday	domingo	noun	m
+present	regalo	noun	m
+surprise	sorpresa	noun	f
+sleepy	soñoliento	adj	
+cash	efectivo	noun	m
+card	tarjeta	noun	f
+town	pueblo	noun	m
+village	aldea	noun	f
+avenue	avenida	noun	f
+text	texto	noun	m
+message	mensaje	noun	m
+ride	montar	verb	
+paint	pintar	verb	
+goal	meta	noun	f
+which	cuál	pron	
+whose	de quién	pron	
+because	porque	conj	
+although	aunque	conj	
+however	sin embargo	adv	
+therefore	por lo tanto	adv	
+meanwhile	mientras tanto	adv	
+besides	además	adv	
+before	antes	prep	
+after	después	prep	
+during	durante	prep	
+without	sin	prep	
+between	entre	prep	
+against	contra	prep	
+toward	hacia	prep	
+since	desde	prep	
+until	hasta	prep	
+through	a través de	prep	
+congratulations	felicidades	other	
+okay	de acuerdo	other	
+disagree	discrepar	verb	
+repeat	repetir	verb	
+mean	significar	verb	
+guess	adivinar	verb	
+suppose	suponer	verb	
+apologize	disculparse	verb	
+greet	saludar	verb	
+uncle	tío	noun	m
+aunt	tía	noun	f
+cousin	primo	noun	mf
+nephew	sobrino	noun	m
+niece	sobrina	noun	f
+boyfriend	novio	noun	mf
+girlfriend	novia	noun	f
+colleague	colega	noun	mf
+stranger	desconocido	noun	mf
+relationship	relación	noun	f
+marriage	matrimonio	noun	m
+wedding	boda	noun	f
+divorce	divorcio	noun	m
+career	carrera	noun	f
+boss	jefe	noun	mf
+employee	empleado	noun	mf
+employer	empleador	noun	m
+deadline	fecha límite	noun	f
+salary	salario	noun	m
+interview	entrevista	noun	f
+resume	currículum	noun	m
+promotion	ascenso	noun	m
+client	cliente	noun	mf
+project	proyecto	noun	m
+report	informe	noun	m
+schedule	horario	noun	m
+manage	gestionar	verb	
+hire	contratar	verb	
+retire	jubilarse	verb	
+password	contraseña	noun	f
+website	sitio web	noun	m
+app	aplicación	noun	f
+file	archivo	noun	m
+folder	carpeta	noun	f
+screen	pantalla	noun	f
+battery	batería	noun	f
+charger	cargador	noun	m
+download	descargar	verb	
+upload	subir	verb	
+install	instalar	verb	
+update	actualizar	verb	
+delete	eliminar	verb	
+click	hacer clic	verb	
+search	buscar	verb	
+trip	viaje	noun	m
+airport	aeropuerto	noun	m
+flight	vuelo	noun	m
+passport	pasaporte	noun	m
+luggage	equipaje	noun	m
+ticket	boleto	noun	m
+hotel	hotel	noun	m
+reservation	reservación	noun	f
+destination	destino	noun	m
+map	mapa	noun	m
+tourist	turista	noun	mf
+vacation	vacaciones	noun	fp
+suitcase	maleta	noun	f
+taxi	taxi	noun	m
+border	frontera	noun	f
+visa	visa	noun	f
+depart	partir	verb	
+pack	empacar	verb	
+menu	menú	noun	m
+waiter	camarero	noun	mf
+recipe	receta	noun	f
+ingredient	ingrediente	noun	m
+discount	descuento	noun	m
+receipt	recibo	noun	m
+refund	reembolso	noun	m
+budget	presupuesto	noun	m
+bill	factura	noun	f
+afford	permitirse	verb	
+borrow	pedir prestado	verb	
+lend	prestar	verb	
+owe	deber	verb	
+fever	fiebre	noun	f
+headache	dolor de cabeza	noun	m
+cough	tos	noun	f
+exercise	ejercicio	noun	m
+gym	gimnasio	noun	m
+diet	dieta	noun	f
+breathe	respirar	verb	
+heal	sanar	verb	
+proud	orgulloso	adj	
+jealous	celoso	adj	
+confident	confiado	adj	
+lonely	solitario	adj	
+grateful	agradecido	adj	
+confused	confundido	adj	
+january	enero	noun	m
+february	febrero	noun	m
+march	marzo	noun	m
+april	abril	noun	m
+may	mayo	noun	m
+june	junio	noun	m
+july	julio	noun	m
+august	agosto	noun	m
+september	septiembre	noun	m
+october	octubre	noun	m
+november	noviembre	noun	m
+december	diciembre	noun	m
+weather	clima	noun	m
+storm	tormenta	noun	f
+sunny	soleado	adj	
+rainy	lluvioso	adj	
+cloudy	nublado	adj	
+windy	ventoso	adj	
+park	parque	noun	m
+church	iglesia	noun	f
+library	biblioteca	noun	f
+museum	museo	noun	m
+station	estación	noun	f
+receive	recibir	verb	
+rude	grosero	adj	
+love	amor	noun	m
+hope	esperanza	noun	f
+work	trabajo	noun	m
+answer	respuesta	noun	f
+help	ayuda	noun	f
+call	llamada	noun	f
+kiss	beso	noun	m
+hug	abrazo	noun	m
+change	cambio	noun	m
+light	ligero	adj	
+open	abierto	adj	
+clean	limpio	adj	
+married	casado	adj	
+say	decir	verb	
+tell	decir	verb	
+can	poder	verb	
+become	convertirse	verb	
+seem	parecer	verb	
+let	dejar	verb	
+keep	guardar	verb	
+begin	comenzar	verb	
+turn	girar	verb	
+move	mover	verb	
+happen	pasar	verb	
+allow	permitir	verb	
+add	añadir	verb	
+offer	ofrecer	verb	
+appear	aparecer	verb	
+consider	considerar	verb	
+expect	esperar	verb	
+serve	servir	verb	
+require	requerir	verb	
+reach	alcanzar	verb	
+raise	levantar	verb	
+pass	pasar	verb	
+cut	cortar	verb	
+fall	caer	verb	
+check	revisar	verb	
+enjoy	disfrutar	verb	
+miss	extrañar	verb	
+prefer	preferir	verb	
+order	pedir	verb	
+cancel	cancelar	verb	
+reply	responder	verb	
+chat	charlar	verb	
+celebrate	celebrar	verb	
+rent	alquilar	verb	
+wash	lavar	verb	
+shower	ducharse	verb	
+prepare	preparar	verb	
+practice	practicar	verb	
+improve	mejorar	verb	
+describe	describir	verb	
+discuss	discutir	verb	
+imagine	imaginar	verb	
+notice	notar	verb	
+sign	firmar	verb	
+touch	tocar	verb	
+smell	oler	verb	
+taste	probar	verb	
+hurt	doler	verb	
+count	contar	verb	
+accept	aceptar	verb	
+refuse	rechazar	verb	
+complain	quejarse	verb	
+enter	entrar	verb	
+climb	subir	verb	
+hang	colgar	verb	
+steal	robar	verb	
+suffer	sufrir	verb	
+wish	desear	verb	
+earn	ganar	verb	
+invest	invertir	verb	
+print	imprimir	verb	
+type	escribir	verb	
+record	grabar	verb	
+post	publicar	verb	
+solve	resolver	verb	
+test	probar	verb	
+compete	competir	verb	
+hurry	apurarse	verb	
+cross	cruzar	verb	
+fill	llenar	verb	
+lie	mentir	verb	
+dress	vestirse	verb	
+order	pedido	noun	m
+look	mirada	noun	f
+return	regreso	noun	m
+rest	descanso	noun	m
+drink	bebida	noun	f
+dance	baile	noun	m
+walk	paseo	noun	m
+run	carrera	noun	f
+smile	sonrisa	noun	f
+visit	visita	noun	f
+cost	costo	noun	m
+sleep	sueño	noun	m
+life	vida	noun	f
+end	fin	noun	m
+side	lado	noun	m
+part	parte	noun	f
+group	grupo	noun	m
+team	equipo	noun	m
+class	clase	noun	f
+lesson	lección	noun	f
+homework	tarea	noun	f
+exam	examen	noun	m
+story	historia	noun	f
+example	ejemplo	noun	m
+fact	hecho	noun	m
+point	punto	noun	m
+moment	momento	noun	m
+future	futuro	noun	m
+past	pasado	noun	m
+meeting	reunión	noun	f
+appointment	cita	noun	f
+date	fecha	noun	f
+sport	deporte	noun	m
+soccer	fútbol	noun	m
+football	fútbol	noun	m
+ball	pelota	noun	f
+player	jugador	noun	mf
+guitar	guitarra	noun	f
+piano	piano	noun	m
+painting	pintura	noun	f
+beer	cerveza	noun	f
+wine	vino	noun	m
+glass	vaso	noun	m
+cup	taza	noun	f
+bottle	botella	noun	f
+plate	plato	noun	m
+dish	plato	noun	m
+spoon	cuchara	noun	f
+fork	tenedor	noun	m
+knife	cuchillo	noun	m
+soup	sopa	noun	f
+salad	ensalada	noun	f
+potato	papa	noun	f
+tomato	tomate	noun	m
+onion	cebolla	noun	f
+cake	pastel	noun	m
+chocolate	chocolate	noun	m
+pizza	pizza	noun	f
+sandwich	sándwich	noun	m
+cookie	galleta	noun	f
+dessert	postre	noun	m
+shirt	camisa	noun	f
+pants	pantalones	noun	mp
+shoe	zapato	noun	m
+jacket	chaqueta	noun	f
+coat	abrigo	noun	m
+hat	sombrero	noun	m
+clothes	ropa	noun	f
+bag	bolsa	noun	f
+key	llave	noun	f
+wallet	cartera	noun	f
+clock	reloj	noun	m
+glasses	lentes	noun	mp
+bed	cama	noun	f
+sofa	sofá	noun	m
+lamp	lámpara	noun	f
+box	caja	noun	f
+toy	juguete	noun	m
+pet	mascota	noun	f
+cow	vaca	noun	f
+pig	cerdo	noun	m
+mouse	ratón	noun	m
+rabbit	conejo	noun	m
+lion	león	noun	m
+bear	oso	noun	m
+elephant	elefante	noun	m
+monkey	mono	noun	m
+snake	serpiente	noun	f
+kid	niño	noun	mf
+boy	chico	noun	m
+girl	chica	noun	f
+guy	chico	noun	m
+lady	señora	noun	f
+mom	mamá	noun	f
+dad	papá	noun	m
+parents	padres	noun	mp
+adult	adulto	noun	mf
+age	edad	noun	f
+death	muerte	noun	f
+finger	dedo	noun	m
+tooth	diente	noun	m
+back	espalda	noun	f
+stomach	estómago	noun	m
+skin	piel	noun	f
+blood	sangre	noun	f
+bone	hueso	noun	m
+neck	cuello	noun	m
+shoulder	hombro	noun	m
+knee	rodilla	noun	f
+room	habitación	noun	f
+building	edificio	noun	m
+shop	tienda	noun	f
+supermarket	supermercado	noun	m
+pharmacy	farmacia	noun	f
+bar	bar	noun	m
+center	centro	noun	m
+corner	esquina	noun	f
+bridge	puente	noun	m
+island	isla	noun	f
+field	campo	noun	m
+farm	granja	noun	f
+neighborhood	barrio	noun	m
+address	dirección	noun	f
+century	siglo	noun	m
+season	estación	noun	f
+spring	primavera	noun	f
+summer	verano	noun	m
+autumn	otoño	noun	m
+winter	invierno	noun	m
+noon	mediodía	noun	m
+midnight	medianoche	noun	f
+opinion	opinión	noun	f
+information	información	noun	f
+decision	decisión	noun	f
+mistake	error	noun	m
+error	error	noun	m
+chance	oportunidad	noun	f
+opportunity	oportunidad	noun	f
+experience	experiencia	noun	f
+success	éxito	noun	m
+luck	suerte	noun	f
+freedom	libertad	noun	f
+culture	cultura	noun	f
+education	educación	noun	f
+knowledge	conocimiento	noun	m
+power	poder	noun	m
+energy	energía	noun	f
+nature	naturaleza	noun	f
+society	sociedad	noun	f
+community	comunidad	noun	f
+situation	situación	noun	f
+quality	calidad	noun	f
+level	nivel	noun	m
+type	tipo	noun	m
+size	tamaño	noun	m
+shape	forma	noun	f
+list	lista	noun	f
+rule	regla	noun	f
+joy	alegría	noun	f
+fun	diversión	noun	f
+sadness	tristeza	noun	f
+stress	estrés	noun	m
+conversation	conversación	noun	f
+nice	agradable	adj	
+cute	lindo	adj	
+pretty	bonito	adj	
+great	genial	adj	
+cool	genial	adj	
+awesome	increíble	adj	
+better	mejor	adj	
+best	mejor	adj	
+worse	peor	adj	
+worst	peor	adj	
+first	primero	adj	
+last	último	adj	
+next	próximo	adj	
+right	correcto	adj	
+wrong	equivocado	adj	
+own	propio	adj	
+whole	entero	adj	
+real	real	adj	
+certain	cierto	adj	
+main	principal	adj	
+public	público	adj	
+private	privado	adj	
+local	local	adj	
+international	internacional	adj	
+national	nacional	adj	
+crazy	loco	adj	
+lucky	afortunado	adj	
+glad	contento	adj	
+alive	vivo	adj	
+dead	muerto	adj	
+single	soltero	adj	
+available	disponible	adj	
+favorite	favorito	adj	
+comfortable	cómodo	adj	
+useful	útil	adj	
+wet	mojado	adj	
+dry	seco	adj	
+thin	delgado	adj	
+fat	gordo	adj	
+round	redondo	adj	
+deep	profundo	adj	
+huge	enorme	adj	
+little	pequeño	adj	
+several	varios	adj	
+enough	suficiente	adj	
+worried	preocupado	adj	
+unhappy	infeliz	adj	
+cheerful	alegre	adj	
+lazy	perezoso	adj	
+clever	listo	adj	
+well	bien	adv	
+very	muy	adv	
+again	otra vez	adv	
+almost	casi	adv	
+ever	alguna vez	adv	
+even	incluso	adv	
+quite	bastante	adv	
+everywhere	en todas partes	adv	
+tonight	esta noche	adv	
+ago	hace	adv	
+early	temprano	adv	
+once	una vez	adv	
+twice	dos veces	adv	
+instead	en cambio	adv	
+especially	especialmente	adv	
+exactly	exactamente	adv	
+absolutely	absolutamente	adv	
+definitely	definitivamente	adv	
+completely	completamente	adv	
+immediately	inmediatamente	adv	
+recently	recientemente	adv	
+perhaps	quizás	adv	
+anyway	de todos modos	adv	
+more	más	adv	
+less	menos	adv	
+something	algo	pron	
+nothing	nada	pron	
+everything	todo	pron	
+someone	alguien	pron	
+somebody	alguien	pron	
+everyone	todos	pron	
+everybody	todos	pron	
+nobody	nadie	pron	
+anything	algo	pron	
+one	uno	other	
+two	dos	other	
+three	tres	other	
+four	cuatro	other	
+five	cinco	other	
+six	seis	other	
+seven	siete	other	
+eight	ocho	other	
+nine	nueve	other	
+ten	diez	other	
+eleven	once	other	
+twelve	doce	other	
+twenty	veinte	other	
+thirty	treinta	other	
+hundred	cien	other	
+thousand	mil	other	
+spanish	español	noun	m
+english	inglés	noun	m
+french	francés	noun	m
+german	alemán	noun	m
+italian	italiano	noun	m
+portuguese	portugués	noun	m
+chinese	chino	noun	m
+japanese	japonés	noun	m
+mexico	México	noun	m
+spain	España	noun	f
+canada	Canadá	noun	m
+england	Inglaterra	noun	f
+europe	Europa	noun	f
+america	América	noun	f
+mexican	mexicano	adj	
+american	estadounidense	adj	
+nurse	enfermero	noun	mf
+lawyer	abogado	noun	mf
+engineer	ingeniero	noun	mf
+worker	trabajador	noun	mf
+writer	escritor	noun	mf
+singer	cantante	noun	mf
+actor	actor	noun	m
+manager	gerente	noun	mf
+partner	pareja	noun	f
+text	escribir	verb	
+just	solo	adv	
+rain	llover	verb	
+snow	nevar	verb	
