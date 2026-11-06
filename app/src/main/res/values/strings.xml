@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KeyLingo</string>
+    <string name="onboarding_title">Set up KeyLingo</string>
+    <string name="onboarding_step1_title">1. Enable the keyboard</string>
+    <string name="onboarding_step1_desc">Turn on KeyLingo in your system keyboard list.</string>
+    <string name="onboarding_step1_action">Open keyboard settings</string>
+    <string name="onboarding_step2_title">2. Switch to KeyLingo</string>
+    <string name="onboarding_step2_desc">While typing in any app, tap the keyboard switch icon and choose KeyLingo.</string>
+    <string name="onboarding_step2_action">Pick input method</string>
+    <string name="onboarding_step3_title">3. Open Settings</string>
+    <string name="onboarding_step3_desc">Choose your learning language and customize hints.</string>
+    <string name="onboarding_step3_action">Go to KeyLingo settings</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_learning_enabled">Enable learning hints</string>
+    <string name="settings_learning_enabled_desc">Show vocabulary hints above the keyboard while you type</string>
+    <string name="settings_show_number_row">Number row</string>
+    <string name="settings_show_number_row_desc">Show a permanent row of digits above the letter keys</string>
+    <string name="settings_language">Learning language</string>
+    <string name="settings_dark_mode">Dark mode</string>
+    <string name="settings_hint_size">Hint text size</string>
+    <string name="settings_hint_size_small">Small</string>
+    <string name="settings_hint_size_medium">Medium</string>
+    <string name="settings_hint_size_large">Large</string>
+    <string name="settings_learning_mode">Learning mode</string>
+    <string name="learning_mode_beginner_title">Beginner</string>
+    <string name="learning_mode_beginner_desc">Show more hints, more translations, and grammar explanations</string>
+    <string name="learning_mode_intermediate_title">Intermediate</string>
+    <string name="learning_mode_intermediate_desc">Fewer hints, focused on the most important words</string>
+    <string name="learning_mode_advanced_title">Advanced</string>
+    <string name="learning_mode_advanced_desc">Minimal hints, only for difficult or uncommon words</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_desc">KeyLingo teaches you vocabulary as you type. Your keystrokes never leave this device.</string>
+</resources>

@@ -1,0 +1,259 @@
+package com.keylingo.app.settings.ui
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.keylingo.app.R
+import com.keylingo.app.data.settings.DarkModeOption
+import com.keylingo.app.data.settings.HintSizeOption
+import com.keylingo.app.domain.model.LearningMode
+import com.keylingo.app.settings.SettingsViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    onBack: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
+    val settings by viewModel.settings.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text(stringResource(R.string.settings_title)) })
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        ) {
+            LearningToggleSection(
+                enabled = settings.learningEnabled,
+                onToggle = viewModel::setLearningEnabled
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(20.dp))
+
+            NumberRowToggleSection(
+                enabled = settings.showNumberRow,
+                onToggle = viewModel::setShowNumberRow
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(20.dp))
+
+            LearningModeSection(
+                selected = settings.learningMode,
+                onSelect = viewModel::setLearningMode
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(20.dp))
+
+            LanguageSection(
+                selectedCode = settings.targetLanguageCode,
+                onSelect = viewModel::setTargetLanguage
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(20.dp))
+
+            DarkModeSection(
+                selected = settings.darkMode,
+                onSelect = viewModel::setDarkMode
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(20.dp))
+
+            HintSizeSection(
+                selected = settings.hintSize,
+                onSelect = viewModel::setHintSize
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = stringResource(R.string.settings_about),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.settings_about_desc),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun LearningToggleSection(enabled: Boolean, onToggle: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_learning_enabled), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.settings_learning_enabled_desc),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(checked = enabled, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun NumberRowToggleSection(enabled: Boolean, onToggle: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_show_number_row), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.settings_show_number_row_desc),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(checked = enabled, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun LearningModeSection(selected: LearningMode, onSelect: (LearningMode) -> Unit) {
+    // Data-driven on purpose: adding a future mode (e.g. Exam or
+    // Conversation) means adding one entry here plus its two string
+    // resources -- no new branching logic in this Composable.
+    val modes = listOf(
+        Triple(LearningMode.BEGINNER, R.string.learning_mode_beginner_title, R.string.learning_mode_beginner_desc),
+        Triple(LearningMode.INTERMEDIATE, R.string.learning_mode_intermediate_title, R.string.learning_mode_intermediate_desc),
+        Triple(LearningMode.ADVANCED, R.string.learning_mode_advanced_title, R.string.learning_mode_advanced_desc)
+    )
+
+    Text(stringResource(R.string.settings_learning_mode), style = MaterialTheme.typography.titleLarge)
+    Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.selectableGroup()) {
+        modes.forEach { (mode, titleRes, descRes) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(selected = mode == selected, onClick = { onSelect(mode) })
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                RadioButton(selected = mode == selected, onClick = { onSelect(mode) })
+                Column(modifier = Modifier.padding(start = 8.dp, top = 12.dp)) {
+                    Text(stringResource(titleRes), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        stringResource(descRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageSection(selectedCode: String, onSelect: (String) -> Unit) {
+    // Only Spanish is bundled in this MVP; the list is data-driven so
+    // adding a new LanguagePack later just means adding an entry here.
+    val languages = listOf("es" to "Spanish")
+
+    Text(stringResource(R.string.settings_language), style = MaterialTheme.typography.titleLarge)
+    Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.selectableGroup()) {
+        languages.forEach { (code, label) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(selected = code == selectedCode, onClick = { onSelect(code) }),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(selected = code == selectedCode, onClick = { onSelect(code) })
+                Text(label, modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DarkModeSection(selected: DarkModeOption, onSelect: (DarkModeOption) -> Unit) {
+    Text(stringResource(R.string.settings_dark_mode), style = MaterialTheme.typography.titleLarge)
+    Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.selectableGroup()) {
+        DarkModeOption.entries.forEach { option ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(selected = option == selected, onClick = { onSelect(option) }),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(selected = option == selected, onClick = { onSelect(option) })
+                Text(option.name.lowercase().replaceFirstChar { it.uppercase() }, modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun HintSizeSection(selected: HintSizeOption, onSelect: (HintSizeOption) -> Unit) {
+    Text(stringResource(R.string.settings_hint_size), style = MaterialTheme.typography.titleLarge)
+    Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.selectableGroup()) {
+        val options = listOf(
+            HintSizeOption.SMALL to stringResource(R.string.settings_hint_size_small),
+            HintSizeOption.MEDIUM to stringResource(R.string.settings_hint_size_medium),
+            HintSizeOption.LARGE to stringResource(R.string.settings_hint_size_large)
+        )
+        options.forEach { (option, label) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(selected = option == selected, onClick = { onSelect(option) }),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(selected = option == selected, onClick = { onSelect(option) })
+                Text(label, modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+    }
+}

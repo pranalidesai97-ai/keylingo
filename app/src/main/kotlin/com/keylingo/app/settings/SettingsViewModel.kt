@@ -1,0 +1,51 @@
+package com.keylingo.app.settings
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.keylingo.app.data.settings.DarkModeOption
+import com.keylingo.app.data.settings.HintSizeOption
+import com.keylingo.app.data.settings.KeyLingoSettings
+import com.keylingo.app.data.settings.SettingsDataStore
+import com.keylingo.app.domain.model.LearningMode
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val settingsDataStore: SettingsDataStore
+) : ViewModel() {
+
+    val settings: StateFlow<KeyLingoSettings> = settingsDataStore.settingsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = KeyLingoSettings()
+    )
+
+    fun setLearningEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsDataStore.setLearningEnabled(enabled) }
+    }
+
+    fun setTargetLanguage(languageCode: String) {
+        viewModelScope.launch { settingsDataStore.setTargetLanguage(languageCode) }
+    }
+
+    fun setDarkMode(option: DarkModeOption) {
+        viewModelScope.launch { settingsDataStore.setDarkMode(option) }
+    }
+
+    fun setHintSize(option: HintSizeOption) {
+        viewModelScope.launch { settingsDataStore.setHintSize(option) }
+    }
+
+    fun setLearningMode(mode: LearningMode) {
+        viewModelScope.launch { settingsDataStore.setLearningMode(mode) }
+    }
+
+    fun setShowNumberRow(show: Boolean) {
+        viewModelScope.launch { settingsDataStore.setShowNumberRow(show) }
+    }
+}

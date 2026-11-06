@@ -1,0 +1,151 @@
+[
+  {
+    "en": "i am going to",
+    "es": "voy",
+    "nextForm": "INFINITIVE"
+  },
+  {
+    "en": "i want to",
+    "es": "quiero",
+    "nextForm": "INFINITIVE"
+  },
+  {
+    "en": "i need to",
+    "es": "necesito",
+    "nextForm": "INFINITIVE"
+  },
+  {
+    "en": "i have to",
+    "es": "tengo que",
+    "nextForm": "INFINITIVE"
+  },
+  {
+    "en": "i am not",
+    "es": "no estoy",
+    "nextForm": "GERUND"
+  },
+  {
+    "en": "i am sorry",
+    "es": "lo siento"
+  },
+  {
+    "en": "i am",
+    "es": "estoy",
+    "nextForm": "GERUND"
+  },
+  {
+    "en": "you are",
+    "es": "estás",
+    "nextForm": "GERUND"
+  },
+  {
+    "en": "we are",
+    "es": "estamos",
+    "nextForm": "GERUND"
+  },
+  {
+    "en": "they are",
+    "es": "están",
+    "nextForm": "GERUND"
+  },
+  {
+    "en": "i want",
+    "es": "quiero"
+  },
+  {
+    "en": "i need",
+    "es": "necesito"
+  },
+  {
+    "en": "i have",
+    "es": "tengo"
+  },
+  {
+    "en": "i love",
+    "es": "amo"
+  },
+  {
+    "en": "i like",
+    "es": "me gusta"
+  },
+  {
+    "en": "i don't like",
+    "es": "no me gusta"
+  },
+  {
+    "en": "i don't know",
+    "es": "no sé"
+  },
+  {
+    "en": "i don't want",
+    "es": "no quiero"
+  },
+  {
+    "en": "i don't need",
+    "es": "no necesito"
+  },
+  {
+    "en": "i don't have",
+    "es": "no tengo"
+  },
+  {
+    "en": "good morning",
+    "es": "buenos días"
+  },
+  {
+    "en": "good afternoon",
+    "es": "buenas tardes"
+  },
+  {
+    "en": "good night",
+    "es": "buenas noches"
+  },
+  {
+    "en": "thank you very much",
+    "es": "muchas gracias"
+  },
+  {
+    "en": "thank you",
+    "es": "gracias"
+  },
+  {
+    "en": "see you later",
+    "es": "hasta luego"
+  },
+  {
+    "en": "see you soon",
+    "es": "hasta pronto"
+  },
+  {
+    "en": "how are you",
+    "es": "cómo estás"
+  },
+  {
+    "en": "nice to meet you",
+    "es": "mucho gusto"
+  },
+  {
+    "en": "excuse me",
+    "es": "perdón"
+  },
+  {
+    "en": "good luck",
+    "es": "buena suerte"
+  },
+  {
+    "en": "happy birthday",
+    "es": "feliz cumpleaños"
+  },
+  {
+    "en": "of course",
+    "es": "claro que sí"
+  },
+  {
+    "en": "no problem",
+    "es": "no hay problema"
+  },
+  {
+    "en": "i am fine",
+    "es": "estoy bien"
+  }
+]
