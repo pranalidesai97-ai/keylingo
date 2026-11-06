@@ -7,14 +7,16 @@ PROJECT_STATE.md / FEATURE_IMPLEMENTATION_STATUS.md.
 
 ```
 presentation   keyboard/ (IME service, KeyboardViewModel, TextContext, InputFieldPolicy, Compose UI)
-               settings/, ui/ (companion app)
+               settings/ (SettingsScreen, ThemePickerSection, LearnedWordsScreen + ViewModels)
+               ui/theme/ KeyLingoTheme, KeyboardColors/KeyboardThemes (keyboard palettes)
       │ calls use cases / interfaces only
 domain         model/, repository/ (interfaces), usecase/   — pure Kotlin, no Android imports
       ▲ implemented by
 data           bundled/   in-memory, read-only language data (assets)
                lexicon/   Lexicon + TypoDistance
                language/  EnglishMorphology, TypingLanguageDetector, spanish/ (conjugator, morphology, text)
-               translation/ EnglishToSpanishTranslator, SpanishToEnglishGlosser
+               translation/ EnglishToSpanishTranslator, SpanishToEnglishTranslator, SpanishToEnglishGlosser
+               grammar/   EnglishGrammarChecker (suggestions only)
                dictionary/ BundledDictionary
                hint/      LearningAssistant (HintProvider), LearningModePolicy
                learning/  Room: personal vocabulary      ┐ user data, never destructive
@@ -50,7 +52,8 @@ on startup by `KeyLingoApplication` (user databases are untouched).
 ## 3. Keyboard runtime flow
 
 ```
-key press ─► KeyboardKey (Compose gesture: tap / long-press accents / backspace repeat, haptic)
+key press ─► KeyboardKey (Compose gesture: tap / long-press accents / backspace repeat; pressed tint + scale)
+          ─► KeyFeedback.onKeyDown  (the only vibration/sound call site; each only if its setting is on)
           ─► KeyboardViewModel.onKeyAction
                ├─ edits via KeyboardTextConnection (commit / delete grapheme / batch edits)
                ├─ word boundary? → autocorrect (if pending + still valid) → learning (if policy allows)
@@ -60,6 +63,8 @@ refreshSuggestions:  TextContext(textBeforeCursor(240), textAfterCursor(4))
                      → LanguageDetector.detect(current sentence)
                      → GenerateAutocompleteSuggestionsUseCase(SuggestionRequest)
 refreshHints:        current (or just-finished) sentence → GenerateHintsUseCase → LearningAssistant
+                     (typing language from Settings or detected; grammar/sentence flags from Settings)
+onGrammarSuggestionApplied: replaces the sentence before the cursor only if it is unchanged
 ```
 
 `InputFieldPolicy` (from `EditorInfo`) gates everything per field: suggestions,
@@ -94,8 +99,9 @@ Between words: personal trigrams (30·ln) > bigrams (20·ln) > bundled cold-star
 `TypoDistance` is a weighted restricted Damerau–Levenshtein: adjacent key 0.45,
 other key 1.0, transposition 0.55, doubled/dropped repeated letter 0.35,
 insert/delete 0.9, accent-only 0.05. One DP pass per candidate yields both the
-whole-word and prefix distance; candidates are pruned by first letter
-(+ neighbours) and second letter. ~6 ms per lookup on the build VM's JVM.
+whole-word and prefix distance, banded (Ukkonen) to the cost limit. Candidates come from (first letter, length) buckets plus first-letter completion lists. Words longer than 6 letters only scan the typed first letter, and the typed second letter in the second position. Measured at 6–10 ms per lookup on the build VM's JVM.
+
+Curated misspellings (`en_misspellings.tsv`) are offered first and preferred as the autocorrection when the typed word is not learned. Distant typo candidates (distance > 0.6) are suppressed when real completions exist. The best completion is guaranteed a visible slot.
 
 ## 5. Learning row (`LearningAssistant`)
 
@@ -108,8 +114,53 @@ whole-word and prefix distance; candidates are pruned by first letter
    "noun · f"); `LearningModePolicy` keeps 8/5/3 hints (Beginner/Intermediate/
    Advanced). The sentence chip is shown only if coverage is 100% and the
    sentence has ≥ 2 words.
-3. Spanish sentence → `SpanishToEnglishGlosser` per word (conjugation-aware,
-   accent restoration, ambiguity shown as "we were / we went").
+3. English grammar: `EnglishGrammarChecker.check(text, complete)` runs on the
+   current sentence (ignoring the word still being typed). A suggestion is shown
+   as a chip; the sentence translation is made from the corrected text and
+   labelled “from corrected sentence”. Nothing is applied without a tap.
+4. Spanish sentence → `SpanishToEnglishGlosser` per word (conjugation-aware,
+   accent restoration, ambiguity shown as "we were / we went") and
+   `SpanishToEnglishTranslator` for the sentence chip (100% coverage, ≥ 2
+   words), with up to two grammar notes matched on the Spanish text.
+
+## 5b. Grammar checker (`EnglishGrammarChecker`)
+
+Small, independent rules produce non-overlapping edits that are spliced into
+one corrected sentence:
+- repeated words, except allowed repeats;
+- subject–verb agreement;
+- past tense with past-time markers, blocked by future markers;
+- a/an and missing articles;
+- confusables;
+- capitalisation, only for complete sentences;
+- spacing.
+
+Agreement finds the subject at clause starts. It skips frequency adverbs, detects compound nouns (`bus stop is`), and skips subjunctive and auxiliary contexts. Plurality comes from English morphology only, so a noun like `news` is not a false plural. The checker prefers missing an error to flagging correct or informal English.
+
+## 5c. Spanish→English translator (`SpanishToEnglishTranslator`)
+
+Recursive descent over Spanish tokens, in this order:
+1. Set phrases and idioms (`por qué`, `mucho gusto`, `¿cuántos años…?`).
+2. wh-word or wh-phrase (`cuántos hermanos`).
+3. Clause-initial time adverbs.
+4. Subject: a pronoun, or a noun phrase followed by a finite verb, telling article `la` from clitic `la`.
+5. Negation and clitics.
+6. Finite verb, read from the reverse index, preferring the subject's person.
+
+Constructions then handled:
+- gustar-type verbs and `doler` + body part;
+- `llamarse`;
+- `querer` + person → love;
+- `tener`, `hacer` and `haber` idioms and ages;
+- impersonal weather;
+- `ser` with impersonal complements;
+- verb chains: estar + gerund, haber + participle, ir a, acabar de, tener que, verb + infinitive with enclitics.
+
+English is generated with do-support for negation and questions, inversion, postverbal subjects in wh-questions, and wh-as-subject (`What happened?`). Complements: prepositional idioms (`en casa`, `por la noche`, `en autobús` → by bus, `en la mesa` → on), personal `a` dropped, generic articles dropped where English omits them. Unknown words are kept and lower coverage, which hides the chip. Questions typed without accents get their wh-word and following verb restored (`Como estas?`).
+
+## 5d. Themes (`ui/theme/KeyboardColors.kt`)
+
+Each preset is one accent colour per light/dark variant. `KeyboardThemes.palette` derives every keyboard colour by HSL rules: background, keys, special keys, strip, chips, translation chip, hint/caption text and popup. Mid-tone accents are shifted in lightness until text reaches 4.6:1 (`readableAccent`). Text colours are chosen by WCAG contrast, and `KeyboardThemesTest` enforces the ratios. Dark Violet prefers dark when following the system. The palette is provided through `LocalKeyboardColors`; geometry is not theme-dependent.
 
 ## 6. Translator design (`EnglishToSpanishTranslator`)
 
@@ -150,4 +201,4 @@ with accent shifts, adjective agreement/apocope, articles (incl. `el agua`).
 See DATABASE_AND_DICTIONARY_INVENTORY.md. All personal writes are atomic
 `INSERT OR IGNORE` + arithmetic `UPDATE` inside a transaction (SQLite 3.19 on
 API 26 lacks UPSERT). Schemas are exported to `app/schemas/`; user databases
-never use destructive migration.
+never use destructive migration. Retention (`PersonalDataRetention`) runs once per keyboard start through DAO `DELETE`s: 30-day expiry for incidental words, 60-day expiry for single-use sequences, and caps on sequence tables.

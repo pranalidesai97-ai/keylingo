@@ -1,5 +1,71 @@
 # Changelog
 
+## 2026-11-06 — Audit and improvement phase (Phases 1–9)
+
+Commits on `claude/eager-dijkstra-jsufzj`, in order:
+- d2ef600 Phase 1, key feedback.
+- 8312171 Phase 6, themes. Done second, together with the feedback work, as agreed.
+- 87662db Phase 2, vocabulary.
+- 5a70f01 Phase 3, grammar.
+- 503009a Phase 4, translation.
+- 20dadd2 Phases 5 and 7, learning data and settings.
+- The Phase 8/9 commit: privacy, latency test, docs.
+
+Verified by the build/test results in PROJECT_STATE.md; nothing was device-tested.
+
+### Phase 1 — Key feedback
+- `KeyFeedback` is the single place that vibrates or plays a key sound. Vibration and sound have separate settings, both **off by default**. `VIBRATE` permission removed (`KEYBOARD_TAP` needs none).
+- Pressed state on every key: face tint and 0.95 scale.
+- Backspace repeat rewritten as one gesture loop: 1 delete on press, repeat after 400 ms at 55 ms, then 35 ms. Stops on release or cancel (Compose gesture test).
+
+### Phase 2 — Vocabulary and autocomplete
+- English lexicon: 61,547 → **111,795** words.
+  - SCOWL levels up to 60 are suggestable; level 70 is recognised-only.
+  - Curated proper nouns added; `cant`/`wont` demoted.
+- 108 curated misspellings, preferred as the autocorrection.
+- Distant typos are no longer shown next to real completions, and the best completion always has a slot.
+- Typo search re-indexed (length buckets, banded DP) so the larger lexicon stays within the 15 ms budget.
+- Typing-language setting: Auto / English / Spanish.
+
+### Phase 3 — Grammar suggestions
+- New `EnglishGrammarChecker`: repeated words, agreement, past tense with time markers, a/an, missing articles, confusables, capitalisation, spacing.
+- Shown as a chip; applied only on tap, and only if the sentence is unchanged.
+- Never checked on a half-typed word.
+- The sentence translation uses the corrected text and says so.
+
+### Phase 4 — Translation
+- New `SpanishToEnglishTranslator` and sentence chip for Spanish typing, with grammar notes. 112 regression sentences, including "¿Cómo estás?", "También.", "Mañana.", "Estoy aprendiendo español.", "Ayer fui al mercado." and "Quiero aprender inglés.".
+- Reverse dictionary keeps every tense × person reading. `es_en_extra.tsv` adds 27 reverse-only Spanish words.
+- EN→ES: "Where are you going?" → "¿Adónde vas?"; the 9 requested English examples are now regression tests.
+
+### Phase 5 — Personal learning
+- Retention: unlearned words expire after 30 days and single-use sequences after 60 days. Sequence tables are capped at 20k/30k.
+- Forgetting a word removes its sequences too. No schema change.
+
+### Phase 6 — Themes
+- Sunlight Yellow (default), Lavender Purple, Dark Violet, Mint Green, Ocean Blue, Blush Pink, and a custom colour (14 swatches plus a hue slider).
+- Separate key, special-key, strip and translation-chip colours; pressed and highlighted states; light/dark.
+- WCAG-checked contrast; persisted; key geometry unchanged.
+
+### Phase 7 — Settings
+- Grouped sections. New controls: typing language, sentence translation, grammar suggestions.
+- New learned-words screen: filter, delete one, delete all.
+- Whole-row touch targets for switches.
+
+### Phase 8 — Offline, privacy, performance
+- Merged manifest checked: no INTERNET permission.
+- Cloud backup and device transfer disabled for app data.
+- `AssistanceLatencyTest`: all per-sentence work under 1 ms on the build JVM.
+
+### Phase 9 — Tests
+98 → **156** tests in 21 suites (see TESTING.md). New suites:
+- `KeyFeedbackTest`, `BackspaceGestureTest`, `KeyboardScreenshotTest`;
+- `SettingsPersistenceTest`, `KeyboardThemesTest`, `VocabularyMetricsTest`;
+- `EnglishGrammarCheckerTest`, `SpanishToEnglishTranslatorTest`;
+- `SettingsScreensTest`, `AssistanceLatencyTest`.
+
+---
+
 ## 2026-11-06 — Engineering pass: first build, data repair, engine, keyboard integration
 
 Starting point: `FINAL_SOURCE_2.zip`, imported unchanged as commit `df4f327`.

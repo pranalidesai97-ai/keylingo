@@ -1,23 +1,30 @@
 # KeyLingo — Known Issues and Prioritised Backlog
 
+## Resolved in this phase
+Vibration was on by default; there was no sound toggle; backspace repeat relied on an untested gesture; the lexicon held 61.5k words; there was no grammar help, no Spanish→English sentence translation and no theme choice; learned words could not be reviewed or deleted individually; personal data could be included in Android backups.
+
 ## Known issues / limitations (current code)
 
 | # | Area | Issue | Impact |
 |---|---|---|---|
-| K1 | Verification | **Never run on a device or emulator.** IME lifecycle, Compose-in-IME rendering, gestures, haptics, latency and the R8 release build are unverified. | High until the TESTING.md §4 checklist passes |
+| K1 | Verification | **Never run on a device or emulator.** Unverified: IME lifecycle, Compose-in-IME rendering, gestures, vibration/sound feel, themes on real screens, latency, the R8 release build. JVM (Robolectric) renders and gesture tests exist but do not replace a device. | High until the TESTING.md §4 checklist passes |
 | K2 | Build | This session's build used a locally assembled SDK (mirror `android.jar`, derived system-modules jar, stub build-tools). | Build in Android Studio with a real SDK for releases |
 | K3 | Translation | Agreement assumes a masculine speaker/addressee (`estoy cansado`). | Wrong for many users — P1 |
-| K4 | Translation | ~800 of the 2,500 most frequent English words still have no dictionary entry; any unknown content word hides the sentence translation (word hints still show). | Coverage — P1 |
+| K4 | Translation | ~800 of the 2,500 most frequent English words still have no dictionary entry (1,325 lemmas + 27 reverse-only Spanish words). Any unknown content word hides the sentence translation in either direction; word hints still show. | Coverage — P1 |
 | K5 | Translation | Not modelled: usted/ustedes register choice, vosotros, passive voice, relative clauses beyond simple `that/what`, possessive `'s`, comparatives beyond `more … than`, phrasal verbs beyond a small table. Indirect questions keep English word order (`no sé dónde él vive`). | Some sentences hidden or less natural |
-| K6 | Lexicon | Only ~1,900 English words have curated frequency ranks; the rest are ordered by SCOWL tier then length (short rare words can rank too high). | Ranking quality for less common words |
+| K6 | Lexicon | Only ~1,900 English words have curated frequency ranks. The other ~110k are ordered by SCOWL tier then length, so short rare words can rank too high. Owner decision needed on a frequency corpus with clear redistribution terms. | Ranking quality for less common words |
 | K7 | Lexicon | Spanish typing vocabulary is generated from the dictionary (8,447 forms); Spanish words outside it get no completion. | Spanish autocomplete coverage |
 | K8 | CEFR | CEFR bands are derived from English frequency rank, not curated. | Advanced-mode hint selection is approximate |
 | K9 | Input | Commit-based editing (no composing region/underline); autocorrect undo works only immediately after the correction. | UX polish |
 | K10 | Layout | Fixed 92 + 260 dp height; not adapted for landscape/tablets/foldables. | Landscape usability |
 | K11 | Layout | No globe/language key, swipe typing, space-bar cursor control, clipboard, emoji search, voice input. | Feature gaps vs. Gboard |
 | K12 | Deps | AGP 8.5.2, Kotlin 1.9.24, Compose BOM 2024.06 — 19 lint "newer version" warnings. | Maintenance |
-| K13 | Timing | Bundled data loads asynchronously at keyboard start (≈150–270 ms desktop JVM, likely ~0.5–1.5 s on a phone); suggestions are empty until then. | First-keystroke experience |
-| K14 | Tests | No Compose UI / instrumented tests. | UI regressions not caught automatically |
+| K13 | Timing | Bundled data loads asynchronously at keyboard start: ≈0.4–0.8 s on the desktop JVM with the 111.8k lexicon, likely 1–3 s on a phone. Suggestions are empty until then. | First-keystroke experience |
+| K14 | Tests | No instrumented tests. Compose UI is covered only by Robolectric (gestures, settings, PNG renders). | Device-only UI regressions not caught |
+| K15 | Translation ES→EN | Rule-based. Third-person subjects stay ambiguous ("He/she ate a lot"). Present tense is kept literal ("¿Vienes conmigo?" → "Do you come with me?"). Not modelled: subordinate clauses beyond simple `cuando/que`, `se` passives/impersonals, relative clauses, most `de` phrases ("Es de madera"). Sentences it does not fully understand show only word glosses. | Some Spanish sentences get no chip |
+| K16 | Grammar | Rule-based and deliberately narrow, preferring no flag to a false one. It does not detect general preposition errors, word order, run-on sentences, or tense agreement across clauses. English only. | Some errors go unflagged |
+| K17 | Performance | The typo lookup (6–10 ms per call on the build JVM, budget 15 ms) is the slowest per-keystroke step. It runs off the main thread, debounced, but may approach 30–50 ms on a low-end phone. | Measure on device (P0) |
+| K18 | Backup | Backups are off for privacy: settings and learned words do not move to a new phone. | Owner decision (PROJECT_STATE §5) |
 
 ## Prioritised roadmap
 
@@ -33,16 +40,18 @@
 7. **Composing-text model** (`setComposingText`) for underline, reliable undo and editing in the middle of words (K9).
 8. Landscape/tablet height and one-handed mode (K10).
 9. Instrumented Compose UI tests for keys, popup and strip (K14).
+10. ES→EN: `se` constructions, relative clauses, `de` complements, progressive reading of present motion verbs (K15).
+11. Grammar: more rules with a false-positive corpus test (K16).
 
 ### P2 — Learning value
-10. Tap a hint to expand (all forms, example) and save to a review list.
-11. Spaced repetition of saved/seen words; learning statistics.
-12. Formal register option (usted) and Spain/LatAm vocabulary option (`carro`/`coche`).
-13. More idioms and phrasal verbs; relative clauses; possessive `'s`.
-14. Broader Spanish lexicon (K7) and Spanish cold-start table.
-15. CEFR curation (K8).
+12. Tap a hint to expand (all forms, example) and save to a review list.
+13. Spaced repetition of saved/seen words; learning statistics.
+14. Formal register option (usted) and Spain/LatAm vocabulary option (`carro`/`coche`).
+15. More idioms and phrasal verbs; relative clauses; possessive `'s`.
+16. Broader Spanish lexicon (K7) and Spanish cold-start table.
+17. CEFR curation (K8).
 
 ### P3 — Keyboard feature parity
-16. Globe key / language toggle, space-bar cursor slide, clipboard strip, emoji search.
-17. Swipe (gesture) typing.
-18. Dependency upgrades (AGP/Kotlin 2.x/Compose BOM) with full regression run (K12).
+18. Globe key / language toggle, space-bar cursor slide, clipboard strip, emoji search.
+19. Swipe (gesture) typing.
+20. Dependency upgrades (AGP/Kotlin 2.x/Compose BOM) with full regression run (K12).

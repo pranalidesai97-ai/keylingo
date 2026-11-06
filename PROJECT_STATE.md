@@ -6,78 +6,87 @@ Verification levels used in all KeyLingo docs:
 
 | Label | Meaning |
 |---|---|
-| **Built + tested** | Compiles in the real Gradle/AGP build and is covered by passing JVM unit tests (incl. Robolectric SQLite tests). |
-| **Built** | Compiles and is packaged in the APK, but has no automated test (usually Compose UI). |
+| **Built + tested** | Compiles in the real Gradle/AGP build and is covered by passing JVM tests (unit, Robolectric SQLite, Robolectric Compose UI). |
+| **Built** | Compiles and is packaged in the APK, but has no automated test. |
+| **Rendered (JVM)** | Compose UI drawn by Robolectric into a PNG and reviewed by eye. **Not** a phone screenshot. |
 | **Device: not verified** | Nothing in this project has been run on a phone or emulator yet. |
 
 ## 1. What KeyLingo is
 
 An Android keyboard (`InputMethodService`, Jetpack Compose UI) for everyday
-English typing that teaches Spanish as you type. It is fully offline: no
-network permission, no network code, personal learning data stored only in
-on-device Room databases.
+English typing that teaches Spanish as you type. It is fully offline:
+- no network permission and no network code;
+- personal learning data stays in on-device Room databases and is excluded from cloud backup and device transfer.
 
 ## 2. Current state in one paragraph
 
-The project now **builds** (`assembleDebug`, minified `assembleRelease`,
-`lintDebug` with 0 errors) and has **98 passing unit tests**. Before this
-pass the code had never been compiled. The keyboard has a 61.5k-word English
-lexicon with keyboard-aware typo correction and conservative autocorrect,
-personal vocabulary and n-gram learning that is race-free and privacy-gated,
-next-word prediction with a cold-start model, a deterministic Spanish
-conjugation engine, and an offline rule-based English→Spanish sentence
-translator whose word alignments drive the learning hints. Typing Spanish is
-detected automatically and gets Spanish suggestions (with accent
-restoration) plus English glosses. **No physical-device or emulator testing
-has happened** — see §6.
+The project **builds** (`assembleDebug`, minified `assembleRelease`,
+`lintDebug` with 0 errors) and has **156 passing tests**. What it has:
+- **Input:** a 111.8k-word English lexicon; keyboard-aware typo correction plus a curated misspelling list (`becuase`, `definately`, `teh`…); conservative autocorrect with one-tap undo; next-word prediction.
+- **Learning row:** an offline English→Spanish sentence translator, and now a Spanish→English one.
+- **Grammar:** suggestions are offered as a tappable chip and never applied automatically.
+- **Appearance:** six keyboard themes plus a custom colour.
+- **Feedback:** vibration and key sound are both off by default.
+- **Settings:** a grouped screen, with a manager for learned words and a retention policy for incidental typing history.
+
+**No physical-device or emulator testing has happened** (see §6).
 
 ## 3. Build and test results (this session)
 
 | Command | Result |
 |---|---|
-| `./gradlew :app:testDebugUnitTest` | ✅ 98 tests, 0 failures (11 suites, see TESTING.md) |
-| `./gradlew :app:assembleDebug` | ✅ `app-debug.apk` 17.7 MB |
-| `./gradlew :app:assembleRelease` | ✅ `app-release-unsigned.apk` 1.95 MB (R8 minified; was 7.0 MB before the keep-rule fix) |
-| `./gradlew :app:lintDebug` | ✅ 0 errors, 22 warnings (19 are "newer dependency version available") |
+| `./gradlew :app:testDebugUnitTest` | ✅ 156 tests, 0 failures (21 suites, see TESTING.md) |
+| `./gradlew :app:assembleDebug` | ✅ `app-debug.apk` 18.6 MB |
+| `./gradlew :app:assembleRelease` | ✅ `app-release-unsigned.apk` 2.5 MB (R8 minified; never run) |
+| `./gradlew :app:lintDebug` | ✅ 0 errors, 21 warnings (almost all "newer dependency version available") |
 
-**Build environment caveat.** This cloud container has no Android SDK, and
-the SDK download host is blocked. The build used: AGP/AndroidX/Room/Hilt
-from Google Maven and Maven Central (allowed by a dedicated network
-environment), `aapt2` from Google Maven (AGP does this itself), the
-`android-34` `android.jar` from the public `Sable/android-platforms`
-mirror, a `core-for-system-modules.jar` derived from it, and stub
-build-tools. The Gradle build itself is standard; nothing in the repo
-depends on that SDK. **Build release artifacts in Android Studio with a real
-SDK** before distributing.
+**Build environment caveat.** This cloud container has no Android SDK. The build used:
+- AGP/AndroidX from Google Maven and Maven Central;
+- the `android-34` `android.jar` from the public `Sable/android-platforms` mirror;
+- a `core-for-system-modules.jar` derived from it;
+- stub build-tools.
 
-## 4. What changed (summary — details in CHANGELOG.md)
+Nothing in the repo depends on that setup. **Build release artifacts in Android Studio with a real SDK.**
 
-1. **Build fixed**: missing `gradle-wrapper.jar` added; the hand-written `gradlew` was broken.
-2. **Data repaired**: every Spanish entry had lost its accents (`año`→`ano`, `bebé`→`bebe`, `trabajó`→`trabajo`); dictionary migrated to a lemma-based, POS-aware, gender-tagged TSV (1,325 rows).
-3. **Crash fixed**: concurrent learning writes violated a unique index inside fire-and-forget coroutines (IME crash) → atomic upserts + coroutine exception guard.
-4. **Privacy fixed**: password/incognito fields were learned from → `InputFieldPolicy`.
-5. **Input correctness**: cursor-relative context, grapheme-safe backspace, case-preserving suggestions, auto-shift that turns off, Enter follows the field action, `directBootAware` crash risk removed.
-6. **New capabilities**: lexicon + typo correction + autocorrect with undo, n-gram prediction with cold start, conjugation engine, sentence translator, Spanish typing support, long-press accents, haptics, emoji grid, "delete learned data".
+## 4. Work in this improvement phase (details in CHANGELOG.md)
 
-## 5. Product rules status
+| Phase | Result |
+|---|---|
+| 1. Feedback | Vibration **off by default** and a separate sound toggle (off), both from a single source (`KeyFeedback`). Visual pressed state on every key. Backspace repeat stops on release (gesture test). `VIBRATE` permission removed. |
+| 2. Vocabulary | English lexicon grew from 61,547 to **111,795** words (77,137 suggestable, 34,658 recognised-only). 48,652 inflected forms, 108 curated misspellings, proper nouns. Typo search re-indexed so it stays fast. |
+| 3. Grammar | Rules: repeated words, subject–verb agreement, past tense with time markers, a/an, missing articles, common confusables, capitalisation, spacing. Shown as a suggestion chip, applied only when tapped, checked only after a finished word. |
+| 4. Translation | New Spanish→English sentence translator (112 regression sentences), with grammar notes. English→Spanish translates the grammar-corrected sentence and says so. "Where are you going?" → "¿Adónde vas?". |
+| 5. Personal learning | Retention: incidental words are forgotten after 30 days and single-use word pairs after 60 days, and stored sequences are capped. Forgetting a word also removes its sequences. |
+| 6. Themes | Sunlight Yellow (default), Lavender Purple, Dark Violet, Mint Green, Ocean Blue, Blush Pink and a custom colour. WCAG-checked text contrast; light/dark; persisted; geometry unchanged. |
+| 7. Settings | Grouped sections; typing language (Auto/EN/ES), grammar and sentence-translation toggles; learned-words screen (filter, delete one, delete all). |
+| 8. Platform | Verified no INTERNET permission in the merged manifest. Personal data excluded from backup and transfer. Per-sentence latency test added (all < 1 ms on the build JVM). |
 
-See FEATURE_IMPLEMENTATION_STATUS.md for the full matrix. Everything listed
-in the product vision has at least a working, tested core except: no
-device-level verification, no composing-text underline, no swipe typing, and
-the dictionary still lacks ~800 of the 2,500 most frequent English words
-(sentence translations are hidden whenever an unknown content word appears).
+## 5. Decisions that need the owner's approval
+
+1. **Backups off.** `allowBackup="false"` plus data-extraction rules keep learned words off Google backup and device-to-device transfer. A side effect is that settings don't move to a new phone either. Revert if cross-device restore matters more.
+2. **Frequency data licence.** Ranking outside the ~1,900 curated words still uses SCOWL tiers, because no corpus licence was accepted (see KNOWN_ISSUES K6).
+3. **Release build.** R8 output has never run; sign and test it in Android Studio before distributing.
 
 ## 6. Outstanding device verification (must happen next)
 
-Nothing here can be closed without a phone/emulator. Checklist in TESTING.md §4:
-IME enable/switch flow, Compose rendering inside the IME window, key
-latency and suggestion latency, accent long-press overlay, haptics,
-autocorrect undo in real apps (WhatsApp, Gmail, Chrome), password fields,
-Enter actions, rotation/landscape height, dark mode, first-launch data load
-time, R8 release build behaviour, and Room migration on an upgraded install.
+Nothing here can be closed without a phone or emulator. The checklist is in TESTING.md §4:
+- enabling and switching to the keyboard;
+- Compose rendering inside the IME window;
+- key and suggestion latency;
+- the accent long-press overlay;
+- vibration and sound feel;
+- backspace repeat;
+- autocorrect undo and grammar-chip apply in real apps;
+- password fields;
+- themes on real screens;
+- landscape;
+- R8 release behaviour;
+- Room upgrade.
 
 ## 7. Next milestone
 
-Run the device checklist on a real phone and fix what it finds; then the
-top items of KNOWN_ISSUES_AND_BACKLOG.md (user gender for agreement,
-dictionary coverage of the top 3,000 words, composing-text model).
+Run the device checklist on a real phone and fix what it finds. Then work through the top of KNOWN_ISSUES_AND_BACKLOG.md:
+- a speaker-gender setting;
+- dictionary coverage;
+- frequency-data licensing;
+- a composing-text model.
