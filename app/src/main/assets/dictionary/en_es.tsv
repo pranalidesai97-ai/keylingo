@@ -1025,3 +1025,305 @@ text	escribir	verb
 just	solo	adv	
 rain	llover	verb	
 snow	nevar	verb	
+hey	oye	other	
+hi	hola	other	
+hello	hola	other	
+bye	adiós	other	
+fine	bien	adv	
+okay	bien	adv	
+yourself	ti mismo	pron	
+anyone	alguien	pron	
+weird	raro	adj	
+careful	cuidadoso	adj	
+quick	rápido	adj	
+outside	afuera	adv	
+inside	adentro	adv	
+downtown	centro	noun	m
+meal	comida	noun	f
+bike	bicicleta	noun	f
+afraid	asustado	adj	
+british	británico	adj	
+canadian	canadiense	adj	
+european	europeo	adj	
+hold	sostener	verb	
+rise	subir	verb	
+pink	rosado	adj	
+million	millón	other	
+third	tercero	adj	
+christmas	Navidad	noun	f
+leaf	hoja	noun	f
+nation	nación	noun	f
+trade	comercio	noun	m
+industry	industria	noun	f
+factory	fábrica	noun	f
+shadow	sombra	noun	f
+shine	brillar	verb	
+remain	quedarse	verb	
+cause	causa	noun	f
+result	resultado	noun	m
+similar	similar	adj	
+equal	igual	adj	
+opposite	opuesto	adj	
+rarely	raramente	adv	
+somewhere	en algún lugar	adv	
+nowhere	en ningún lugar	adv	
+anywhere	en cualquier lugar	adv	
+create	crear	verb	
+design	diseñar	verb	
+develop	desarrollar	verb	
+repair	reparar	verb	
+damage	dañar	verb	
+destroy	destruir	verb	
+noise	ruido	noun	m
+silent	silencioso	adj	
+king	rey	noun	m
+queen	reina	noun	f
+prince	príncipe	noun	m
+princess	princesa	noun	f
+soldier	soldado	noun	mf
+army	ejército	noun	m
+artist	artista	noun	mf
+image	imagen	noun	f
+sentence	oración	noun	f
+page	página	noun	f
+chapter	capítulo	noun	m
+college	universidad	noun	f
+degree	título	noun	m
+yard	patio	noun	m
+fence	cerca	noun	f
+gate	puerta	noun	f
+bowl	tazón	noun	m
+jar	frasco	noun	m
+lock	cerradura	noun	f
+candle	vela	noun	f
+keyboard	teclado	noun	m
+path	sendero	noun	m
+desert	desierto	noun	m
+rock	roca	noun	f
+stone	piedra	noun	f
+sand	arena	noun	f
+gold	oro	noun	m
+silver	plata	noun	f
+metal	metal	noun	m
+plastic	plástico	noun	m
+wood	madera	noun	f
+weight	peso	noun	m
+height	altura	noun	f
+speed	velocidad	noun	f
+distance	distancia	noun	f
+direction	dirección	noun	f
+top	parte de arriba	noun	f
+bottom	fondo	noun	m
+middle	medio	noun	m
+line	línea	noun	f
+circle	círculo	noun	m
+square	cuadrado	noun	m
+half	mitad	noun	f
+club	club	noun	m
+member	miembro	noun	mf
+leader	líder	noun	mf
+suggestion	sugerencia	noun	f
+argue	discutir	verb	
+trust	confiar	verb	
+ashamed	avergonzado	adj	
+embarrassed	avergonzado	adj	
+whisper	susurrar	verb	
+kick	patear	verb	
+bake	hornear	verb	
+fry	freír	verb	
+boil	hervir	verb	
+sour	agrio	adj	
+salty	salado	adj	
+smooth	suave	adj	
+sharp	afilado	adj	
+thick	grueso	adj	
+ancient	antiguo	adj	
+born	nacido	adj	
+risk	riesgo	noun	m
+waste	desperdiciar	verb	
+measure	medir	verb	
+compare	comparar	verb	
+increase	aumentar	verb	
+decrease	disminuir	verb	
+shut	cerrar	verb	
+unlock	desbloquear	verb	
+lift	levantar	verb	
+drop	dejar caer	verb	
+wrap	envolver	verb	
+cover	cubrir	verb	
+mix	mezclar	verb	
+disappear	desaparecer	verb	
+discover	descubrir	verb	
+belong	pertenecer	verb	
+control	controlar	verb	
+avoid	evitar	verb	
+prevent	prevenir	verb	
+support	apoyar	verb	
+encourage	animar	verb	
+warn	advertir	verb	
+graduate	graduarse	verb	
+forgive	perdonar	verb	
+blame	culpar	verb	
+suggest	sugerir	verb	
+recommend	recomendar	verb	
+advise	aconsejar	verb	
+achieve	lograr	verb	
+succeed	tener éxito	verb	
+fail	fallar	verb	
+struggle	luchar	verb	
+respect	respetar	verb	
+respond	responder	verb	
+rescue	rescatar	verb	
+resolve	resolver	verb	
+research	investigación	noun	f
+response	respuesta	noun	f
+responsible	responsable	adj	
+grape	uva	noun	f
+strawberry	fresa	noun	f
+lemon	limón	noun	m
+peach	durazno	noun	m
+pear	pera	noun	f
+cherry	cereza	noun	f
+watermelon	sandía	noun	f
+pineapple	piña	noun	f
+mango	mango	noun	m
+avocado	aguacate	noun	m
+garlic	ajo	noun	m
+carrot	zanahoria	noun	f
+lettuce	lechuga	noun	f
+cucumber	pepino	noun	m
+pepper	pimienta	noun	f
+mushroom	champiñón	noun	m
+corn	maíz	noun	m
+pasta	pasta	noun	f
+noodle	fideo	noun	m
+burger	hamburguesa	noun	f
+hamburger	hamburguesa	noun	f
+taco	taco	noun	m
+steak	bistec	noun	m
+beef	carne de res	noun	f
+pork	carne de cerdo	noun	f
+shrimp	camarón	noun	m
+butter	mantequilla	noun	f
+yogurt	yogur	noun	m
+cream	crema	noun	f
+sauce	salsa	noun	f
+honey	miel	noun	f
+cereal	cereal	noun	m
+toast	pan tostado	noun	m
+bacon	tocino	noun	m
+pie	pastel	noun	m
+candy	dulce	noun	m
+snack	bocadillo	noun	m
+soda	refresco	noun	m
+chef	chef	noun	mf
+flavor	sabor	noun	m
+tasty	sabroso	adj	
+frozen	congelado	adj	
+raw	crudo	adj	
+airplane	avión	noun	m
+backpack	mochila	noun	f
+journey	viaje	noun	m
+tour	recorrido	noun	m
+currency	moneda	noun	f
+camera	cámara	noun	f
+valley	valle	noun	m
+cave	cueva	noun	f
+waterfall	cascada	noun	f
+laptop	portátil	noun	f
+tablet	tableta	noun	f
+smartphone	teléfono inteligente	noun	m
+software	software	noun	m
+program	programa	noun	m
+code	código	noun	m
+document	documento	noun	m
+printer	impresora	noun	f
+speaker	altavoz	noun	m
+storage	almacenamiento	noun	m
+security	seguridad	noun	f
+virus	virus	noun	m
+director	director	noun	mf
+president	presidente	noun	mf
+conference	conferencia	noun	f
+profit	ganancia	noun	f
+contract	contrato	noun	m
+customer	cliente	noun	mf
+economy	economía	noun	f
+delivery	entrega	noun	f
+deal	trato	noun	m
+agreement	acuerdo	noun	m
+sales	ventas	noun	fp
+department	departamento	noun	m
+task	tarea	noun	f
+garage	garaje	noun	m
+basement	sótano	noun	m
+balcony	balcón	noun	m
+ceiling	techo	noun	m
+stairs	escaleras	noun	fp
+closet	armario	noun	m
+drawer	cajón	noun	m
+shelf	estante	noun	m
+mirror	espejo	noun	m
+curtain	cortina	noun	f
+carpet	alfombra	noun	f
+couch	sofá	noun	m
+desk	escritorio	noun	m
+pillow	almohada	noun	f
+blanket	manta	noun	f
+towel	toalla	noun	f
+fridge	refrigerador	noun	m
+refrigerator	refrigerador	noun	m
+stove	estufa	noun	f
+oven	horno	noun	m
+microwave	microondas	noun	m
+anxious	ansioso	adj	
+frightened	asustado	adj	
+curious	curioso	adj	
+exhausted	agotado	adj	
+hopeful	esperanzado	adj	
+disappointed	decepcionado	adj	
+frustrated	frustrado	adj	
+satisfied	satisfecho	adj	
+jeans	jeans	noun	mp
+skirt	falda	noun	f
+suit	traje	noun	m
+sweater	suéter	noun	m
+socks	calcetines	noun	mp
+sock	calcetín	noun	m
+boots	botas	noun	fp
+cap	gorra	noun	f
+scarf	bufanda	noun	f
+belt	cinturón	noun	m
+umbrella	paraguas	noun	m
+purse	bolso	noun	m
+necklace	collar	noun	m
+ring	anillo	noun	m
+sunglasses	lentes de sol	noun	mp
+basketball	baloncesto	noun	m
+baseball	béisbol	noun	m
+tennis	tenis	noun	m
+golf	golf	noun	m
+athlete	atleta	noun	mf
+coach	entrenador	noun	mf
+stadium	estadio	noun	m
+match	partido	noun	m
+score	marcador	noun	m
+workout	entrenamiento	noun	m
+injury	lesión	noun	f
+illness	enfermedad	noun	f
+disease	enfermedad	noun	f
+treatment	tratamiento	noun	m
+dentist	dentista	noun	mf
+flu	gripe	noun	f
+insurance	seguro	noun	m
+emergency	emergencia	noun	f
+ambulance	ambulancia	noun	f
+temperature	temperatura	noun	f
+thunder	trueno	noun	m
+lightning	relámpago	noun	m
+flood	inundación	noun	f
+climate	clima	noun	m
+classroom	salón de clases	noun	m
+professor	profesor	noun	mf
+lecture	clase	noun	f
+lot	mucho	adv	

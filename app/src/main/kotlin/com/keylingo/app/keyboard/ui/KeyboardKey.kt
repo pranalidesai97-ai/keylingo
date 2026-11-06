@@ -43,7 +43,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -97,7 +100,7 @@ fun RowScope.KeyboardKey(
     val currentShift by rememberUpdatedState(shiftState)
     val haptics by rememberUpdatedState(hapticsEnabled)
     val alternates = remember(action) { KeyboardLayoutProvider.alternatesFor(action) }
-    var bounds = remember { arrayOf(Rect.Zero) }
+    val bounds = remember { arrayOf(Rect.Zero) }
 
     val colors = MaterialTheme.colorScheme
     val isAccentKey = action is KeyAction.Shift || action is KeyAction.Backspace || action is KeyAction.Enter ||
@@ -189,7 +192,12 @@ fun RowScope.KeyboardKey(
             .scale(scale)
             .background(background, RoundedCornerShape(8.dp))
             .then(gesture)
-            .semantics { contentDescription = describe(action, shiftState, enterAction) },
+            // TalkBack: announce the key and let a double-tap type it (pointerInput alone exposes no click action).
+            .semantics {
+                contentDescription = describe(action, shiftState, enterAction)
+                role = Role.Button
+                onClick { currentOnClick(action); true }
+            },
         contentAlignment = Alignment.Center
     ) {
         KeyContent(action, shiftState, contentColor, enterAction, spaceLabel, hasAlternates = alternates.isNotEmpty())
