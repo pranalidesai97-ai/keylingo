@@ -16,15 +16,36 @@ enum class DarkModeOption { SYSTEM, LIGHT, DARK }
 enum class HintSizeOption { SMALL, MEDIUM, LARGE }
 
 /**
- * Keyboard colour themes. [DARK_VIOLET] prefers its dark variant when the
- * dark-mode setting follows the system; every preset has light and dark
- * variants. [CUSTOM] derives the palette from [KeyLingoSettings.customAccentArgb].
+ * Keyboard colour themes: Ocean Mist (the approved flat blue design), four
+ * gradient themes, and a custom colour. Each has light and dark variants;
+ * the dark-mode setting decides which is used. [CUSTOM] derives the palette
+ * from [KeyLingoSettings.customAccentArgb].
  */
 /** Which language the user is typing. AUTO detects it per sentence; the others force it (and skip detection). */
 enum class TypingLanguageOption(val code: String?) { AUTO(null), ENGLISH("en"), SPANISH("es") }
 
 enum class KeyboardThemePreset(val prefersDark: Boolean = false) {
-    SUNLIGHT_YELLOW, LAVENDER_PURPLE, DARK_VIOLET(prefersDark = true), MINT_GREEN, OCEAN_BLUE, BLUSH_PINK, CUSTOM
+    OCEAN_MIST, SUNSET_BLOOM, AQUA_BREEZE, GOLDEN_DUNE, SLATE_GREY, CUSTOM;
+
+    companion object {
+        /** Golden Dune succeeds the former default, Sunlight Yellow. */
+        val DEFAULT = GOLDEN_DUNE
+
+        /**
+         * Reads a stored theme name, including names from earlier versions, so an
+         * upgrade keeps the user's choice: Ocean Blue is now Ocean Mist (same colours),
+         * and the other retired flat themes map to the closest new gradient.
+         */
+        fun fromStored(name: String?): KeyboardThemePreset? = when (name) {
+            null -> null
+            "OCEAN_BLUE" -> OCEAN_MIST
+            "SUNLIGHT_YELLOW" -> GOLDEN_DUNE
+            "BLUSH_PINK" -> SUNSET_BLOOM
+            "MINT_GREEN" -> AQUA_BREEZE
+            "LAVENDER_PURPLE", "DARK_VIOLET" -> SLATE_GREY
+            else -> entries.firstOrNull { it.name == name }
+        }
+    }
 }
 
 data class KeyLingoSettings(
@@ -39,7 +60,7 @@ data class KeyLingoSettings(
     val hapticsEnabled: Boolean = false,
     /** Key-click sound. OFF by default; independent of [hapticsEnabled]. */
     val soundEnabled: Boolean = false,
-    val themePreset: KeyboardThemePreset = KeyboardThemePreset.SUNLIGHT_YELLOW,
+    val themePreset: KeyboardThemePreset = KeyboardThemePreset.DEFAULT,
     /** Accent colour (ARGB) used by [KeyboardThemePreset.CUSTOM]. */
     val customAccentArgb: Int = DEFAULT_CUSTOM_ACCENT,
     val typingLanguage: TypingLanguageOption = TypingLanguageOption.AUTO,
@@ -91,8 +112,7 @@ class SettingsDataStore @Inject constructor(
             // Absent key = the user never chose: vibration stays off. An explicit choice is respected.
             hapticsEnabled = prefs[Keys.HAPTICS] ?: false,
             soundEnabled = prefs[Keys.SOUND] ?: false,
-            themePreset = prefs[Keys.THEME]?.let { runCatching { KeyboardThemePreset.valueOf(it) }.getOrNull() }
-                ?: KeyboardThemePreset.SUNLIGHT_YELLOW,
+            themePreset = KeyboardThemePreset.fromStored(prefs[Keys.THEME]) ?: KeyboardThemePreset.DEFAULT,
             customAccentArgb = prefs[Keys.CUSTOM_ACCENT] ?: KeyLingoSettings.DEFAULT_CUSTOM_ACCENT,
             typingLanguage = prefs[Keys.TYPING_LANGUAGE]?.let { runCatching { TypingLanguageOption.valueOf(it) }.getOrNull() }
                 ?: TypingLanguageOption.AUTO,

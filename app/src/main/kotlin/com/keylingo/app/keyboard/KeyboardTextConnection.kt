@@ -25,6 +25,9 @@ interface KeyboardTextConnection {
     fun textAfterCursor(maxChars: Int): String
 
     /** Group several edits so the app sees them atomically (no flicker, one undo step). */
+    /** True while the user has text selected (an "empty-looking" field may still hold selected text, e.g. a browser URL). */
+    fun hasSelection(): Boolean = false
+
     fun beginBatchEdit() {}
     fun endBatchEdit() {}
 }

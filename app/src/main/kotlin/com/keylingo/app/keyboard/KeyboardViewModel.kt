@@ -2,6 +2,7 @@ package com.keylingo.app.keyboard
 
 import com.keylingo.app.data.settings.KeyLingoSettings
 import com.keylingo.app.domain.model.SentenceStarters
+import com.keylingo.app.domain.model.StarterPhrases
 import com.keylingo.app.domain.model.AutocompleteSuggestion
 import com.keylingo.app.domain.model.HintWord
 import com.keylingo.app.domain.model.LearningAssistance
@@ -33,6 +34,8 @@ data class KeyboardUiState(
     val autoCorrection: AutocompleteSuggestion? = null,
     val assistance: LearningAssistance = LearningAssistance.EMPTY,
     val typingLanguage: String = "en",
+    /** Everyday phrases shown instead of word suggestions while the field is empty. */
+    val starterPhrases: List<String> = emptyList(),
     val policy: InputFieldPolicy = InputFieldPolicy.DEFAULT,
     val settings: KeyLingoSettings = KeyLingoSettings()
 ) {
@@ -123,7 +126,7 @@ class KeyboardViewModel(
         val mode = if (restarting) state.mode else if (newPolicy.startInSymbols) KeyboardMode.SYMBOLS_1 else KeyboardMode.LETTERS
         _uiState.update {
             it.copy(policy = newPolicy, mode = mode, shiftState = ShiftState.OFF, suggestions = emptyList(),
-                autoCorrection = null, assistance = LearningAssistance.EMPTY)
+                autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList())
         }
         autoShifted = false
         updateAutoShift()
@@ -135,7 +138,7 @@ class KeyboardViewModel(
         suggestionJob?.cancel(); hintJob?.cancel()
         lastCorrection = null
         phantomSpace = false
-        _uiState.update { it.copy(suggestions = emptyList(), autoCorrection = null, assistance = LearningAssistance.EMPTY) }
+        _uiState.update { it.copy(suggestions = emptyList(), autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList()) }
     }
 
     /** The cursor/selection moved. Ignores the echo of our own edits; an external move cancels undo/space-swap state. */
@@ -298,6 +301,32 @@ class KeyboardViewModel(
     // ------------------------------------------------------------ suggestions
 
     /** The user tapped a suggestion chip. Replaces only the partial word before the cursor. */
+    /**
+     * A starter phrase was tapped. Inserted only while the field is still empty (and
+     * nothing is selected), so a double tap or a stale chip can never insert it twice
+     * or replace text. Phrases are curated, not the user's words: nothing is learned.
+     */
+    fun onStarterPhraseSelected(phrase: String) {
+        if (phrase !in state.starterPhrases || !isEmptyField(context())) return
+        lastOwnEditAt = clock()
+        textConnection.commitText("$phrase ")
+        _uiState.update { it.copy(starterPhrases = emptyList()) }
+        lastCorrection = null
+        // "Hello" + "," -> "Hello, " (like a picked suggestion); not after "How are you?".
+        phantomSpace = phrase.last().isLetterOrDigit()
+        lastKeyWasSpace = false
+        consumeOneShotShift()
+        updateAutoShift()
+        scheduleRefresh(immediate = true)
+    }
+
+    /** Field with no text at all and no selection, in a field that allows language help (never passwords or e-mail). */
+    private fun isEmptyField(ctx: TextContext): Boolean =
+        policy.showSuggestions && policy.allowLearningHints && ctx.before.isEmpty() && ctx.after.isEmpty() && !textConnection.hasSelection()
+
+    /** Typing language for starter phrases: the setting, or (Auto) the language last typed. */
+    private fun phraseLanguage(): String = state.settings.typingLanguage.code ?: state.typingLanguage
+
     fun onAutocompleteSelected(suggestion: AutocompleteSuggestion) {
         lastOwnEditAt = clock()
         val ctx = context()
@@ -427,10 +456,20 @@ class KeyboardViewModel(
             return
         }
         val ctx = context()
+        // Empty field: everyday starter phrases instead of single-word guesses. Constants, so no data is awaited.
+        if (isEmptyField(ctx)) {
+            val phrases = StarterPhrases.forLanguage(phraseLanguage())
+            suggestionsComputedFor = null
+            if (state.starterPhrases != phrases || state.suggestions.isNotEmpty() || state.autoCorrection != null) {
+                _uiState.update { it.copy(starterPhrases = phrases, suggestions = emptyList(), autoCorrection = null) }
+            }
+            return
+        }
+        if (state.starterPhrases.isNotEmpty()) _uiState.update { it.copy(starterPhrases = emptyList()) }
         val prefix = if (ctx.cursorInsideWord) "" else ctx.currentWord
         // Predict the next word only right after a space (not straight after "word," or mid-punctuation).
         val canPredict = prefix.isNotEmpty() || ctx.before.isEmpty() || ctx.before.last().isWhitespace()
-        // Empty field or a new sentence: show starter words right away. The computed predictions below need the
+        // A new sentence: show starter words right away. The computed predictions below need the
         // bundled data, which can still be loading for 1-3 s after the keyboard starts; they replace these
         // (same words) when ready.
         if (prefix.isEmpty() && canPredict && ctx.atSentenceStart && state.suggestions.isEmpty()) {

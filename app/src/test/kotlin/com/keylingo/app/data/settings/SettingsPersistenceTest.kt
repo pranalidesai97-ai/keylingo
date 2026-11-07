@@ -27,10 +27,14 @@ class SettingsPersistenceTest {
         assertEquals(true, SettingsDataStore(ApplicationProvider.getApplicationContext()).settingsFlow.first().hapticsEnabled)
     }
 
-    @Test fun themeDefaultsToSunlightYellowAndPersists() = runBlocking {
-        assertEquals(KeyboardThemePreset.SUNLIGHT_YELLOW, store.settingsFlow.first().themePreset)
-        store.setThemePreset(KeyboardThemePreset.OCEAN_BLUE)
-        assertEquals(KeyboardThemePreset.OCEAN_BLUE, SettingsDataStore(ApplicationProvider.getApplicationContext()).settingsFlow.first().themePreset)
+    @Test fun themeDefaultsToGoldenDuneAndPersists() = runBlocking {
+        assertEquals(KeyboardThemePreset.GOLDEN_DUNE, store.settingsFlow.first().themePreset)
+        for (preset in KeyboardThemePreset.entries.filter { it != KeyboardThemePreset.CUSTOM }) {
+            store.setThemePreset(preset)
+            assertEquals(preset, SettingsDataStore(ApplicationProvider.getApplicationContext()).settingsFlow.first().themePreset)
+        }
+        store.setThemePreset(KeyboardThemePreset.OCEAN_MIST)
+        assertEquals(KeyboardThemePreset.OCEAN_MIST, SettingsDataStore(ApplicationProvider.getApplicationContext()).settingsFlow.first().themePreset)
         store.setCustomAccent(0xFF123456.toInt())
         store.settingsFlow.first().let {
             assertEquals(KeyboardThemePreset.CUSTOM, it.themePreset)

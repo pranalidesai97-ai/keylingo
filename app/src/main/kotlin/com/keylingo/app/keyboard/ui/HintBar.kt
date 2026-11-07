@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -32,6 +33,7 @@ import com.keylingo.app.domain.model.HintWord
 import com.keylingo.app.domain.model.LearningAssistance
 import com.keylingo.app.domain.model.SuggestionKind
 import com.keylingo.app.ui.theme.LocalKeyboardColors
+import com.keylingo.app.ui.theme.toBrush
 
 /** Height of the word-suggestion row: one line of text at [HintSizeOption.LARGE]. */
 internal val WORD_ROW_HEIGHT = 40.dp
@@ -68,15 +70,22 @@ fun HintBar(
     onSuggestionSelected: (AutocompleteSuggestion) -> Unit,
     modifier: Modifier = Modifier,
     showLearningRow: Boolean = true,
-    onGrammarApplied: (GrammarSuggestion) -> Unit = {}
+    onGrammarApplied: (GrammarSuggestion) -> Unit = {},
+    starterPhrases: List<String> = emptyList(),
+    onStarterPhrase: (String) -> Unit = {}
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .height(if (showLearningRow) WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT else WORD_ROW_HEIGHT)
-            .background(LocalKeyboardColors.current.strip)
+            // No fill of its own: the keyboard's background gradient shows through (strip == background in every theme).
     ) {
-        SuggestionRow(WORD_ROW_HEIGHT) {
+        // Keyed so switching between phrases and suggestions starts scrolled to the beginning.
+        if (starterPhrases.isNotEmpty()) key("phrases") {
+            SuggestionRow(WORD_ROW_HEIGHT) {
+                starterPhrases.forEach { phrase -> PhraseChip(phrase, hintSize, onStarterPhrase) }
+            }
+        } else key("suggestions") { SuggestionRow(WORD_ROW_HEIGHT) {
             suggestions.forEach { suggestion ->
                 SuggestionChip(
                     suggestion = suggestion,
@@ -85,7 +94,7 @@ fun HintBar(
                     onClick = onSuggestionSelected
                 )
             }
-        }
+        } }
         if (showLearningRow) SuggestionRow(LEARNING_ROW_HEIGHT) {
             assistance.grammar?.let { grammar -> GrammarChip(grammar, hintSize, onGrammarApplied) }
             assistance.sentence?.let { sentence ->
@@ -129,7 +138,7 @@ private fun SuggestionChip(
         modifier = Modifier
             .fillMaxHeight()
             .widthIn(min = 56.dp)
-            .background(if (highlighted) colors.accent else colors.chip, RoundedCornerShape(14.dp))
+            .background((if (highlighted) colors.accentGradient else colors.chipGradient).toBrush(), RoundedCornerShape(14.dp))
             .clickable { onClick(suggestion) }
             .padding(horizontal = 14.dp, vertical = 4.dp)
             .semantics { contentDescription = if (highlighted) "Autocorrect to ${suggestion.word}" else "Suggestion ${suggestion.word}" },
@@ -149,6 +158,31 @@ private fun SuggestionChip(
     }
 }
 
+/** An everyday starter phrase shown in an empty field; tapping inserts it. Same look as a word suggestion. */
+@Composable
+private fun PhraseChip(phrase: String, hintSize: HintSizeOption, onClick: (String) -> Unit) {
+    val colors = LocalKeyboardColors.current
+    Row(
+        modifier = Modifier
+            .fillMaxHeight()
+            .widthIn(min = 56.dp)
+            .background(colors.chipGradient.toBrush(), RoundedCornerShape(14.dp))
+            .clickable { onClick(phrase) }
+            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .semantics { contentDescription = "Insert phrase $phrase" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = phrase,
+            color = colors.chipText,
+            fontSize = fontSizeFor(hintSize),
+            lineHeight = fontSizeFor(hintSize) * 1.2f,
+            maxLines = 1
+        )
+    }
+}
+
 /** Suggested correction of the sentence. Tapping applies it; nothing changes otherwise. */
 @Composable
 private fun GrammarChip(grammar: GrammarSuggestion, hintSize: HintSizeOption, onApply: (GrammarSuggestion) -> Unit) {
@@ -156,7 +190,7 @@ private fun GrammarChip(grammar: GrammarSuggestion, hintSize: HintSizeOption, on
     Row(
         modifier = Modifier
             .fillMaxHeight()
-            .background(colors.accent, RoundedCornerShape(14.dp))
+            .background(colors.accentGradient.toBrush(), RoundedCornerShape(14.dp))
             .clickable { onApply(grammar) }
             .padding(horizontal = 12.dp, vertical = 2.dp)
             .semantics { contentDescription = "Grammar suggestion: ${grammar.corrected}. ${grammar.issues.firstOrNull()?.message.orEmpty()}" },
@@ -180,7 +214,7 @@ private fun SentenceChip(text: String, typingLanguage: String, hintSize: HintSiz
     Row(
         modifier = Modifier
             .fillMaxHeight()
-            .background(colors.translationChip, RoundedCornerShape(14.dp))
+            .background(colors.translationGradient.toBrush(), RoundedCornerShape(14.dp))
             .padding(horizontal = 12.dp, vertical = 2.dp)
             .semantics { contentDescription = "Translation: $text" + (caption?.let { ". $it" } ?: "") },
         verticalAlignment = Alignment.CenterVertically
@@ -207,7 +241,7 @@ private fun HintChip(hint: HintWord, hintSize: HintSizeOption) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .background(colors.chip, RoundedCornerShape(14.dp))
+            .background(colors.chipGradient.toBrush(), RoundedCornerShape(14.dp))
             .padding(horizontal = 12.dp, vertical = 2.dp)
             .semantics { contentDescription = "${hint.originalWord}: ${hint.translatedWord}, ${hint.formLabel}" },
         verticalArrangement = Arrangement.Center,

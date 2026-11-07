@@ -29,12 +29,11 @@
     <string name="settings_personal_data_confirm_title">Delete learned words?</string>
     <string name="settings_personal_data_confirm_text">KeyLingo will forget every word and word sequence it learned from you. Bundled dictionaries are not affected. This cannot be undone.</string>
     <string name="settings_theme">Keyboard theme</string>
-    <string name="theme_sunlight_yellow">Sunlight Yellow</string>
-    <string name="theme_lavender_purple">Lavender Purple</string>
-    <string name="theme_dark_violet">Dark Violet</string>
-    <string name="theme_mint_green">Mint Green</string>
-    <string name="theme_ocean_blue">Ocean Blue</string>
-    <string name="theme_blush_pink">Blush Pink</string>
+    <string name="theme_ocean_mist">Ocean Mist</string>
+    <string name="theme_sunset_bloom">Sunset Bloom</string>
+    <string name="theme_aqua_breeze">Aqua Breeze</string>
+    <string name="theme_golden_dune">Golden Dune</string>
+    <string name="theme_slate_grey">Slate Grey</string>
     <string name="theme_custom">Custom colour</string>
     <string name="theme_custom_preview">Your colour</string>
     <string name="theme_custom_hue">Fine-tune hue</string>
@@ -80,10 +79,10 @@
     <string name="learned_words_back">Back</string>
     <string name="theme_selected">Selected</string>
     <string name="theme_current">Current theme</string>
-    <string name="theme_screen_desc">Tap a theme to use it. The keyboard changes the next time it opens, and your choice is kept after restarting.</string>
+    <string name="theme_screen_desc">Tap a theme to use it. The keyboard updates right away, and your choice is kept after restarting.</string>
     <string name="theme_back">Back</string>
     <string name="settings_theme_entry_desc">Change the keyboard colours</string>
     <string name="onboarding_step4_title">4. Choose a theme</string>
-    <string name="onboarding_step4_desc">Six colour themes, or your own colour. Sunlight Yellow is the default.</string>
+    <string name="onboarding_step4_desc">Five gradient themes, or your own colour. Golden Dune is the default.</string>
     <string name="onboarding_step4_action">Choose keyboard theme</string>
 </resources>

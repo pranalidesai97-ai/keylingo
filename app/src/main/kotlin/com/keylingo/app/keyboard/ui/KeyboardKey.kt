@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -55,6 +54,7 @@ import com.keylingo.app.keyboard.KeyAction
 import com.keylingo.app.keyboard.KeyboardLayoutProvider
 import com.keylingo.app.keyboard.ShiftState
 import com.keylingo.app.ui.theme.LocalKeyboardColors
+import com.keylingo.app.ui.theme.toBrush
 
 /** Long-press-to-repeat tuning for Backspace. */
 private const val BACKSPACE_INITIAL_DELAY_MS = 350L
@@ -103,19 +103,21 @@ fun RowScope.KeyboardKey(
         action is KeyAction.SwitchToSymbols || action is KeyAction.SwitchToLetters || action is KeyAction.SwitchToNumbers
     val enterHighlighted = action is KeyAction.Enter && enterAction != EnterKeyAction.NEWLINE
     val active = (action is KeyAction.Shift && shiftState != ShiftState.OFF) || enterHighlighted
-    val background = when {
-        active -> palette.accent
-        isAccentKey -> palette.specialKey
-        else -> palette.key
+    val faceBrush = remember(palette, active, isAccentKey) {
+        when {
+            active -> palette.accentGradient
+            isAccentKey -> palette.specialKeyGradient
+            else -> listOf(palette.key)
+        }.toBrush()
     }
     val contentColor = when {
         active -> palette.onAccent
         isAccentKey -> palette.specialKeyText
         else -> palette.keyText
     }
-    val pressedOverlay = contentColor.copy(alpha = 0.16f)
-    val face by animateColorAsState(
-        targetValue = if (isPressed) pressedOverlay.compositeOver(background) else background,
+    // Pressed: a 16% tint of the label colour over the face (flat or gradient).
+    val pressedOverlay by animateColorAsState(
+        targetValue = if (isPressed) contentColor.copy(alpha = 0.16f) else Color.Transparent,
         animationSpec = tween(60), label = "keyPressColor"
     )
 
@@ -192,7 +194,8 @@ fun RowScope.KeyboardKey(
             .padding(3.dp)
             .onGloballyPositioned { bounds[0] = it.boundsInRoot() }
             .scale(scale)
-            .background(face, RoundedCornerShape(8.dp))
+            .background(faceBrush, RoundedCornerShape(8.dp))
+            .background(pressedOverlay, RoundedCornerShape(8.dp))
             .then(gesture)
             // TalkBack: announce the key and let a double-tap type it (pointerInput alone exposes no click action).
             .semantics {

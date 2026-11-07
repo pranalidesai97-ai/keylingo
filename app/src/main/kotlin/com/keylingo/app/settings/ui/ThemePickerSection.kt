@@ -39,17 +39,17 @@ import com.keylingo.app.R
 import com.keylingo.app.data.settings.KeyboardThemePreset
 import com.keylingo.app.ui.theme.KeyboardColors
 import com.keylingo.app.ui.theme.KeyboardThemes
+import com.keylingo.app.ui.theme.toBrush
 
 /** Human-readable preset names (also used by the settings summary). */
 @Composable
 fun presetName(preset: KeyboardThemePreset): String = stringResource(
     when (preset) {
-        KeyboardThemePreset.SUNLIGHT_YELLOW -> R.string.theme_sunlight_yellow
-        KeyboardThemePreset.LAVENDER_PURPLE -> R.string.theme_lavender_purple
-        KeyboardThemePreset.DARK_VIOLET -> R.string.theme_dark_violet
-        KeyboardThemePreset.MINT_GREEN -> R.string.theme_mint_green
-        KeyboardThemePreset.OCEAN_BLUE -> R.string.theme_ocean_blue
-        KeyboardThemePreset.BLUSH_PINK -> R.string.theme_blush_pink
+        KeyboardThemePreset.OCEAN_MIST -> R.string.theme_ocean_mist
+        KeyboardThemePreset.SUNSET_BLOOM -> R.string.theme_sunset_bloom
+        KeyboardThemePreset.AQUA_BREEZE -> R.string.theme_aqua_breeze
+        KeyboardThemePreset.GOLDEN_DUNE -> R.string.theme_golden_dune
+        KeyboardThemePreset.SLATE_GREY -> R.string.theme_slate_grey
         KeyboardThemePreset.CUSTOM -> R.string.theme_custom
     }
 )
@@ -131,13 +131,13 @@ private fun ThemeCard(name: String, colors: KeyboardColors, isSelected: Boolean,
         Column(
             Modifier
                 .fillMaxWidth()
-                .background(colors.background, RoundedCornerShape(10.dp))
+                .background(colors.backgroundGradient.toBrush(), RoundedCornerShape(10.dp))
                 .padding(6.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Box(Modifier.width(22.dp).height(8.dp).background(colors.translationChip, RoundedCornerShape(4.dp)))
-                Box(Modifier.width(16.dp).height(8.dp).background(colors.chip, RoundedCornerShape(4.dp)))
+                Box(Modifier.width(22.dp).height(8.dp).background(colors.translationGradient.toBrush(), RoundedCornerShape(4.dp)))
+                Box(Modifier.width(16.dp).height(8.dp).background(colors.chipGradient.toBrush(), RoundedCornerShape(4.dp)))
             }
             repeat(2) {
                 Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -145,9 +145,9 @@ private fun ThemeCard(name: String, colors: KeyboardColors, isSelected: Boolean,
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                Box(Modifier.weight(1f).height(11.dp).background(colors.specialKey, RoundedCornerShape(3.dp)))
+                Box(Modifier.weight(1f).height(11.dp).background(colors.specialKeyGradient.toBrush(), RoundedCornerShape(3.dp)))
                 Box(Modifier.weight(3f).height(11.dp).background(colors.key, RoundedCornerShape(3.dp)))
-                Box(Modifier.weight(1f).height(11.dp).background(colors.accent, RoundedCornerShape(3.dp)))
+                Box(Modifier.weight(1f).height(11.dp).background(colors.accentGradient.toBrush(), RoundedCornerShape(3.dp)))
             }
         }
         Spacer(Modifier.height(6.dp))

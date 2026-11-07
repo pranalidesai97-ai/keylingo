@@ -233,6 +233,8 @@ class KeyLingoInputMethodService :
     /** Tracked from onUpdateSelection so Backspace needs no extra IPC round trip to know about a selection. */
     private var hasSelection = false
 
+    override fun hasSelection(): Boolean = hasSelection
+
     override fun commitText(text: String) {
         currentInputConnection?.commitText(text, 1)
     }

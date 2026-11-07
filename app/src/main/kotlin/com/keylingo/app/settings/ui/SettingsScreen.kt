@@ -145,6 +145,8 @@ fun SettingsScreen(
 
             // ---- About
             SectionHeader(stringResource(R.string.settings_about))
+            com.keylingo.app.ui.brand.KeyLingoWordmark(markSize = 36.dp)
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.settings_about_desc),
                 style = MaterialTheme.typography.bodyLarge,

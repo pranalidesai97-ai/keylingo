@@ -44,6 +44,7 @@ import com.keylingo.app.keyboard.KeyboardViewModel
 import com.keylingo.app.ui.theme.KeyLingoTheme
 import com.keylingo.app.ui.theme.KeyboardThemes
 import com.keylingo.app.ui.theme.LocalKeyboardColors
+import com.keylingo.app.ui.theme.toBrush
 import androidx.compose.runtime.CompositionLocalProvider
 import kotlin.math.roundToInt
 
@@ -83,10 +84,13 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
 
     CompositionLocalProvider(LocalKeyboardColors provides palette) { KeyLingoTheme(darkTheme = dark) {
         Surface(color = palette.background) {
-            Box(modifier = Modifier.fillMaxWidth()) {
+            // One gradient behind the strip and the keys, so it reads as a single surface.
+            val backgroundBrush = remember(palette) { palette.backgroundGradient.toBrush() }
+            Box(modifier = Modifier.fillMaxWidth().background(backgroundBrush)) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     val onSuggestion = remember(viewModel) { viewModel::onAutocompleteSelected }
                     val onGrammar = remember(viewModel) { viewModel::onGrammarSuggestionApplied }
+                    val onPhrase = remember(viewModel) { viewModel::onStarterPhraseSelected }
                     val onKeyAction = remember(viewModel) { viewModel::onKeyAction }
                     HintBar(
                         suggestions = uiState.suggestions,
@@ -95,7 +99,9 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
                         hintSize = uiState.settings.hintSize,
                         onSuggestionSelected = onSuggestion,
                         showLearningRow = uiState.showLearningRow,
-                        onGrammarApplied = onGrammar
+                        onGrammarApplied = onGrammar,
+                        starterPhrases = uiState.starterPhrases,
+                        onStarterPhrase = onPhrase
                     )
                     val rows = remember(uiState.mode, uiState.settings.showNumberRow) {
                         KeyboardLayoutProvider.rowsFor(uiState.mode, uiState.settings.showNumberRow)
@@ -104,7 +110,6 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(KEY_ROWS_HEIGHT)
-                            .background(palette.background)
                             .padding(horizontal = 4.dp, vertical = 4.dp)
                     ) {
                         if (uiState.mode == KeyboardMode.EMOJI) {

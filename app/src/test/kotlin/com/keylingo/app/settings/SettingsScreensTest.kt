@@ -121,35 +121,35 @@ class SettingsScreensTest {
 
     // ---- Theme selection (discoverable screen, current-theme marker, persistence)
 
-    private val sixThemes = listOf("Sunlight Yellow", "Lavender Purple", "Dark Violet", "Mint Green", "Ocean Blue", "Blush Pink")
+    private val fiveThemes = listOf("Ocean Mist", "Sunset Bloom", "Aqua Breeze", "Golden Dune", "Slate Grey")
 
-    @Test fun themeScreenShowsAllSixThemesAndMarksTheCurrentOne() {
+    @Test fun themeScreenShowsAllFiveThemesAndMarksTheCurrentOne() {
         var picked: com.keylingo.app.data.settings.KeyboardThemePreset? = null
         compose.setContent {
             KeyLingoTheme(darkTheme = false) { Surface { com.keylingo.app.settings.ui.ThemeScreenContent(KeyLingoSettings(), {}, { picked = it }, {}) } }
         }
         snapshot("settings-theme-screen")
-        sixThemes.forEach { name -> assertTrue("missing $name", compose.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty()) }
+        fiveThemes.forEach { name -> assertTrue("missing $name", compose.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty()) }
         // Header names the current theme, and exactly one card is marked selected.
-        assertEquals(2, compose.onAllNodesWithText("Sunlight Yellow").fetchSemanticsNodes().size) // header + card
+        assertEquals(2, compose.onAllNodesWithText("Golden Dune").fetchSemanticsNodes().size) // header + card
         assertEquals(1, compose.onAllNodesWithText("✓ Selected").fetchSemanticsNodes().size)
         assertEquals(1, compose.onAllNodes(androidx.compose.ui.test.isSelected()).fetchSemanticsNodes().size)
-        compose.onNodeWithText("Ocean Blue").performClick()
-        assertEquals(com.keylingo.app.data.settings.KeyboardThemePreset.OCEAN_BLUE, picked)
+        compose.onNodeWithText("Sunset Bloom").performClick()
+        assertEquals(com.keylingo.app.data.settings.KeyboardThemePreset.SUNSET_BLOOM, picked)
     }
 
     @Test fun selectedThemeIsKeptAfterRestart() {
         val store = SettingsDataStore(ApplicationProvider.getApplicationContext())
         val vm = SettingsViewModel(store, FakeLearnedVocabulary(), FakeContextPrediction())
         compose.setContent { KeyLingoTheme(darkTheme = false) { com.keylingo.app.settings.ui.ThemeScreen(onBack = {}, viewModel = vm) } }
-        compose.onNodeWithText("Ocean Blue").performClick()
+        compose.onNodeWithText("Aqua Breeze").performClick()
         repeat(10) { Thread.sleep(50); compose.waitForIdle() } // DataStore write resumes on the main looper
         // A fresh DataStore reader stands in for an app/keyboard restart.
         val restarted = runBlocking { SettingsDataStore(ApplicationProvider.getApplicationContext()).settingsFlow.first() }
-        assertEquals(com.keylingo.app.data.settings.KeyboardThemePreset.OCEAN_BLUE, restarted.themePreset)
-        assertEquals(2, compose.onAllNodesWithText("Ocean Blue").fetchSemanticsNodes().size) // header now names it
+        assertEquals(com.keylingo.app.data.settings.KeyboardThemePreset.AQUA_BREEZE, restarted.themePreset)
+        assertEquals(2, compose.onAllNodesWithText("Aqua Breeze").fetchSemanticsNodes().size) // header now names it
         assertEquals(false, restarted.hapticsEnabled) // unrelated defaults untouched
-        runBlocking { store.setThemePreset(com.keylingo.app.data.settings.KeyboardThemePreset.SUNLIGHT_YELLOW) }
+        runBlocking { store.setThemePreset(com.keylingo.app.data.settings.KeyboardThemePreset.DEFAULT) }
     }
 
     @Test fun settingsOpensWithAThemeEntryAtTheTop() {
@@ -160,7 +160,7 @@ class SettingsScreensTest {
         snapshot("settings-top-theme-entry")
         // Visible without scrolling, with the current theme's name.
         compose.onNodeWithText("Keyboard theme").assertIsDisplayed()
-        compose.onNodeWithText("Sunlight Yellow").assertIsDisplayed()
+        compose.onNodeWithText("Golden Dune").assertIsDisplayed()
         compose.onNodeWithText("Keyboard theme").performClick()
         assertTrue(opened)
     }

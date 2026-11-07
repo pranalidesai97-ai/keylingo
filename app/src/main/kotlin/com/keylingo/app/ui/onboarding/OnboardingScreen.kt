@@ -46,6 +46,8 @@ fun OnboardingScreen(onOpenSettings: () -> Unit, onOpenThemes: () -> Unit = {}) 
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            com.keylingo.app.ui.brand.KeyLingoWordmark(markSize = 52.dp)
+
             Text(
                 text = stringResource(R.string.onboarding_title),
                 style = MaterialTheme.typography.titleLarge

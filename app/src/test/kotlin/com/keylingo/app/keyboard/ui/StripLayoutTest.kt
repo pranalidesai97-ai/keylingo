@@ -13,6 +13,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.keylingo.app.data.language.SpanishLanguagePack
@@ -143,13 +146,17 @@ class StripLayoutTest {
         assertDp(WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT + keys, height())
     }
 
-    @Test fun emptyFieldShowsStarterWordsWithoutChangingTheHeight() {
+    @Test fun emptyFieldShowsStarterPhrasesWithoutChangingTheHeight() {
         val kb = show(chat)
-        assertEquals(listOf("I", "The", "Thanks", "Hi", "Ok"), kb.vm.uiState.value.suggestions.map { it.word })
-        snapshot("empty-field-starters")
+        assertEquals(com.keylingo.app.domain.model.StarterPhrases.ENGLISH, kb.vm.uiState.value.starterPhrases)
+        snapshot("empty-field-phrases")
         val empty = height()
+        // Tapping a phrase chip in the real UI inserts the phrase.
+        compose.onNodeWithContentDescription("Insert phrase Good morning").performScrollTo().performClick()
+        settle()
+        assertEquals("Good morning ", kb.editor.text)
+        assertDp(empty, height())
         kb.type("I want ")
-        assertEquals("to", kb.vm.uiState.value.suggestions.first().word)
         assertDp(empty, height())
     }
 }

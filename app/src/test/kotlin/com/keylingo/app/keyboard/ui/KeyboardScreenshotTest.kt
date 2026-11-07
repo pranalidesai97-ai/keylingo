@@ -109,7 +109,7 @@ class KeyboardScreenshotTest {
                 androidx.compose.material3.Surface {
                     Box(Modifier.width(380.dp).padding(16.dp)) {
                         com.keylingo.app.settings.ui.ThemePickerSection(
-                            selected = KeyboardThemePreset.SUNLIGHT_YELLOW, customAccentArgb = KeyLingoSettings.DEFAULT_CUSTOM_ACCENT,
+                            selected = KeyboardThemePreset.GOLDEN_DUNE, customAccentArgb = KeyLingoSettings.DEFAULT_CUSTOM_ACCENT,
                             darkPreview = { it.prefersDark }, onSelectPreset = {}, onSelectCustom = {}
                         )
                     }

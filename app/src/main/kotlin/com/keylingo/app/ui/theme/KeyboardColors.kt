@@ -2,7 +2,9 @@ package com.keylingo.app.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import com.keylingo.app.data.settings.KeyboardThemePreset
 import kotlin.math.abs
@@ -30,29 +32,148 @@ data class KeyboardColors(
     /** Secondary text ("working · gerund"), key hint dots. */
     val caption: Color,
     val popup: Color,
-    val isDark: Boolean
+    val isDark: Boolean,
+    /**
+     * Gradient stops, drawn with [toBrush]. One stop means a flat colour, which is
+     * what the derived palettes (Ocean Mist, custom colour) use: they render
+     * exactly as before. The single colours above stay the representative
+     * (middle) tone for contrast checks and small surfaces.
+     */
+    val backgroundGradient: List<Color> = listOf(background),
+    val specialKeyGradient: List<Color> = listOf(specialKey),
+    val chipGradient: List<Color> = listOf(chip),
+    val accentGradient: List<Color> = listOf(accent),
+    val translationGradient: List<Color> = listOf(translationChip),
 )
 
-val LocalKeyboardColors = staticCompositionLocalOf { KeyboardThemes.palette(KeyboardThemePreset.SUNLIGHT_YELLOW, null, dark = false) }
+/** A flat colour for one stop, otherwise a diagonal (top-start to bottom-end) multi-stop gradient. */
+fun List<Color>.toBrush(): Brush = if (size == 1) SolidColor(first()) else Brush.linearGradient(this)
+
+val LocalKeyboardColors = staticCompositionLocalOf { KeyboardThemes.palette(KeyboardThemePreset.DEFAULT, null, dark = false) }
 
 /**
- * Builds palettes from one accent colour per preset using tonal (HSL)
- * derivation, so all presets and custom colours follow the same rules:
- * tinted background, near-white (light) or tinted charcoal (dark) letter
- * keys, a stronger tint for special keys, accent for active states, and
- * text colours chosen for contrast (checked by KeyboardThemesTest against
- * WCAG ratios).
+ * Keyboard palettes.
+ * - Ocean Mist (the approved former "Ocean Blue") and the custom colour are
+ *   derived from one accent colour by tonal (HSL) rules, unchanged from
+ *   before: tinted background, near-white (light) or tinted charcoal (dark)
+ *   letter keys, a stronger tint for special keys, accent for active states.
+ * - Sunset Bloom, Aqua Breeze, Golden Dune and Slate Grey are hand-tuned
+ *   three-stop gradients ([gradientThemes]) for the keyboard background,
+ *   special keys, chips, accent and translation surfaces, with off-white
+ *   letter keys. Every text colour reaches WCAG AA (4.5:1) against every
+ *   stop it sits on; KeyboardThemesTest checks this.
  */
 object KeyboardThemes {
 
     /** Light-variant accent and dark-variant accent for each preset. */
     private val presetAccents: Map<KeyboardThemePreset, Pair<Color, Color>> = mapOf(
-        KeyboardThemePreset.SUNLIGHT_YELLOW to (Color(0xFFF5B800) to Color(0xFFFFCC33)),
-        KeyboardThemePreset.LAVENDER_PURPLE to (Color(0xFF8E6CEF) to Color(0xFFB9A2FF)),
-        KeyboardThemePreset.DARK_VIOLET to (Color(0xFF6A2FD8) to Color(0xFFA57CFF)),
-        KeyboardThemePreset.MINT_GREEN to (Color(0xFF2FB98A) to Color(0xFF5ED8AE)),
-        KeyboardThemePreset.OCEAN_BLUE to (Color(0xFF1E78D6) to Color(0xFF5AA9FF)),
-        KeyboardThemePreset.BLUSH_PINK to (Color(0xFFE5679A) to Color(0xFFFF94BD)),
+        // Ocean Mist keeps the approved Ocean Blue accents exactly.
+        KeyboardThemePreset.OCEAN_MIST to (Color(0xFF1E78D6) to Color(0xFF5AA9FF)),
+    )
+
+    /** Light and dark gradient variants of one preset. */
+    class GradientTheme(val light: GradientSpec, val dark: GradientSpec)
+
+    class GradientSpec(
+        val background: List<Color>, val specialKey: List<Color>, val chip: List<Color>,
+        val accent: List<Color>, val onAccent: Color, val translation: List<Color>, val onTranslation: Color,
+        val key: Color, val keyText: Color, val specialKeyText: Color, val chipText: Color,
+        val hintText: Color, val caption: Color, val popup: Color
+    )
+
+    // Values generated from a palette prototype that checked every text/surface contrast pair.
+    internal val gradientThemes: Map<KeyboardThemePreset, GradientTheme> = mapOf(
+        KeyboardThemePreset.SUNSET_BLOOM to GradientTheme(
+            light = GradientSpec(
+                background = listOf(Color(0xFFF4C6D3), Color(0xFFF7C2B5), Color(0xFFFAD9C1)),
+                specialKey = listOf(Color(0xFFEBA9BB), Color(0xFFEFA694), Color(0xFFF3BE9C)),
+                chip = listOf(Color(0xFFFBE4EB), Color(0xFFFCE3DB), Color(0xFFFDEEE3)),
+                accent = listOf(Color(0xFFE0708F), Color(0xFFE8806A), Color(0xFFEE9C6C)), onAccent = Color(0xFF2B1117),
+                translation = listOf(Color(0xFF8C2D4E), Color(0xFFA03D2E), Color(0xFFA35528)), onTranslation = Color(0xFFFFF7F5),
+                key = Color(0xFFFFF8F7), keyText = Color(0xFF3A1E25), specialKeyText = Color(0xFF3A1E25), chipText = Color(0xFF3A1E25),
+                hintText = Color(0xFF6B291F), caption = Color(0xFF604943), popup = Color(0xFFFFF8F7)
+            ),
+            dark = GradientSpec(
+                background = listOf(Color(0xFF231015), Color(0xFF321913), Color(0xFF3D2717)),
+                specialKey = listOf(Color(0xFF54363E), Color(0xFF573A33), Color(0xFF584132)),
+                chip = listOf(Color(0xFF452C33), Color(0xFF46312A), Color(0xFF47362A)),
+                accent = listOf(Color(0xFFE0708F), Color(0xFFE8806A), Color(0xFFEE9C6C)), onAccent = Color(0xFF2B1117),
+                translation = listOf(Color(0xFFE0708F), Color(0xFFE8806A), Color(0xFFEE9C6C)), onTranslation = Color(0xFF2B1117),
+                key = Color(0xFF443734), keyText = Color(0xFFECEFF2), specialKeyText = Color(0xFFF0DBD6), chipText = Color(0xFFECEFF2),
+                hintText = Color(0xFFE8BBB0), caption = Color(0xFFBCADA9), popup = Color(0xFF503E3A)
+            )
+        ),
+        KeyboardThemePreset.AQUA_BREEZE to GradientTheme(
+            light = GradientSpec(
+                background = listOf(Color(0xFFB3E5E3), Color(0xFFBCEDF0), Color(0xFFC5F0D9)),
+                specialKey = listOf(Color(0xFF86D1CD), Color(0xFF90DCE1), Color(0xFF9DE1BD)),
+                chip = listOf(Color(0xFFDDF5F4), Color(0xFFE1F8F9), Color(0xFFE3F8EC)),
+                accent = listOf(Color(0xFF33B5AE), Color(0xFF3CC3D0), Color(0xFF4CC493)), onAccent = Color(0xFF0B2523),
+                translation = listOf(Color(0xFF0B615D), Color(0xFF0E6673), Color(0xFF156B49)), onTranslation = Color(0xFFF3FCFB),
+                key = Color(0xFFF6FDFC), keyText = Color(0xFF10302E), specialKeyText = Color(0xFF10302E), chipText = Color(0xFF10302E),
+                hintText = Color(0xFF0D5C67), caption = Color(0xFF435F60), popup = Color(0xFFF6FDFC)
+            ),
+            dark = GradientSpec(
+                background = listOf(Color(0xFF132020), Color(0xFF162D2E), Color(0xFF1C3829)),
+                specialKey = listOf(Color(0xFF3A504F), Color(0xFF375153), Color(0xFF385244)),
+                chip = listOf(Color(0xFF2F4141), Color(0xFF2D4243), Color(0xFF2E4237)),
+                accent = listOf(Color(0xFF33B5AE), Color(0xFF3CC3D0), Color(0xFF4CC493)), onAccent = Color(0xFF0B2523),
+                translation = listOf(Color(0xFF33B5AE), Color(0xFF3CC3D0), Color(0xFF4CC493)), onTranslation = Color(0xFF0B2523),
+                key = Color(0xFF344344), keyText = Color(0xFFECEFF2), specialKeyText = Color(0xFFD6EEF0), chipText = Color(0xFFECEFF2),
+                hintText = Color(0xFFB0E5E8), caption = Color(0xFFA9BBBC), popup = Color(0xFF3A4F50)
+            )
+        ),
+        KeyboardThemePreset.GOLDEN_DUNE to GradientTheme(
+            light = GradientSpec(
+                background = listOf(Color(0xFFFBE6A4), Color(0xFFF3CF7C), Color(0xFFF8EBD0)),
+                specialKey = listOf(Color(0xFFF1D07A), Color(0xFFE6B457), Color(0xFFEBD2A0)),
+                chip = listOf(Color(0xFFFDF3D3), Color(0xFFFAE7BB), Color(0xFFFCF5E7)),
+                accent = listOf(Color(0xFFE9B444), Color(0xFFDC9A30), Color(0xFFE2B76B)), onAccent = Color(0xFF2E2108),
+                translation = listOf(Color(0xFF76560F), Color(0xFF875714), Color(0xFF7A612E)), onTranslation = Color(0xFFFFFBF0),
+                key = Color(0xFFFFFCF3), keyText = Color(0xFF3A2E12), specialKeyText = Color(0xFF3A2E12), chipText = Color(0xFF3A2E12),
+                hintText = Color(0xFF784D12), caption = Color(0xFF605743), popup = Color(0xFFFFFCF3)
+            ),
+            dark = GradientSpec(
+                background = listOf(Color(0xFF251F0E), Color(0xFF322913), Color(0xFF3B3019)),
+                specialKey = listOf(Color(0xFF584E31), Color(0xFF574A33), Color(0xFF554A35)),
+                chip = listOf(Color(0xFF474029), Color(0xFF473E2A), Color(0xFF453C2B)),
+                accent = listOf(Color(0xFFE9B444), Color(0xFFDC9A30), Color(0xFFE2B76B)), onAccent = Color(0xFF2E2108),
+                translation = listOf(Color(0xFFE9B444), Color(0xFFDC9A30), Color(0xFFE2B76B)), onTranslation = Color(0xFF2E2108),
+                key = Color(0xFF443F34), keyText = Color(0xFFECEFF2), specialKeyText = Color(0xFFF0E8D6), chipText = Color(0xFFECEFF2),
+                hintText = Color(0xFFE8D7B0), caption = Color(0xFFBCB6A9), popup = Color(0xFF50493A)
+            )
+        ),
+        KeyboardThemePreset.SLATE_GREY to GradientTheme(
+            light = GradientSpec(
+                background = listOf(Color(0xFFE2E5E9), Color(0xFFCBD0D7), Color(0xFFC4CFDC)),
+                specialKey = listOf(Color(0xFFBBC1CA), Color(0xFFA9B0BA), Color(0xFFA2B1C3)),
+                chip = listOf(Color(0xFFF1F3F5), Color(0xFFE4E7EB), Color(0xFFE0E6EE)),
+                accent = listOf(Color(0xFF5E6A79), Color(0xFF525D6C), Color(0xFF56708F)), onAccent = Color(0xFFF7F9FB),
+                translation = listOf(Color(0xFF3A4451), Color(0xFF333D4A), Color(0xFF374B62)), onTranslation = Color(0xFFF7F9FB),
+                key = Color(0xFFF9FAFB), keyText = Color(0xFF1E242C), specialKeyText = Color(0xFF1E242C), chipText = Color(0xFF1E242C),
+                hintText = Color(0xFF384352), caption = Color(0xFF434F60), popup = Color(0xFFF9FAFB)
+            ),
+            dark = GradientSpec(
+                background = listOf(Color(0xFF18191B), Color(0xFF202225), Color(0xFF242A30)),
+                specialKey = listOf(Color(0xFF424448), Color(0xFF424447), Color(0xFF40444A)),
+                chip = listOf(Color(0xFF35383B), Color(0xFF36383B), Color(0xFF33373D)),
+                accent = listOf(Color(0xFF5E6A79), Color(0xFF525D6C), Color(0xFF56708F)), onAccent = Color(0xFFF7F9FB),
+                translation = listOf(Color(0xFF5E6A79), Color(0xFF525D6C), Color(0xFF56708F)), onTranslation = Color(0xFFF7F9FB),
+                key = Color(0xFF343B44), keyText = Color(0xFFECEFF2), specialKeyText = Color(0xFFD6E1F0), chipText = Color(0xFFECEFF2),
+                hintText = Color(0xFFB0C7E8), caption = Color(0xFFA9B1BC), popup = Color(0xFF3A4350)
+            )
+        )
+    )
+
+    private fun GradientSpec.toColors(dark: Boolean) = KeyboardColors(
+        background = background[1], key = key, keyText = keyText,
+        specialKey = specialKey[1], specialKeyText = specialKeyText,
+        accent = accent[1], onAccent = onAccent,
+        strip = background[0], chip = chip[1], chipText = chipText,
+        translationChip = translation[1], onTranslationChip = onTranslation,
+        hintText = hintText, caption = caption, popup = popup, isDark = dark,
+        backgroundGradient = background, specialKeyGradient = specialKey, chipGradient = chip,
+        accentGradient = accent, translationGradient = translation
     )
 
     /** Swatches offered for the custom colour (any ARGB works; these are just quick picks). */
@@ -62,6 +183,7 @@ object KeyboardThemes {
     ).map { it.toInt() }
 
     fun accentOf(preset: KeyboardThemePreset, customArgb: Int?, dark: Boolean): Color {
+        gradientThemes[preset]?.let { return (if (dark) it.dark else it.light).accent[1] }
         if (preset == KeyboardThemePreset.CUSTOM) {
             val base = Color(customArgb ?: 0xFF2E9E8F.toInt())
             if (!dark) return base
@@ -77,11 +199,11 @@ object KeyboardThemes {
         if (followSystem) systemDark || preset.prefersDark else forcedDark
 
     fun palette(preset: KeyboardThemePreset, customArgb: Int?, dark: Boolean): KeyboardColors {
+        gradientThemes[preset]?.let { return (if (dark) it.dark else it.light).toColors(dark) }
         val accent = readableAccent(accentOf(preset, customArgb, dark), dark)
         val (h, sRaw, _) = toHsl(accent)
         val s = sRaw.coerceIn(0.15f, 0.9f)
-        // Dark Violet is the deliberately rich, saturated dark theme.
-        val richness = if (preset == KeyboardThemePreset.DARK_VIOLET) 1.8f else 1f
+        val richness = 1f
         val onAccent = bestText(accent, h)
         return if (!dark) {
             val translation = hsl(h, min(s, 0.8f), 0.28f)

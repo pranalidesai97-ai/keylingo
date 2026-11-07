@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-11-07 — Gradient themes, starter phrases, new logo
+
+**Themes.**
+- The preset list is now the five approved themes plus the custom colour. Golden Dune is the default.
+- Ocean Mist is the approved Ocean Blue, unchanged: same palette values, and pixel-identical renders in light and dark (0 differing pixels against the pre-change render).
+- Sunset Bloom (rose pink → coral → warm peach), Aqua Breeze (turquoise → aqua → mint), Golden Dune (butter yellow → honey gold → warm cream) and Slate Grey (silver → cool grey → soft blue-grey) are three-stop gradients. They are drawn on the keyboard background, special keys, chips and accent/translation surfaces, with off-white letter keys and dark text. Each has a dark variant.
+- Every text colour passes WCAG AA on every gradient stop.
+- Saved themes from earlier versions map to their successors.
+- Theme previews draw the same gradients.
+
+**Starter phrases.**
+- An empty field shows everyday phrases instead of single-word guesses. English: Hello, Thanks, Good morning … Have a nice day, Basic, English Course, Learn English, More. Spanish: Hola, Gracias, Buenos días … Que tengas un buen día, Curso básico, Aprende español, Más.
+- They follow the typing language (Auto: the language last typed) and are never mixed.
+- They show immediately; the row scrolls horizontally.
+- A tap inserts the phrase once, and never over existing or selected text.
+- Typing returns to autocomplete. None in password or e-mail fields.
+
+**Logo.**
+- New adaptive launcher icon: two speech bubbles (conversation, two languages) with a gradient K and a coral acute accent ("á"), on a midnight-blue → ocean-blue → aqua gradient.
+- Monochrome layer for Android 13 themed icons.
+- In-app mark and a KeyLingo wordmark on the setup screen and in Settings → About.
+
+**Tests.** +14:
+- theme contrast, gradient visibility, hues, Ocean Mist pinning, legacy mapping;
+- pixel-level keyboard rendering and immediate theme switch;
+- starter phrases (EN/ES, loading, insertion, double tap, selection, password/e-mail, typing transition);
+- branding resources and renders.
+
 ## 2026-11-07 — Starter words in empty fields; discoverable theme screen
 
 **Device report (vivo V2515, build c4aa430).** The word row was blank in a focused, empty field. The theme picker could not be found.

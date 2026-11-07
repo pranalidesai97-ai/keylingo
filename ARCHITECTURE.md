@@ -169,7 +169,42 @@ English is generated with do-support for negation and questions, inversion, post
 
 ## 5d. Themes (`ui/theme/KeyboardColors.kt`)
 
-Each preset is one accent colour per light/dark variant. `KeyboardThemes.palette` derives every keyboard colour by HSL rules: background, keys, special keys, strip, chips, translation chip, hint/caption text and popup. Mid-tone accents are shifted in lightness until text reaches 4.6:1 (`readableAccent`). Text colours are chosen by WCAG contrast, and `KeyboardThemesTest` enforces the ratios. Dark Violet prefers dark when following the system. The palette is provided through `LocalKeyboardColors`; geometry is not theme-dependent.
+There are five presets plus a custom colour. `KeyLingoSettings.themePreset` is stored by enum name.
+
+**Upgrades.** `KeyboardThemePreset.fromStored` maps names saved by earlier versions:
+- `OCEAN_BLUE` → Ocean Mist;
+- `SUNLIGHT_YELLOW` → Golden Dune;
+- `BLUSH_PINK` → Sunset Bloom;
+- `MINT_GREEN` → Aqua Breeze;
+- `LAVENDER_PURPLE` and `DARK_VIOLET` → Slate Grey.
+
+The default is Golden Dune.
+
+**Ocean Mist** is the approved former Ocean Blue. It is still derived by HSL rules from one accent colour and is flat: single-stop "gradients". `KeyboardThemesTest` pins every value to the pre-change palette. The custom colour uses the same derivation.
+
+**Sunset Bloom, Aqua Breeze, Golden Dune, Slate Grey** are hand-tuned three-stop gradients in `gradientThemes`, each with light and dark variants. Gradients are drawn on:
+- the keyboard background: one diagonal brush behind the strip and the keys;
+- special keys;
+- word, phrase and hint chips;
+- accent surfaces (active Shift/Enter, highlighted autocorrection, grammar chip) and the translation chip.
+
+Letter keys stay a flat off-white tint with dark text. `KeyboardColors` keeps one representative colour per surface (the middle stop) for contrast checks, popups and small elements. `List<Color>.toBrush()` turns stops into a `SolidColor` (one stop) or a linear gradient.
+
+**Contrast.** Every text colour reaches WCAG AA (4.5:1) against every stop it sits on (`KeyboardThemesTest`). `ThemeRenderingTest` checks the drawn pixels. Geometry is not theme-dependent.
+
+## 5e. Starter phrases and branding
+
+**Starter phrases.** In an empty field (no text before or after the cursor, no selection) that allows language help, the word row shows `StarterPhrases.ENGLISH` or `StarterPhrases.SPANISH` instead of word suggestions:
+- The language is the typing-language setting, or, on Auto, the language last typed.
+- They are constants, so they appear without waiting for the bundled data.
+- `onStarterPhraseSelected` inserts "phrase " only while the field is still empty, so a double tap cannot insert it twice or replace text.
+- Nothing is learned from phrases.
+- Typing switches to normal autocomplete; deleting everything brings the phrases back.
+
+**Branding.**
+- Adaptive launcher icon: `ic_launcher_background` (brand gradient), `ic_launcher_foreground` (two speech bubbles, gradient K with a coral acute accent) and `ic_launcher_monochrome` (themed icons).
+- `ic_keylingo_mark` is the same artwork on a rounded square for in-app use.
+- `ui/brand/KeyLingoWordmark` combines the mark with "Key" and "Lingo" (the latter in the brand gradient) on the setup screen and in Settings → About.
 
 ## 6. Translator design (`EnglishToSpanishTranslator`)
 

@@ -71,6 +71,7 @@ class FakeEditor(initial: String = "", var cursor: Int = initial.length) : Keybo
     var delKeyEvents = 0
     var multiLine = true
     val hasSelection get() = selectionEnd != cursor
+    override fun hasSelection(): Boolean = hasSelection
 
     override fun commitText(text: String) {
         val start = minOf(cursor, selectionEnd); val end = maxOf(cursor, selectionEnd)

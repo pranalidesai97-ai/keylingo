@@ -366,21 +366,122 @@ class KeyboardViewModelTest {
         ).also { it.onStartInput(policy, restarting = false) }
     }
 
-    @Test fun anEmptyFieldShowsStarterWords() = runTest {
-        val h = harness(policy = chat)
-        assertEquals(listOf("I", "The", "Thanks", "Hi", "Ok"), h.state.suggestions.map { it.word })
-        // Address bar: no automatic capitals, but "I" stays "I".
-        val bar = harness(policy = omnibox)
-        assertEquals(listOf("I", "the", "thanks", "hi", "ok"), bar.state.suggestions.map { it.word })
+    // ---- Starter phrases (empty field)
+
+    private val en = com.keylingo.app.domain.model.StarterPhrases.ENGLISH
+    private val es = com.keylingo.app.domain.model.StarterPhrases.SPANISH
+
+    @Test fun anEmptyFieldShowsEnglishStarterPhrasesNotWordGuesses() = runTest {
+        for (field in listOf(chat, omnibox, appSearchView, InputFieldPolicy.DEFAULT)) {
+            val h = harness(policy = field)
+            assertEquals(en, h.state.starterPhrases)
+            assertTrue("no single-word guesses beside the phrases", h.state.suggestions.isEmpty())
+        }
+        assertTrue(en.containsAll(listOf("Hello", "Good morning", "How are you?", "You're welcome", "Have a nice day", "Learn English", "More")))
+        assertTrue(en.none { it in setOf("Hi", "Him", "His", "High", "Hit") })
     }
 
-    @Test fun starterWordsAppearImmediatelyWhileTheBundledDataIsStillLoading() = runTest {
+    @Test fun spanishModeShowsSpanishStarterPhrasesOnly() = runTest {
+        val h = harness(policy = chat, settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH))
+        assertEquals(es, h.state.starterPhrases)
+        assertTrue(es.containsAll(listOf("Hola", "Buenos días", "¿Cómo estás?", "¿Cómo está usted?", "Que tengas un buen día", "Aprende español", "Más")))
+        // Never mixed: no phrase appears in both lists, and English mode shows none of the Spanish ones.
+        assertTrue(en.intersect(es.toSet()).isEmpty())
+        val english = harness(policy = chat, settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.ENGLISH))
+        assertTrue(english.state.starterPhrases.none { it in es })
+    }
+
+    @Test fun autoModeUsesTheLanguageLastTyped() = runTest {
+        val h = harness(policy = chat)
+        h.type("Estoy aprendiendo español ")
+        assertEquals("es", h.state.typingLanguage)
+        h.vm.onFinishInput()
+        h.editor.text = ""; h.editor.moveCursor(0)
+        h.vm.onStartInput(chat, restarting = false); h.scope.testScheduler.advanceUntilIdle()
+        assertEquals(es, h.state.starterPhrases)
+    }
+
+    @Test fun starterPhrasesAppearBeforeTheLanguageDataHasLoaded() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val real = realAutocompleteProvider()
+        val slow = object : com.keylingo.app.domain.repository.AutocompleteProvider by real {
+            override suspend fun seedNextWords(previousWord: String, languageCode: String): List<String> { gate.await(); return real.seedNextWords(previousWord, languageCode) }
+            override suspend fun suggest(prefix: String, languageCode: String, maxSuggestions: Int) = run { gate.await(); real.suggest(prefix, languageCode, maxSuggestions) }
+        }
+        val vm = vmWith(slow, FakeEditor(""), chat)
+        testScheduler.advanceUntilIdle()
+        assertEquals(en, vm.uiState.value.starterPhrases)
+        gate.complete(Unit)
+    }
+
+    @Test fun tappingAPhraseInsertsItOnce() = runTest {
+        val h = harness(policy = chat)
+        h.vm.onStarterPhraseSelected("Good morning"); h.scope.testScheduler.advanceUntilIdle()
+        assertEquals("Good morning ", h.editor.text)
+        assertTrue("phrases leave once the field has text", h.state.starterPhrases.isEmpty())
+        h.vm.onStarterPhraseSelected("Good morning"); h.scope.testScheduler.advanceUntilIdle() // double tap / stale chip
+        assertEquals("Good morning ", h.editor.text)
+        // Next-word prediction takes over after a phrase (here "you" has known continuations).
+        val ty = harness(policy = chat)
+        ty.vm.onStarterPhraseSelected("Thank you"); ty.scope.testScheduler.advanceUntilIdle()
+        assertTrue(ty.state.suggestions.map { it.word }.toString(), ty.state.suggestions.isNotEmpty())
+        // A question phrase ends the sentence: the next letter is capitalised, and "," does not swap with its space.
+        val q = harness(policy = chat)
+        q.vm.onStarterPhraseSelected("How are you?"); q.scope.testScheduler.advanceUntilIdle()
+        assertEquals("How are you? ", q.editor.text)
+        q.type("good")
+        assertEquals("How are you? Good", q.editor.text)
+        // "Hello" + "," attaches the comma to the word, like a picked suggestion.
+        val hello = harness(policy = chat)
+        hello.vm.onStarterPhraseSelected("Hello"); hello.scope.testScheduler.advanceUntilIdle()
+        hello.type(",")
+        assertEquals("Hello, ", hello.editor.text)
+    }
+
+    @Test fun phrasesNeverReplaceExistingOrSelectedText() = runTest {
+        // Text present: no phrases, and a stray tap does nothing.
+        val h = harness("Draft", policy = chat)
+        assertTrue(h.state.starterPhrases.isEmpty())
+        h.vm.onStarterPhraseSelected("Hello")
+        assertEquals("Draft", h.editor.text)
+        // Cursor at the start of existing text: not an empty field.
+        val start = harness("Draft", policy = chat).also { it.editor.moveCursor(0); it.vm.onSelectionChanged(); it.scope.testScheduler.advanceUntilIdle() }
+        assertTrue(start.state.starterPhrases.isEmpty())
+        // Selected text (e.g. a browser URL selected on focus): no phrases.
+        val selected = FakeEditor("https://example.org", cursor = 0).also { it.selectionEnd = 19 }
+        val vm = vmWith(realAutocompleteProvider(), selected, omnibox)
+        testScheduler.advanceUntilIdle()
+        assertTrue(vm.uiState.value.starterPhrases.isEmpty())
+        vm.onStarterPhraseSelected("Hello")
+        assertEquals("https://example.org", selected.text)
+    }
+
+    @Test fun typingSwitchesFromPhrasesToAutocomplete() = runTest {
+        val h = harness(policy = chat)
+        assertEquals(en, h.state.starterPhrases)
+        h.type("hel")
+        assertTrue(h.state.starterPhrases.isEmpty())
+        assertTrue(h.state.suggestions.map { it.word.lowercase() }.toString(), h.state.suggestions.any { it.word.lowercase() in setOf("hello", "help") })
+        // Deleting everything brings the phrases back.
+        repeat(3) { h.backspace() }
+        assertEquals("", h.editor.text)
+        assertEquals(en, h.state.starterPhrases)
+    }
+
+    @Test fun passwordAndEmailFieldsGetNoPhrases() = runTest {
+        val pw = harness(policy = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD, EditorInfo.IME_ACTION_DONE))
+        assertTrue(pw.state.starterPhrases.isEmpty()); assertTrue(pw.state.suggestions.isEmpty())
+        val email = harness(policy = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, EditorInfo.IME_ACTION_NEXT))
+        assertTrue(email.state.starterPhrases.isEmpty())
+    }
+
+    @Test fun starterWordsAppearImmediatelyAfterASentenceWhileTheBundledDataIsStillLoading() = runTest {
         val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
         val real = realAutocompleteProvider()
         val slow = object : com.keylingo.app.domain.repository.AutocompleteProvider by real {
             override suspend fun seedNextWords(previousWord: String, languageCode: String): List<String> { gate.await(); return real.seedNextWords(previousWord, languageCode) }
         }
-        val vm = vmWith(slow, FakeEditor(""), chat)
+        val vm = vmWith(slow, FakeEditor("Thanks. "), chat)
         testScheduler.advanceUntilIdle()
         assertEquals("shown before the data has loaded", listOf("I", "The", "Thanks", "Hi", "Ok"), vm.uiState.value.suggestions.map { it.word })
         gate.complete(Unit); testScheduler.advanceUntilIdle()
@@ -429,6 +530,6 @@ class KeyboardViewModelTest {
         h.type("hel")
         assertTrue(h.state.suggestions.map { it.word.lowercase() }.toString(), h.state.suggestions.any { it.word.lowercase() in setOf("hello", "help") })
         val pw = harness(policy = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD, EditorInfo.IME_ACTION_DONE))
-        assertTrue("no starter words in a password field", pw.state.suggestions.isEmpty())
+        assertTrue("nothing in a password field", pw.state.suggestions.isEmpty() && pw.state.starterPhrases.isEmpty())
     }
 }

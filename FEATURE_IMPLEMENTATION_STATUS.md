@@ -25,7 +25,7 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 | Visual pressed state (face tint + 0.95 scale) on every key | 🖼 | `KeyboardScreenshotTest` |
 | Keyboard geometry: keys 260 dp in all modes and themes; strip 40 dp word row + 46 dp learning row, or the word row alone in fields without language help / with learning and grammar off; constant while typing | ✅ / 🖼 | `StripLayoutTest` (measured heights, renders); landscape not adapted |
 | Translation, word hints and grammar chips in browser address bars, search boxes (`textUri`, `textFilter`, web inputs, SearchView) and untyped fields; never in passwords or e-mail fields; URLs/e-mails typed in them are skipped | ✅ | `InputFieldPolicyTest` (21 field configurations), `KeyboardViewModelTest` cross-app tests; **device-confirmed only for WhatsApp so far** |
-| Themes: Sunlight Yellow (default), Lavender Purple, Dark Violet, Mint Green, Ocean Blue, Blush Pink + custom colour; light/dark; persisted | ✅ / 🖼 | `KeyboardThemesTest` (WCAG contrast for every preset and 14 swatches × light/dark), `SettingsPersistenceTest`, rendered previews |
+| Themes: Ocean Mist (approved design, unchanged), Sunset Bloom, Aqua Breeze, Golden Dune (default), Slate Grey + custom colour; gradients on the keyboard background, special keys, chips and accent surfaces; light/dark; persisted; older saved themes mapped | ✅ / 🖼 | `KeyboardThemesTest` (contrast on every stop, gradient visibility and hues, Ocean Mist pinned), `ThemeRenderingTest` (pixels), `SettingsPersistenceTest`, renders |
 | Number/phone fields open symbols layer | ✅ | `numberFieldsOpenTheSymbolsLayer` |
 | TalkBack labels and click actions on keys/chips | 🟨 | |
 | Keyboard switching (globe) | ❌ | system switcher only (`supportsSwitchingToNextInputMethod` declared, no key) |
@@ -106,7 +106,8 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 | Personal bigrams | ✅ | |
 | Personal trigrams (Context DB v2, non-destructive migration) | ✅ | migration test validates schema |
 | Cold-start model (EN 79 heads, ES 21 heads, sentence start) | ✅ | `predictsNextWordWithNoHistory` |
-| Starter words in an empty field / new sentence, shown immediately even while data loads; never the previous word repeated; empty row (not guesses) without context | ✅ | `KeyboardViewModelTest`, `SentenceStartersTest`, `StripLayoutTest` |
+| Starter phrases (EN/ES, never mixed) in an empty field, shown immediately; tap inserts once; never over existing or selected text; none in password/e-mail fields | ✅ / 🖼 | `KeyboardViewModelTest`, `StripLayoutTest` |
+| Starter words after a finished sentence, shown immediately even while data loads; never the previous word repeated; empty row (not guesses) without context | ✅ | `KeyboardViewModelTest`, `SentenceStartersTest` |
 | Context only re-ranks prefix matches | ✅ | `contextReranksButNeverIntroduces…` |
 | Capitalised predictions at sentence start | ✅ / 🟨 | |
 
@@ -131,7 +132,8 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 |---|---|---|
 | Sections: Typing · Appearance · Learning & translation · Personal dictionary · About | ✅ / 🖼 | `SettingsScreensTest` |
 | Typing: autocorrect, number row, vibration (off), sound (off), typing language | ✅ | whole row is the touch target |
-| Keyboard theme screen (current theme, six presets + custom, "✓ Selected"), opened from the top of Settings and setup step 4 | ✅ / 🖼 | `SettingsScreensTest` |
+| Keyboard theme screen (current theme, five gradient previews + custom, "✓ Selected"), opened from the top of Settings and setup step 4 | ✅ / 🖼 | `SettingsScreensTest` |
+| App icon (adaptive + themed monochrome) and KeyLingo wordmark on setup screen and About | ✅ / 🖼 | `BrandingRenderTest` (inflation, small-size legibility, renders) |
 | Appearance: dark mode, hint size | ✅ / 🖼 | |
 | Learning: learning row, sentence translation, grammar suggestions, learning mode, learning language | ✅ | |
 | Personal dictionary: learned-words manager, delete all | ✅ / 🖼 | |

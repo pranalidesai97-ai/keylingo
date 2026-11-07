@@ -42,6 +42,7 @@ import com.keylingo.app.data.settings.KeyLingoSettings
 import com.keylingo.app.data.settings.KeyboardThemePreset
 import com.keylingo.app.settings.SettingsViewModel
 import com.keylingo.app.ui.theme.KeyboardThemes
+import com.keylingo.app.ui.theme.toBrush
 
 /** Dedicated theme screen, reachable from the top of Settings and from the setup screen. */
 @Composable
@@ -117,8 +118,8 @@ fun ThemeEntryRow(settings: KeyLingoSettings, onClick: () -> Unit) {
     ) {
         // Two overlapping dots: keyboard background and accent.
         Box(Modifier.width(44.dp).height(30.dp)) {
-            Box(Modifier.size(30.dp).background(colors.background, CircleShape).border(1.dp, colors.specialKey, CircleShape))
-            Box(Modifier.padding(start = 14.dp).size(30.dp).background(colors.accent, CircleShape).border(2.dp, MaterialTheme.colorScheme.surface, CircleShape))
+            Box(Modifier.size(30.dp).background(colors.backgroundGradient.toBrush(), CircleShape).border(1.dp, colors.specialKey, CircleShape))
+            Box(Modifier.padding(start = 14.dp).size(30.dp).background(colors.accentGradient.toBrush(), CircleShape).border(2.dp, MaterialTheme.colorScheme.surface, CircleShape))
         }
         Column(Modifier.weight(1f).padding(start = 14.dp)) {
             Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleLarge)

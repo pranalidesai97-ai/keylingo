@@ -21,7 +21,7 @@ English typing that teaches Spanish as you type. It is fully offline:
 ## 2. Current state in one paragraph
 
 The project **builds** (`assembleDebug`, minified `assembleRelease`,
-`lintDebug` with 0 errors) and has **195 passing tests**. What it has:
+`lintDebug` with 0 errors) and has **209 passing tests**. What it has:
 - **Input:** a 111.8k-word English lexicon; keyboard-aware typo correction plus a curated misspelling list (`becuase`, `definately`, `teh`…); conservative autocorrect with one-tap undo; next-word prediction.
 - **Learning row:** an offline English→Spanish sentence translator, and now a Spanish→English one.
 - **Grammar:** suggestions are offered as a tappable chip and never applied automatically.
@@ -35,7 +35,7 @@ The project **builds** (`assembleDebug`, minified `assembleRelease`,
 
 | Command | Result |
 |---|---|
-| `./gradlew :app:testDebugUnitTest` | ✅ 195 tests, 0 failures (25 suites, see TESTING.md) |
+| `./gradlew :app:testDebugUnitTest` | ✅ 209 tests, 0 failures (27 suites, see TESTING.md) |
 | `tools/android-regex-check/run.sh` (ICU4C 74.2) | ✅ 31 production patterns compile; 283 match checks equal the JVM |
 | `./gradlew :app:assembleDebug` | ✅ `app-debug.apk` 18.6 MB |
 | `./gradlew :app:assembleRelease` | ✅ `app-release-unsigned.apk` 2.5 MB (R8 minified; never run) |
@@ -68,7 +68,9 @@ On a vivo phone, build 493dd6e crashed while the keyboard service started: a `(?
 
 Second device result: WhatsApp shows the translation, but Chrome and YouTube search fields do not. Their field types (`textUri`, `textFilter`…) were excluded from language help. Fixed, and the suggestion strip slimmed (see CHANGELOG). Confirmed on device: build c4aa430 shows translations in Chrome, YouTube and WhatsApp.
 
-Third round: the empty-field word row was blank (data still loading) and themes were hard to find. Fixed with immediate starter words and a Keyboard theme screen (see CHANGELOG). **On-device confirmation of this build is pending.**
+Third round: the empty-field word row was blank (data still loading) and themes were hard to find. Fixed with immediate starter words and a Keyboard theme screen (see CHANGELOG).
+
+Fourth round: five gradient themes (Ocean Mist kept exactly), EN/ES starter phrases in empty fields, and a new logo (see CHANGELOG). **On-device confirmation of this build is pending.**
 
 ## 5. Decisions that need the owner's approval
 
