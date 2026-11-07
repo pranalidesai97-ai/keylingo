@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-07 — Fix: keyboard service crashed at startup on Android
+
+**Device report (vivo phone, build 493dd6e).** `Unable to create service KeyLingoInputMethodService`, caused by `PatternSyntaxException: Syntax error in regexp pattern near index 3` at `LearningAssistant.<init>`.
+
+**Root cause.**
+- The Spanish grammar-note patterns started with the inline flag `(?U)` (UNICODE_CHARACTER_CLASS).
+- Android's `java.util.regex` is ICU4C, which rejects that flag. Reproduced with ICU 74.2: `U_REGEX_RULE_SYNTAX` at offset 3.
+- The patterns were compiled in `LearningAssistant`'s constructor, which Hilt runs while creating the keyboard service, so the service never started.
+- JVM unit tests could not catch it because desktop Java accepts `(?U)`.
+
+**Fix (no linguistic change).**
+- The ten rules moved to `SpanishGrammarNotes`. `(?U)` is removed.
+- `\b` is replaced by explicit look-arounds on Unicode letters, marks and digits. Desktop Java and ICU disagree on `\b` next to accented letters; the look-arounds behave identically in both.
+- Input is NFC-normalised, so decomposed accents still match.
+- Patterns compile lazily on first use (background dispatcher), never during service creation. A pattern the platform rejects is skipped instead of crashing.
+- Spanish progressive detection (estoy trabajando, estás comiendo, estamos viviendo, estaba estudiando…) and the other nine notes are unchanged.
+
+**New safeguards.**
+- `SpanishGrammarNotesTest`: production patterns on progressive examples, accents, capitals, NFD, punctuation, English, empty input, word boundaries, and the real `LearningAssistant` path.
+- `AndroidRegexCompatibilityTest`: statically rejects syntax ICU does not support (inline flags other than i/m/s/x/w, Java-only properties, unbounded look-behind) in all 29 production patterns. It also writes `build/android-regex-cases.tsv`.
+- `tools/android-regex-check/run.sh`: replays that file in ICU4C (Android's engine). Result: 29 patterns compile, and all 283 match checks agree with the JVM. Both checks fail on the old `(?U)` pattern.
+
 ## 2026-11-06 — Audit and improvement phase (Phases 1–9)
 
 Commits on `claude/eager-dijkstra-jsufzj`, in order:

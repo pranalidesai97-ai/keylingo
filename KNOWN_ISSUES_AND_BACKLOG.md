@@ -25,6 +25,7 @@ Vibration was on by default; there was no sound toggle; backspace repeat relied 
 | K16 | Grammar | Rule-based and deliberately narrow, preferring no flag to a false one. It does not detect general preposition errors, word order, run-on sentences, or tense agreement across clauses. English only. | Some errors go unflagged |
 | K17 | Performance | The typo lookup (6–10 ms per call on the build JVM, budget 15 ms) is the slowest per-keystroke step. It runs off the main thread, debounced, but may approach 30–50 ms on a low-end phone. | Measure on device (P0) |
 | K18 | Backup | Backups are off for privacy: settings and learned words do not move to a new phone. | Owner decision (PROJECT_STATE §5) |
+| K19 | Tests | JVM unit tests use desktop Java's regex engine, not Android's ICU engine. The ICU check (`tools/android-regex-check`) closes that gap for regex. Other platform differences (ART, Android-only APIs) are still only caught on a device. | Run the ICU check after the unit tests; keep device testing in the loop |
 
 ## Prioritised roadmap
 

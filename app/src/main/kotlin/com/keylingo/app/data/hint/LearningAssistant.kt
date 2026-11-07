@@ -156,22 +156,11 @@ class LearningAssistant @Inject constructor(
         return LearningAssistance(translation, trim(candidates, mode, cap), "es")
     }
 
-    private val spanishNoteRules: List<Pair<Regex, String>> = listOf(
-        Regex("(?U)\\b(estoy|estás|esta|está|estamos|están|estaba|estabas|estábamos|estaban)\\s+\\p{L}+(ando|iendo|yendo)\\b") to "estar + gerund: action in progress (estoy aprendiendo)",
-        Regex("(?U)\\b(voy|vas|va|vamos|van|iba|ibas|íbamos|iban)\\s+a\\s+\\p{L}+(ar|er|ir)\\b") to "ir a + infinitive: near future (voy a llamar)",
-        Regex("(?U)\\b(me|te|le|nos|les)\\s+(gusta|gustan|gustaba|gustó|encanta|encantan)\\b") to "gustar: the thing liked is the subject (me gusta / me gustan)",
-        Regex("(?U)\\b(tengo|tienes|tiene|tenemos|tienen|tenía)\\s+que\\b") to "tener que + infinitive: have to",
-        Regex("(?U)\\b(tengo|tienes|tiene|tenemos|tienen)\\s+(hambre|sed|frío|frio|calor|miedo|sueño|prisa|razón|\\d+\\s+años)\\b") to "Spanish uses tener for hunger, thirst, fear, age…",
-        Regex("(?U)\\bhace\\s+(frío|frio|calor|sol|viento|buen tiempo|mal tiempo)\\b") to "Weather uses hacer: hace frío, hace calor",
-        Regex("(?U)\\b(acabo|acabas|acaba|acabamos|acaban)\\s+de\\b") to "acabar de + infinitive: to have just done",
-        Regex("(?U)\\b(fui|fuiste|fue|fuimos|fueron)\\s+(a|al)\\b") to "fui + a: preterite of ir (went to); fui is also the preterite of ser",
-        Regex("(?U)\\b(he|has|ha|hemos|han)\\s+\\p{L}+(ado|ido|to|cho)\\b") to "haber + participle: present perfect",
-        Regex("^\\s*no\\s") to "Negation: no goes right before the verb",
-    )
-
-    /** Short notes on the Spanish grammar the user wrote, most instructive first. */
-    private fun spanishNotes(sentence: String): List<String> {
-        val lower = sentence.lowercase()
-        return spanishNoteRules.filter { it.first.containsMatchIn(lower) }.map { it.second }.take(2)
-    }
+    /**
+     * Short notes on the Spanish grammar the user wrote, most instructive first.
+     * The patterns live in [SpanishGrammarNotes] and compile lazily there: they
+     * must not be compiled while Hilt constructs this class for the keyboard
+     * service (an Android-incompatible pattern crashed the service at startup).
+     */
+    private fun spanishNotes(sentence: String): List<String> = SpanishGrammarNotes.notesFor(sentence)
 }

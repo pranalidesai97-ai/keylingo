@@ -18,7 +18,7 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 
 ## 2. Current results (2026-11-06)
 
-**156 tests, 0 failures, 21 suites.**
+**167 tests, 0 failures, 23 suites** (2026-11-07, after the startup-crash fix).
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -43,6 +43,8 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `SettingsPersistenceTest` | 2 | Vibration/sound and theme survive a new DataStore instance. |
 | `AssistanceLatencyTest` | 1 | Per-sentence grammar / EN→ES / ES→EN / full analysis under budget (measured < 1 ms each). |
 | `VocabularyMetricsTest` | 1 | Prints vocabulary counts (`VOCAB …` lines). |
+| `SpanishGrammarNotesTest` | 8 | Production Spanish note patterns: progressive constructions, accents, capitals, NFD, punctuation, word boundaries, English, empty input, all ten rules, and the real `LearningAssistant` path. |
+| `AndroidRegexCompatibilityTest` | 3 | No Android-incompatible regex syntax in any production pattern. A checker self-test uses the exact pattern that crashed. Writes the cases for the ICU check. |
 
 PNG renders are written to `app/build/keyboard-screenshots/`. They are
 Robolectric JVM renders used for visual review, **not device screenshots**.
@@ -51,6 +53,15 @@ Design notes:
 - The ViewModel runs on a `StandardTestDispatcher` that shares the test scheduler; work in `backgroundScope` would not run under `advanceUntilIdle`.
 - Bundled providers take `AppDispatchers`, so all timing is virtual and deterministic.
 - Compose screenshots draw the root view into a Bitmap, because `captureToImage` times out under Robolectric.
+
+### Android regex check (ICU4C)
+Unit tests run on a desktop JVM, whose regex engine accepts syntax Android's (ICU4C) rejects. That gap let a `(?U)` pattern crash the keyboard service on a phone. After the unit tests, run:
+
+```bash
+tools/android-regex-check/run.sh
+```
+
+It needs `g++` and ICU headers (`apt-get install libicu-dev`). It compiles every production pattern with ICU and replays the match checks; it must report 0 failures.
 
 ## 3. What is NOT automatically tested
 - The `InputMethodService` itself, and the InputConnection behaviour of real apps.
