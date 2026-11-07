@@ -21,6 +21,19 @@ enum class EnterKeyAction { NEWLINE, SEND, SEARCH, GO, NEXT, DONE, PREVIOUS }
  * Correctness rules: e-mail/URL/username/number fields get no autocorrect
  * and no automatic capitals; number/phone/date fields open the symbols
  * layer.
+ *
+ * Language assistance (translation, word hints, grammar suggestions) is
+ * read-only: it never changes the text unless the user taps a chip, and
+ * nothing is stored. So it is available in every text field except
+ * passwords and e-mail addresses -- including search and address bars
+ * (`textUri`, `textFilter`, web inputs) and fields that declare no input
+ * type. Apps describe "the same kind of field" very differently: a browser
+ * address bar is `textUri` + actionGo, a search box may be `textFilter`, a
+ * web input `textWebEditText`, a custom view TYPE_NULL. Earlier this flag
+ * required "prose" (no URI/filter variation, text class only), which is why
+ * Chrome and YouTube search fields got word suggestions but no translation.
+ * Text that is clearly a web address or e-mail is filtered by content in
+ * [TextContext.containsWebAddressOrEmail].
  */
 data class InputFieldPolicy(
     val showSuggestions: Boolean,
@@ -53,9 +66,13 @@ data class InputFieldPolicy(
                 variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                 variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD)) ||
                 (inputClass == InputType.TYPE_CLASS_NUMBER && variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD)
-            val isAddressLike = isText && (variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
-                variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS || variation == InputType.TYPE_TEXT_VARIATION_URI ||
+            val isEmailAddress = isText && (variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
+                variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS)
+            // Address/search bars: not rewritten, capitalised or learned from, but still assisted.
+            val isAddressLike = isEmailAddress || isText && (variation == InputType.TYPE_TEXT_VARIATION_URI ||
                 variation == InputType.TYPE_TEXT_VARIATION_FILTER)
+            // TYPE_NULL: the app declared no content type (custom views); treated as plain text for read-only help.
+            val noDeclaredType = inputType == InputType.TYPE_NULL
             val incognito = imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING != 0
             val noSuggestionsFlag = flags and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0
             val numeric = inputClass == InputType.TYPE_CLASS_NUMBER || inputClass == InputType.TYPE_CLASS_PHONE ||
@@ -82,7 +99,7 @@ data class InputFieldPolicy(
                 showSuggestions = !isPassword && !numeric,
                 allowLearning = !isPassword && !incognito && !numeric && !isAddressLike,
                 allowAutoCorrect = prose && !noSuggestionsFlag && variation != InputType.TYPE_TEXT_VARIATION_PERSON_NAME,
-                allowLearningHints = prose,
+                allowLearningHints = (isText || noDeclaredType) && !isPassword && !isEmailAddress,
                 // Respect explicit capitalisation flags; plain prose fields without flags still get sentence caps.
                 autoCapitalize = prose && (hasCapFlags || variation == InputType.TYPE_TEXT_VARIATION_NORMAL || variation == InputType.TYPE_TEXT_VARIATION_LONG_MESSAGE ||
                     variation == InputType.TYPE_TEXT_VARIATION_SHORT_MESSAGE || variation == InputType.TYPE_TEXT_VARIATION_EMAIL_SUBJECT),

@@ -53,6 +53,27 @@ data class TextContext(val before: String, val after: String = "") {
     companion object {
         private val wordRegex = Regex("[\\p{L}\\p{M}'’-]+")
 
+        /**
+         * One whitespace-free token that is a web address or e-mail: a scheme URL, `www.` host,
+         * `name@host.tld`, or `host.tld` with a common top-level domain. Matched on lower-cased
+         * text; no inline flags (Android's ICU regex engine rejects some, see SpanishGrammarNotes).
+         */
+        private val addressToken = Regex(
+            """[a-z][a-z0-9+.-]*://\S*|www\.\S+|[^\s@]+@[^\s@]+\.[^\s@]+|(?:[\p{L}\p{Nd}-]+\.)+(?:com|org|net|edu|gov|io|co|es|mx|ar|cl|pe|uk|de|fr|it|app|dev|ai|info|me|tv|us|ca|in|ly|be)(?:[/:?#]\S*)?"""
+        )
+        private val trailingPunctuation = Regex("[.,!?;:)\\]]+$")
+
+        /**
+         * True if [text] contains a web address or e-mail ("www.youtube.com", "maria@example.com").
+         * Translation and grammar help are skipped for such text, e.g. a URL typed into a browser
+         * address bar, which is otherwise an ordinary assisted field.
+         */
+        fun containsWebAddressOrEmail(text: String): Boolean =
+            text.lowercase().split(' ', '\t', '\n').any { token ->
+                val t = token.replace(trailingPunctuation, "")
+                t.length >= 4 && addressToken.matches(t)
+            }
+
         fun isWordChar(c: Char): Boolean = c.isLetter() || c == '\'' || c == '’' || Character.getType(c) == Character.NON_SPACING_MARK.toInt() ||
             c == '-'
 

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import com.keylingo.app.domain.model.LearningAssistance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -275,5 +276,81 @@ class KeyboardViewModelTest {
         h.type("Yesterday I go to the office. ")
         assertNull(h.state.assistance.grammar)
         assertEquals("Ayer voy a la oficina.", h.state.assistance.sentence?.translatedText) // literal translation of what was typed
+    }
+
+    // ---- Cross-app fields (regression: translation missing in Chrome / YouTube search fields)
+
+    private val omnibox = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI,
+        EditorInfo.IME_ACTION_GO or EditorInfo.IME_FLAG_NO_EXTRACT_UI or EditorInfo.IME_FLAG_NO_FULLSCREEN)
+    private val appSearchView = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE or
+        InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, EditorInfo.IME_ACTION_SEARCH)
+    private val filterSearch = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_FILTER, EditorInfo.IME_ACTION_SEARCH)
+    private val webSearch = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT, EditorInfo.IME_ACTION_SEARCH)
+    private val chat = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+        InputType.TYPE_TEXT_VARIATION_SHORT_MESSAGE, EditorInfo.IME_ACTION_SEND)
+
+    @Test fun translationAppearsInChatBrowserAndSearchFieldsAlike() = runTest {
+        for ((name, field) in listOf("chat" to chat, "browser address bar" to omnibox, "web search" to webSearch,
+                "app SearchView" to appSearchView, "filter search" to filterSearch)) {
+            val h = harness(policy = field)
+            h.editor.multiLine = field.multiLine
+            h.type("I am drinking water")
+            assertEquals("translation in $name", "Estoy bebiendo agua", h.state.assistance.sentence?.translatedText)
+            assertTrue("word hints in $name", h.state.hints.isNotEmpty())
+            assertTrue("word suggestions in $name", h.state.suggestions.isNotEmpty())
+            assertEquals("text untouched in $name", "I am drinking water", h.editor.text.replaceFirstChar { it.uppercase() })
+        }
+        val yt = harness(policy = appSearchView)
+        yt.type("She is working today")
+        assertEquals("Ella está trabajando hoy", yt.state.assistance.sentence?.translatedText)
+    }
+
+    @Test fun searchFieldsKeepTheirActionAndAssistanceNeverEditsTheText() = runTest {
+        val h = harness(policy = omnibox)
+        h.editor.multiLine = false
+        h.type("she go to school")
+        val typed = h.editor.text
+        assertNotNull("grammar suggestion offered", h.state.assistance.grammar)
+        assertEquals(typed, h.editor.text) // suggested, not applied
+        h.key(KeyAction.Enter)
+        assertEquals("Enter performs GO", 1, h.editor.editorActions)
+        assertEquals("no newline, no edit", typed, h.editor.text)
+    }
+
+    @Test fun webAddressesAndEmailsGetNoLanguageAssistance() = runTest {
+        for (address in listOf("www.youtube.com", "https://example.org/a", "maria@example.com", "go to youtube.com")) {
+            val h = harness(policy = omnibox)
+            h.type(address)
+            assertEquals("assistance for \"$address\"", LearningAssistance.EMPTY, h.state.assistance)
+        }
+        // An ordinary sentence with a period inside is still assisted.
+        val h = harness(policy = chat)
+        h.type("I am tired. I am drinking water")
+        assertEquals("Estoy bebiendo agua", h.state.assistance.sentence?.translatedText)
+    }
+
+    @Test fun fieldsWithoutAnInputTypeAreAssistedButEmailAndPasswordFieldsAreNot() = runTest {
+        val untyped = harness(policy = InputFieldPolicy.from(InputType.TYPE_NULL, EditorInfo.IME_ACTION_UNSPECIFIED))
+        untyped.type("I am drinking water")
+        assertEquals("Estoy bebiendo agua", untyped.state.assistance.sentence?.translatedText)
+        for (restricted in listOf(
+            InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, EditorInfo.IME_ACTION_NEXT),
+            InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD, EditorInfo.IME_ACTION_GO),
+            InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, EditorInfo.IME_ACTION_DONE),
+        )) {
+            val h = harness(policy = restricted)
+            h.type("I am drinking water")
+            assertEquals(LearningAssistance.EMPTY, h.state.assistance)
+            assertTrue(h.learned.rows.isEmpty())
+        }
+    }
+
+    @Test fun searchAndAddressTextIsStillNotLearned() = runTest {
+        for (field in listOf(omnibox, filterSearch)) {
+            val h = harness(policy = field)
+            h.type("quokka quokka quokka quokka ")
+            assertTrue(h.learned.rows.isEmpty())
+            assertTrue(h.context.bigrams.isEmpty())
+        }
     }
 }

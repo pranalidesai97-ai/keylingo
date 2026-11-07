@@ -18,11 +18,11 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 
 ## 2. Current results (2026-11-06)
 
-**167 tests, 0 failures, 23 suites** (2026-11-07, after the startup-crash fix).
+**182 tests, 0 failures, 24 suites** (2026-11-07, after the cross-app fix).
 
 | Suite | Tests | What it covers |
 |---|---|---|
-| `KeyboardViewModelTest` | 25 | Real typing sequences into a simulated text field. Covers auto-caps, grapheme backspace, double-space and autocorrect with undo. Also picks, prediction, learning, password/incognito/email fields, Enter actions, translation and hints. New: forced Spanish mode, grammar suggested but not applied, translation of the corrected source, grammar waits for a finished word, grammar off. |
+| `KeyboardViewModelTest` | 30 | Real typing sequences into a simulated text field. Covers auto-caps, grapheme backspace, double-space and autocorrect with undo. Also picks, prediction, learning, password/incognito/email fields, Enter actions, translation and hints. New: forced Spanish mode, grammar suggested but not applied, translation of the corrected source, grammar waits for a finished word, grammar off. |
 | `GenerateAutocompleteSuggestionsUseCaseTest` | 21 | Ranking, case, typos, curated misspellings (`becuase`, `definately`, `tomorow`, `recieve`, `teh`). No junk beside good completions; proper nouns in the top 3; rare real words never corrected; Spanish misspellings; learned words; context re-ranking. |
 | `EnglishToSpanishTranslatorTest` | 14 | 96 sentences: the 9 requested examples, `adónde`, tenses, modals, clitics, gustar, ser/estar/tener, questions, subjunctive, agreement, idioms, alignments. |
 | `SpanishToEnglishTranslatorTest` | 13 | 112 sentences: the 6 requested examples, dropped subjects, negation, questions, ages, unaccented questions, verb chains, gustar/doler, idioms, ser/estar, prepositions, set phrases. Unknown words must lower coverage. |
@@ -30,7 +30,7 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `SpanishConjugatorTest` | 10 | Full paradigms. |
 | `EnglishGrammarCheckerTest` | 8 | Repeated words, agreement, past tense, articles, confusables, capitalisation. Also: no flags on informal or incomplete sentences or compound nouns, and edits are spliced correctly. |
 | `BundledDataIntegrityTest` | 7 | Asset rows, senses, conjugation, gender, accents, lexicon, seeds. |
-| `InputFieldPolicyTest` | 7 | Field-type rules. |
+| `InputFieldPolicyTest` | 11 | Field-type rules, including 21 cross-app field configurations (chat, browser address bar, web/app search fields, TYPE_NULL, passwords, e-mail, numbers). |
 | `LanguageAndGlossTest` | 5 | Detection, glosses, assistant consistency. New: the Spanish sentence chip with notes, hidden for partial or single-word input. |
 | `SpanishMorphologyTest` | 5 | Plurals, agreement, articles, stress. |
 | `LexiconTest` | 5 | Size, prefix keys, distances, speed (< 15 ms per typo lookup; measured 6–10 ms). |
@@ -43,6 +43,7 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `SettingsPersistenceTest` | 2 | Vibration/sound and theme survive a new DataStore instance. |
 | `AssistanceLatencyTest` | 1 | Per-sentence grammar / EN→ES / ES→EN / full analysis under budget (measured < 1 ms each). |
 | `VocabularyMetricsTest` | 1 | Prints vocabulary counts (`VOCAB …` lines). |
+| `StripLayoutTest` (Robolectric Compose) | 6 | Strip height per field and setting (86 dp assisted, 40 dp otherwise); unchanged while typing; Large hint size; renders `strip-*.png`. |
 | `SpanishGrammarNotesTest` | 8 | Production Spanish note patterns: progressive constructions, accents, capitals, NFD, punctuation, word boundaries, English, empty input, all ten rules, and the real `LearningAssistant` path. |
 | `AndroidRegexCompatibilityTest` | 3 | No Android-incompatible regex syntax in any production pattern. A checker self-test uses the exact pattern that crashed. Writes the cases for the ICU check. |
 

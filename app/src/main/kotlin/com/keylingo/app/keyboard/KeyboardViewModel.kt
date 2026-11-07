@@ -37,6 +37,12 @@ data class KeyboardUiState(
 ) {
     val autocompleteSuggestions: List<AutocompleteSuggestion> get() = suggestions
     val hints: List<HintWord> get() = assistance.hints
+
+    /**
+     * Whether the strip reserves the learning row. Depends only on the field and the
+     * settings, never on the current chips, so the keys do not move while typing.
+     */
+    val showLearningRow: Boolean get() = policy.allowLearningHints && (settings.learningEnabled || settings.grammarEnabled)
 }
 
 /** Punctuation that ends a word (triggers learning and autocorrect) and is followed by a space after a picked suggestion. */
@@ -462,6 +468,11 @@ class KeyboardViewModel(
             val end = head.length
             val start = TextContext.lastSentenceBoundary(head.dropLast(1))
             if (end > 0) head.substring(start, end).trim() else ""
+        }
+        // A web address or e-mail (e.g. typed into a browser address bar) is not language to translate or correct.
+        if (TextContext.containsWebAddressOrEmail(sentence)) {
+            if (s.assistance != LearningAssistance.EMPTY) _uiState.update { it.copy(assistance = LearningAssistance.EMPTY) }
+            return
         }
         var assistance = generateHintsUseCase(
             sentence, languagePack.languageCode, s.settings.learningMode,

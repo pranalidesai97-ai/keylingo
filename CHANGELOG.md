@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-11-07 — Language help in browser and search fields; slimmer suggestion strip
+
+**Device report (vivo V2515, build a2e98e6).** WhatsApp showed "Estoy bebiendo agua" for "I am drinking water". Chrome's search field and YouTube's search field showed only English word suggestions, with no translation.
+
+**Root cause.** `InputFieldPolicy.allowLearningHints`, the single gate for translation, word hints and grammar chips, required a "prose" field. Prose excluded the `TYPE_TEXT_VARIATION_URI` variation (used by browser address/search bars), `TYPE_TEXT_VARIATION_FILTER` (common for search boxes) and any field without the text class (`TYPE_NULL`). Word suggestions use a separate, looser gate (not password, not numeric), so those fields got words but no Spanish. No app-specific code was involved.
+
+**Fix.**
+- Read-only language help now has its own rule: every text field (and `TYPE_NULL`) except passwords and e-mail addresses.
+- Autocorrect, auto-capitals and learning keep their previous rules: still off in address/search bars and incognito.
+- Text that is a URL or e-mail (`www.…`, `https://…`, `name@host.tld`, `host.com`) gets no translation or grammar chips.
+- Enter still performs the field's action (GO/SEARCH/SEND). Nothing is applied without a tap.
+
+**Layout.**
+- The strip was always 92 dp: two 46 dp rows, even where the second row could never have content.
+- Now the word row is 40 dp, with an explicit line height so Large text is not clipped. The 46 dp learning row is reserved only when the field allows language help and the learning row or grammar is on.
+- The height is decided per field and settings, so keys never move while typing.
+- Assisted fields: 86 dp (was 92). Others: 40 dp. Keys, themes and colours are unchanged.
+
+**Tests.** +15:
+- `InputFieldPolicyTest`: 21 named field configurations (chat, browser address bar normal and incognito, web search input, spellcheck-off input, SearchView, filter box, TYPE_NULL, passwords, e-mail, numbers…), plus actions and learning.
+- `KeyboardViewModelTest`: typing through the keyboard in each field type, Enter action, URL/e-mail skipping, restricted fields, nothing learned in search fields.
+- `StripLayoutTest`: measured heights per field and setting, constant while typing, renders.
+
+The ICU regex check also covers the new address pattern.
+
 ## 2026-11-07 — Fix: keyboard service crashed at startup on Android
 
 **Device report (vivo phone, build 493dd6e).** `Unable to create service KeyLingoInputMethodService`, caused by `PatternSyntaxException: Syntax error in regexp pattern near index 3` at `LearningAssistant.<init>`.

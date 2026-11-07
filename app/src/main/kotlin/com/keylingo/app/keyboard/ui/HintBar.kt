@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.keylingo.app.data.settings.HintSizeOption
@@ -32,12 +33,14 @@ import com.keylingo.app.domain.model.LearningAssistance
 import com.keylingo.app.domain.model.SuggestionKind
 import com.keylingo.app.ui.theme.LocalKeyboardColors
 
+/** Height of the word-suggestion row: one line of text at [HintSizeOption.LARGE]. */
+internal val WORD_ROW_HEIGHT = 40.dp
+
 /**
- * Fixed height of one strip row, sized for a two-line hint chip at
- * [HintSizeOption.LARGE]. Intentionally independent of content so the key
- * grid below never moves (see [HintBar]).
+ * Height of the learning row, sized for a two-line chip (translation +
+ * grammar note) at [HintSizeOption.LARGE].
  */
-private val SUGGESTION_ROW_HEIGHT = 46.dp
+internal val LEARNING_ROW_HEIGHT = 46.dp
 
 /**
  * The two strips above the keys:
@@ -49,8 +52,12 @@ private val SUGGESTION_ROW_HEIGHT = 46.dp
  *   followed by word hints with their grammar note. Read-only: hints never
  *   write into the message.
  *
- * Total height is constant (`SUGGESTION_ROW_HEIGHT * 2`) whatever the
- * content -- both rows are always laid out -- so key geometry never shifts.
+ * Height depends only on [showLearningRow], which is decided per field
+ * and settings (see KeyboardUiState.showLearningRow), never on the chips
+ * currently shown. Within a field the keys never move while typing. Fields
+ * that can never show language help (passwords, e-mail, numbers), or where
+ * the user turned the learning row and grammar off, get only the slim word
+ * row instead of an always-empty second row.
  */
 @Composable
 fun HintBar(
@@ -60,15 +67,16 @@ fun HintBar(
     hintSize: HintSizeOption,
     onSuggestionSelected: (AutocompleteSuggestion) -> Unit,
     modifier: Modifier = Modifier,
+    showLearningRow: Boolean = true,
     onGrammarApplied: (GrammarSuggestion) -> Unit = {}
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(SUGGESTION_ROW_HEIGHT * 2)
+            .height(if (showLearningRow) WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT else WORD_ROW_HEIGHT)
             .background(LocalKeyboardColors.current.strip)
     ) {
-        SuggestionRow {
+        SuggestionRow(WORD_ROW_HEIGHT) {
             suggestions.forEach { suggestion ->
                 SuggestionChip(
                     suggestion = suggestion,
@@ -78,7 +86,7 @@ fun HintBar(
                 )
             }
         }
-        SuggestionRow {
+        if (showLearningRow) SuggestionRow(LEARNING_ROW_HEIGHT) {
             assistance.grammar?.let { grammar -> GrammarChip(grammar, hintSize, onGrammarApplied) }
             assistance.sentence?.let { sentence ->
                 SentenceChip(
@@ -95,11 +103,11 @@ fun HintBar(
 }
 
 @Composable
-private fun SuggestionRow(content: @Composable RowScope.() -> Unit) {
+private fun SuggestionRow(height: Dp, content: @Composable RowScope.() -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(SUGGESTION_ROW_HEIGHT)
+            .height(height)
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -123,7 +131,7 @@ private fun SuggestionChip(
             .widthIn(min = 56.dp)
             .background(if (highlighted) colors.accent else colors.chip, RoundedCornerShape(14.dp))
             .clickable { onClick(suggestion) }
-            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .padding(horizontal = 14.dp, vertical = 4.dp)
             .semantics { contentDescription = if (highlighted) "Autocorrect to ${suggestion.word}" else "Suggestion ${suggestion.word}" },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
@@ -132,6 +140,8 @@ private fun SuggestionChip(
             text = label,
             color = if (highlighted) colors.onAccent else colors.chipText,
             fontSize = fontSizeFor(hintSize),
+            // Explicit: the inherited 24sp body line height would clip Large text in the 40dp row.
+            lineHeight = fontSizeFor(hintSize) * 1.2f,
             fontWeight = if (highlighted) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

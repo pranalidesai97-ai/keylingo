@@ -16,7 +16,7 @@ Vibration was on by default; there was no sound toggle; backspace repeat relied 
 | K7 | Lexicon | Spanish typing vocabulary is generated from the dictionary (8,447 forms); Spanish words outside it get no completion. | Spanish autocomplete coverage |
 | K8 | CEFR | CEFR bands are derived from English frequency rank, not curated. | Advanced-mode hint selection is approximate |
 | K9 | Input | Commit-based editing (no composing region/underline); autocorrect undo works only immediately after the correction. | UX polish |
-| K10 | Layout | Fixed 92 + 260 dp height; not adapted for landscape/tablets/foldables. | Landscape usability |
+| K10 | Layout | Keys 260 dp; strip 86 dp (40 + 46) in assisted fields, 40 dp elsewhere. Not adapted for landscape/tablets/foldables. | Landscape usability |
 | K11 | Layout | No globe/language key, swipe typing, space-bar cursor control, clipboard, emoji search, voice input. | Feature gaps vs. Gboard |
 | K12 | Deps | AGP 8.5.2, Kotlin 1.9.24, Compose BOM 2024.06 — 19 lint "newer version" warnings. | Maintenance |
 | K13 | Timing | Bundled data loads asynchronously at keyboard start: ≈0.4–0.8 s on the desktop JVM with the 111.8k lexicon, likely 1–3 s on a phone. Suggestions are empty until then. | First-keystroke experience |
@@ -26,6 +26,9 @@ Vibration was on by default; there was no sound toggle; backspace repeat relied 
 | K17 | Performance | The typo lookup (6–10 ms per call on the build JVM, budget 15 ms) is the slowest per-keystroke step. It runs off the main thread, debounced, but may approach 30–50 ms on a low-end phone. | Measure on device (P0) |
 | K18 | Backup | Backups are off for privacy: settings and learned words do not move to a new phone. | Owner decision (PROJECT_STATE §5) |
 | K19 | Tests | JVM unit tests use desktop Java's regex engine, not Android's ICU engine. The ICU check (`tools/android-regex-check`) closes that gap for regex. Other platform differences (ART, Android-only APIs) are still only caught on a device. | Run the ICU check after the unit tests; keep device testing in the loop |
+| K20 | Cross-app | The Chrome/YouTube fix is based on how those fields normally declare themselves (`textUri`, `textFilter`, SearchView, web inputs), not on EditorInfo captured from your phone. If a field still shows no translation, its inputType/imeOptions are needed (e.g. `adb shell dumpsys input_method`, look for `inputType=` and `imeOptions=`). | Confirm on device |
+| K21 | Cross-app | A URL or e-mail anywhere in the current sentence turns off translation and grammar for that sentence. A missing space before a TLD-like word ("tired.it is late") also counts, so that sentence gets no chip. | Rare; no effect on typing |
+| K22 | Suggestions | In address bars autocorrect is off (unchanged), and a correctly typed word can be followed by weak typo alternatives ("today" → foray, toady). Pre-existing ranking, not changed here. | Cosmetic |
 
 ## Prioritised roadmap
 

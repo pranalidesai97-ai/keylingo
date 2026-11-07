@@ -23,7 +23,8 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 | Vibration on key press: **off by default**, setting persists | ✅ | `KeyFeedbackTest`, `SettingsPersistenceTest`; `KeyFeedback` is the only haptic call site; no `VIBRATE` permission |
 | Key sound: separate setting, off by default, system volume | ✅ | `KeyFeedbackTest` (Delete/Space/Return/standard effects) |
 | Visual pressed state (face tint + 0.95 scale) on every key | 🖼 | `KeyboardScreenshotTest` |
-| Fixed keyboard geometry (strip + keys constant height in all modes and themes) | 🖼 | 92 dp + 260 dp; landscape not adapted |
+| Keyboard geometry: keys 260 dp in all modes and themes; strip 40 dp word row + 46 dp learning row, or the word row alone in fields without language help / with learning and grammar off; constant while typing | ✅ / 🖼 | `StripLayoutTest` (measured heights, renders); landscape not adapted |
+| Translation, word hints and grammar chips in browser address bars, search boxes (`textUri`, `textFilter`, web inputs, SearchView) and untyped fields; never in passwords or e-mail fields; URLs/e-mails typed in them are skipped | ✅ | `InputFieldPolicyTest` (21 field configurations), `KeyboardViewModelTest` cross-app tests; **device-confirmed only for WhatsApp so far** |
 | Themes: Sunlight Yellow (default), Lavender Purple, Dark Violet, Mint Green, Ocean Blue, Blush Pink + custom colour; light/dark; persisted | ✅ / 🖼 | `KeyboardThemesTest` (WCAG contrast for every preset and 14 swatches × light/dark), `SettingsPersistenceTest`, rendered previews |
 | Number/phone fields open symbols layer | ✅ | `numberFieldsOpenTheSymbolsLayer` |
 | TalkBack labels and click actions on keys/chips | 🟨 | |

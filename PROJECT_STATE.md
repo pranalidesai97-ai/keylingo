@@ -21,7 +21,7 @@ English typing that teaches Spanish as you type. It is fully offline:
 ## 2. Current state in one paragraph
 
 The project **builds** (`assembleDebug`, minified `assembleRelease`,
-`lintDebug` with 0 errors) and has **167 passing tests**. What it has:
+`lintDebug` with 0 errors) and has **182 passing tests**. What it has:
 - **Input:** a 111.8k-word English lexicon; keyboard-aware typo correction plus a curated misspelling list (`becuase`, `definately`, `teh`…); conservative autocorrect with one-tap undo; next-word prediction.
 - **Learning row:** an offline English→Spanish sentence translator, and now a Spanish→English one.
 - **Grammar:** suggestions are offered as a tappable chip and never applied automatically.
@@ -35,8 +35,8 @@ The project **builds** (`assembleDebug`, minified `assembleRelease`,
 
 | Command | Result |
 |---|---|
-| `./gradlew :app:testDebugUnitTest` | ✅ 167 tests, 0 failures (23 suites, see TESTING.md) |
-| `tools/android-regex-check/run.sh` (ICU4C 74.2) | ✅ 29 production patterns compile; 283 match checks equal the JVM |
+| `./gradlew :app:testDebugUnitTest` | ✅ 182 tests, 0 failures (24 suites, see TESTING.md) |
+| `tools/android-regex-check/run.sh` (ICU4C 74.2) | ✅ 31 production patterns compile; 283 match checks equal the JVM |
 | `./gradlew :app:assembleDebug` | ✅ `app-debug.apk` 18.6 MB |
 | `./gradlew :app:assembleRelease` | ✅ `app-release-unsigned.apk` 2.5 MB (R8 minified; never run) |
 | `./gradlew :app:lintDebug` | ✅ 0 errors, 21 warnings (almost all "newer dependency version available") |
@@ -64,7 +64,9 @@ Nothing in the repo depends on that setup. **Build release artifacts in Android 
 
 ## 4b. First device result (2026-11-07)
 
-On a vivo phone, build 493dd6e crashed while the keyboard service started: a `(?U)` regex is rejected by Android's ICU engine. Fixed (see CHANGELOG 2026-11-07). The fix is built and tested on the JVM and against ICU4C. **On-device confirmation of the fixed build is pending.**
+On a vivo phone, build 493dd6e crashed while the keyboard service started: a `(?U)` regex is rejected by Android's ICU engine. Fixed (see CHANGELOG 2026-11-07). The fix is built and tested on the JVM and against ICU4C. Confirmed on the device: build a2e98e6 launches.
+
+Second device result: WhatsApp shows the translation, but Chrome and YouTube search fields do not. Their field types (`textUri`, `textFilter`…) were excluded from language help. Fixed, and the suggestion strip slimmed (see CHANGELOG). **On-device confirmation of this build is pending.**
 
 ## 5. Decisions that need the owner's approval
 

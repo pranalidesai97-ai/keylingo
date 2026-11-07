@@ -94,6 +94,7 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
                         assistance = uiState.assistance,
                         hintSize = uiState.settings.hintSize,
                         onSuggestionSelected = onSuggestion,
+                        showLearningRow = uiState.showLearningRow,
                         onGrammarApplied = onGrammar
                     )
                     val rows = remember(uiState.mode, uiState.settings.showNumberRow) {

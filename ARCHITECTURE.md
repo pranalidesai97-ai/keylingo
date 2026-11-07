@@ -71,6 +71,15 @@ onGrammarSuggestionApplied: replaces the sentence before the cursor only if it i
 learning, autocorrect, learning hints, capitalisation mode, initial layer,
 Enter action. Passwords: nothing analysed or stored. Incognito: nothing stored.
 
+The gates are deliberately different, because apps describe similar fields very differently:
+- **Read-only language help** (translation, word hints, grammar chips): every text field except passwords and e-mail addresses. That includes browser address bars (`textUri` + actionGo), filter-style search boxes (`textFilter`), web inputs (`textWebEditText`, with or without `NO_SUGGESTIONS`) and `TYPE_NULL` views. Text that is itself a URL or e-mail is skipped by content (`TextContext.containsWebAddressOrEmail`).
+- **Autocorrect and auto-capitals**: prose fields only, never address or search bars.
+- **Learning**: never in password, incognito, numeric, e-mail, URI or filter fields.
+
+There is no per-app (package-name) logic.
+
+Strip height: a 40 dp word row, plus a 46 dp learning row when `KeyboardUiState.showLearningRow` (field allows language help and the learning row or grammar is enabled). It is decided per field and settings, never by the chips shown, so keys don't move while typing.
+
 Threading: the ViewModel runs on the main thread but does no heavy work;
 lexicon search, translation and detection run on `AppDispatchers.compute`,
 Room on `Dispatchers.IO`. Only a 240-char window before the cursor is read per
