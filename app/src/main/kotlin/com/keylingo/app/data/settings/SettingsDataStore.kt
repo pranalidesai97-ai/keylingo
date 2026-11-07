@@ -28,8 +28,11 @@ enum class KeyboardThemePreset(val prefersDark: Boolean = false) {
     OCEAN_MIST, SUNSET_BLOOM, AQUA_BREEZE, GOLDEN_DUNE, SLATE_GREY, CUSTOM;
 
     companion object {
-        /** Golden Dune succeeds the former default, Sunlight Yellow. */
-        val DEFAULT = GOLDEN_DUNE
+        /**
+         * Theme for installs with no saved choice. A saved choice (including one saved
+         * by an earlier version, see [fromStored]) always wins and is never overwritten.
+         */
+        val DEFAULT = OCEAN_MIST
 
         /**
          * Reads a stored theme name, including names from earlier versions, so an

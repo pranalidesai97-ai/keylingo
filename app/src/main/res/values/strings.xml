@@ -83,6 +83,6 @@
     <string name="theme_back">Back</string>
     <string name="settings_theme_entry_desc">Change the keyboard colours</string>
     <string name="onboarding_step4_title">4. Choose a theme</string>
-    <string name="onboarding_step4_desc">Five gradient themes, or your own colour. Golden Dune is the default.</string>
+    <string name="onboarding_step4_desc">Five themes, or your own colour. Ocean Mist is the default.</string>
     <string name="onboarding_step4_action">Choose keyboard theme</string>
 </resources>

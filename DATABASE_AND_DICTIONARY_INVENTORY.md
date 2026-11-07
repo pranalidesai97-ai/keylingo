@@ -99,7 +99,7 @@ bundled assets in earlier versions. `KeyLingoApplication` deletes them.
 | `autocorrect_enabled` | Boolean | true (new) |
 | `haptics_enabled` | Boolean | **false** (vibration off by default) |
 | `sound_enabled` | Boolean | false |
-| `theme_preset` | OCEAN_MIST / SUNSET_BLOOM / AQUA_BREEZE / GOLDEN_DUNE / SLATE_GREY / CUSTOM (older stored names are mapped on read, see ARCHITECTURE §5d) | GOLDEN_DUNE |
+| `theme_preset` | OCEAN_MIST / SUNSET_BLOOM / AQUA_BREEZE / GOLDEN_DUNE / SLATE_GREY / CUSTOM (older stored names are mapped on read, see ARCHITECTURE §5d) | OCEAN_MIST |
 | `custom_accent_argb` | Int | 0xFF2E9E8F |
 | `typing_language` | AUTO / ENGLISH / SPANISH | AUTO |
 | `grammar_enabled` | Boolean | true |

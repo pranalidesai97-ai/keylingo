@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-07 — Ocean Mist is the default theme
+
+- New installs start with Ocean Mist (its colours unchanged). Golden Dune stays one of the five selectable themes.
+- A saved theme choice is never overwritten. Installs that never chose a theme had no saved value, so they now show Ocean Mist.
+
 ## 2026-11-07 — Gradient themes, starter phrases, new logo
 
 **Themes.**

@@ -30,7 +30,7 @@ class KeyboardThemesTest {
                 KeyboardThemePreset.GOLDEN_DUNE, KeyboardThemePreset.SLATE_GREY),
             KeyboardThemePreset.entries.filter { it != KeyboardThemePreset.CUSTOM }
         )
-        assertEquals(KeyboardThemePreset.GOLDEN_DUNE, KeyLingoSettings().themePreset)
+        assertEquals(KeyboardThemePreset.OCEAN_MIST, KeyLingoSettings().themePreset)
     }
 
     @Test fun textIsReadableOnEverySurfaceAndEveryGradientStop() {

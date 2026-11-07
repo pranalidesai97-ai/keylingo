@@ -178,7 +178,7 @@ There are five presets plus a custom colour. `KeyLingoSettings.themePreset` is s
 - `MINT_GREEN` → Aqua Breeze;
 - `LAVENDER_PURPLE` and `DARK_VIOLET` → Slate Grey.
 
-The default is Golden Dune.
+The default for new installs is Ocean Mist; a saved choice is never replaced.
 
 **Ocean Mist** is the approved former Ocean Blue. It is still derived by HSL rules from one accent colour and is flat: single-stop "gradients". `KeyboardThemesTest` pins every value to the pre-change palette. The custom colour uses the same derivation.
 

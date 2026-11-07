@@ -131,7 +131,7 @@ class SettingsScreensTest {
         snapshot("settings-theme-screen")
         fiveThemes.forEach { name -> assertTrue("missing $name", compose.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty()) }
         // Header names the current theme, and exactly one card is marked selected.
-        assertEquals(2, compose.onAllNodesWithText("Golden Dune").fetchSemanticsNodes().size) // header + card
+        assertEquals(2, compose.onAllNodesWithText("Ocean Mist").fetchSemanticsNodes().size) // header + card (the default)
         assertEquals(1, compose.onAllNodesWithText("✓ Selected").fetchSemanticsNodes().size)
         assertEquals(1, compose.onAllNodes(androidx.compose.ui.test.isSelected()).fetchSemanticsNodes().size)
         compose.onNodeWithText("Sunset Bloom").performClick()
@@ -160,7 +160,7 @@ class SettingsScreensTest {
         snapshot("settings-top-theme-entry")
         // Visible without scrolling, with the current theme's name.
         compose.onNodeWithText("Keyboard theme").assertIsDisplayed()
-        compose.onNodeWithText("Golden Dune").assertIsDisplayed()
+        compose.onNodeWithText("Ocean Mist").assertIsDisplayed()
         compose.onNodeWithText("Keyboard theme").performClick()
         assertTrue(opened)
     }

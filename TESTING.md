@@ -35,7 +35,7 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `SpanishMorphologyTest` | 5 | Plurals, agreement, articles, stress. |
 | `LexiconTest` | 5 | Size, prefix keys, distances, speed (< 15 ms per typo lookup; measured 6–10 ms). |
 | `TextContextTest` | 4 | Word/sentence extraction. |
-| `KeyboardThemesTest` | 7 | Five presets in order (Golden Dune default). Contrast against every gradient stop, light and dark, plus 14 custom swatches. Gradient themes have visible 3-stop gradients with hues matching their names. Ocean Mist equals the pre-change palette exactly. Older saved names map forward. |
+| `KeyboardThemesTest` | 7 | Five presets in order (Ocean Mist default). Contrast against every gradient stop, light and dark, plus 14 custom swatches. Gradient themes have visible 3-stop gradients with hues matching their names. Ocean Mist equals the pre-change palette exactly. Older saved names map forward. |
 | `ThemeRenderingTest` (Robolectric Compose) | 1 | Rendered pixels: gradient background and Shift face, flat letter keys, immediate recolour on theme change, flat Ocean Mist. |
 | `BrandingRenderTest` (Robolectric) | 3 | Adaptive icon with a monochrome layer; legible at 48 px; renders icon shapes/sizes, the wordmark and the setup screen (`brand-*.png`). |
 | `KeyboardScreenshotTest` (Robolectric Compose) | 4 | Renders every theme, the grammar row, the translation row and the theme picker to PNG. |
