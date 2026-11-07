@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-07 — Starter words in empty fields; discoverable theme screen
+
+**Device report (vivo V2515, build c4aa430).** The word row was blank in a focused, empty field. The theme picker could not be found.
+
+**Empty suggestion row.**
+- Cause: every suggestion request waits for the bundled language data, which loads 1–3 s after the keyboard process starts. Vivo frequently restarts background keyboards, so a freshly focused empty field showed nothing until the load finished. With the data loaded, empty fields already showed the sentence-start words (verified in the JVM).
+- Fix: in an empty field or after a finished sentence, the first five sentence-start words (I · The · Thanks · Hi · Ok; Spanish: hola · yo · no · sí · qué) appear immediately. The computed predictions replace them with the same words once loaded. `SentenceStartersTest` keeps the two lists identical.
+- Predictions never repeat the previous word.
+- Unchanged: context-aware predictions after a space (bundled cold-start table and personal history), autocomplete while typing, nothing in password fields. With no context the row stays empty rather than guessing.
+
+**Themes.**
+- New Keyboard theme screen: current theme named at the top, all six presets plus a custom colour, the selected card marked "✓ Selected".
+- Reached from a "Keyboard theme" card at the top of Settings (showing the current theme) and from a new step 4 on the setup screen.
+- The inline picker moved from Settings → Appearance to this screen; dark mode and hint size stay in Appearance. Selection still persists in DataStore.
+
+**Tests.** +13:
+- `KeyboardViewModelTest`: starters; starters during data load (fails without the fix); a new sentence; context after a space; personal history; no invented words; no repeats; autocomplete; passwords.
+- `SentenceStartersTest`.
+- `SettingsScreensTest`: six themes, selected marker, persistence across a fresh DataStore, Settings entry, setup step.
+- `StripLayoutTest`: starters with unchanged height.
+
 ## 2026-11-07 — Language help in browser and search fields; slimmer suggestion strip
 
 **Device report (vivo V2515, build a2e98e6).** WhatsApp showed "Estoy bebiendo agua" for "I am drinking water". Chrome's search field and YouTube's search field showed only English word suggestions, with no translation.

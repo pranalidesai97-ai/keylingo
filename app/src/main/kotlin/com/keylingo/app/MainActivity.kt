@@ -16,6 +16,7 @@ import com.keylingo.app.data.settings.DarkModeOption
 import com.keylingo.app.settings.SettingsViewModel
 import com.keylingo.app.settings.ui.LearnedWordsScreen
 import com.keylingo.app.settings.ui.SettingsScreen
+import com.keylingo.app.settings.ui.ThemeScreen
 import com.keylingo.app.ui.onboarding.OnboardingScreen
 import com.keylingo.app.ui.theme.KeyLingoTheme
 import com.keylingo.app.ui.theme.KeyboardThemes
@@ -25,6 +26,7 @@ private object Routes {
     const val ONBOARDING = "onboarding"
     const val SETTINGS = "settings"
     const val LEARNED_WORDS = "learned_words"
+    const val THEMES = "themes"
 }
 
 /**
@@ -59,14 +61,19 @@ private fun KeyLingoApp() {
         NavHost(navController = navController, startDestination = Routes.ONBOARDING) {
             composable(Routes.ONBOARDING) {
                 OnboardingScreen(
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) }
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                    onOpenThemes = { navController.navigate(Routes.THEMES) }
                 )
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenLearnedWords = { navController.navigate(Routes.LEARNED_WORDS) }
+                    onOpenLearnedWords = { navController.navigate(Routes.LEARNED_WORDS) },
+                    onOpenThemes = { navController.navigate(Routes.THEMES) }
                 )
+            }
+            composable(Routes.THEMES) {
+                ThemeScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.LEARNED_WORDS) {
                 LearnedWordsScreen(onBack = { navController.popBackStack() })

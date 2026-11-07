@@ -353,4 +353,82 @@ class KeyboardViewModelTest {
             assertTrue(h.context.bigrams.isEmpty())
         }
     }
+
+    // ---- Empty-field and between-words suggestions
+
+    private fun TestScope.vmWith(provider: com.keylingo.app.domain.repository.AutocompleteProvider, editor: FakeEditor, policy: InputFieldPolicy,
+                                 context: FakeContextPrediction = FakeContextPrediction()): KeyboardViewModel {
+        val learned = FakeLearnedVocabulary()
+        return KeyboardViewModel(
+            GenerateHintsUseCase(realHintProvider()), GenerateAutocompleteSuggestionsUseCase(provider, learned, context),
+            learned, context, realLanguageDetector(), MutableStateFlow(KeyLingoSettings()), SpanishLanguagePack(), editor,
+            CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        ).also { it.onStartInput(policy, restarting = false) }
+    }
+
+    @Test fun anEmptyFieldShowsStarterWords() = runTest {
+        val h = harness(policy = chat)
+        assertEquals(listOf("I", "The", "Thanks", "Hi", "Ok"), h.state.suggestions.map { it.word })
+        // Address bar: no automatic capitals, but "I" stays "I".
+        val bar = harness(policy = omnibox)
+        assertEquals(listOf("I", "the", "thanks", "hi", "ok"), bar.state.suggestions.map { it.word })
+    }
+
+    @Test fun starterWordsAppearImmediatelyWhileTheBundledDataIsStillLoading() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val real = realAutocompleteProvider()
+        val slow = object : com.keylingo.app.domain.repository.AutocompleteProvider by real {
+            override suspend fun seedNextWords(previousWord: String, languageCode: String): List<String> { gate.await(); return real.seedNextWords(previousWord, languageCode) }
+        }
+        val vm = vmWith(slow, FakeEditor(""), chat)
+        testScheduler.advanceUntilIdle()
+        assertEquals("shown before the data has loaded", listOf("I", "The", "Thanks", "Hi", "Ok"), vm.uiState.value.suggestions.map { it.word })
+        gate.complete(Unit); testScheduler.advanceUntilIdle()
+        assertEquals("the same words once loaded", listOf("I", "The", "Thanks", "Hi", "Ok"), vm.uiState.value.suggestions.map { it.word })
+    }
+
+    @Test fun aNewSentenceStartsWithStarterWords() = runTest {
+        val h = harness("Thanks. ", policy = chat)
+        assertEquals(listOf("I", "The", "Thanks", "Hi", "Ok"), h.state.suggestions.map { it.word })
+    }
+
+    @Test fun afterASpacePredictionsComeFromContext() = runTest {
+        val h = harness(policy = chat)
+        h.type("I want ")
+        assertEquals("to", h.state.suggestions.first().word)
+        // Existing text before the cursor when the field opens is used the same way.
+        val existing = harness("Thank you for the ", policy = chat)
+        assertTrue(existing.state.suggestions.isNotEmpty())
+        // Personal history predicts where the bundled data has nothing.
+        val learned = harness(policy = chat)
+        learned.context.bigrams[Triple("should", "go", "en")] = 4
+        learned.type("We should ")
+        assertEquals("go", learned.state.suggestions.first().word)
+    }
+
+    @Test fun noPredictionsAreInventedWithoutContext() = runTest {
+        // "should" has no bundled continuations and no personal history: the row stays empty rather than guessing.
+        val h = harness(policy = chat)
+        h.type("We should ")
+        assertEquals(emptyList<String>(), h.state.suggestions.map { it.word })
+    }
+
+    @Test fun predictionsNeverRepeatThePreviousWord() = runTest {
+        val h = harness(policy = chat)
+        h.context.bigrams[Triple("very", "very", "en")] = 9
+        h.context.bigrams[Triple("very", "good", "en")] = 2
+        h.type("This is very ")
+        val words = h.state.suggestions.map { it.word.lowercase() }
+        assertTrue(words.toString(), "very" !in words)
+        assertTrue(words.toString(), "good" in words)
+        assertEquals("no duplicates", words.distinct(), words)
+    }
+
+    @Test fun typingStillAutocompletesAndPasswordFieldsStayEmpty() = runTest {
+        val h = harness(policy = chat)
+        h.type("hel")
+        assertTrue(h.state.suggestions.map { it.word.lowercase() }.toString(), h.state.suggestions.any { it.word.lowercase() in setOf("hello", "help") })
+        val pw = harness(policy = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD, EditorInfo.IME_ACTION_DONE))
+        assertTrue("no starter words in a password field", pw.state.suggestions.isEmpty())
+    }
 }

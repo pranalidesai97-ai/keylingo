@@ -1,6 +1,7 @@
 package com.keylingo.app.keyboard
 
 import com.keylingo.app.data.settings.KeyLingoSettings
+import com.keylingo.app.domain.model.SentenceStarters
 import com.keylingo.app.domain.model.AutocompleteSuggestion
 import com.keylingo.app.domain.model.HintWord
 import com.keylingo.app.domain.model.LearningAssistance
@@ -426,10 +427,20 @@ class KeyboardViewModel(
             return
         }
         val ctx = context()
-        val language = state.settings.typingLanguage.code ?: languageDetector.detect(ctx.currentSentence.ifEmpty { ctx.currentWord })
         val prefix = if (ctx.cursorInsideWord) "" else ctx.currentWord
         // Predict the next word only right after a space (not straight after "word," or mid-punctuation).
         val canPredict = prefix.isNotEmpty() || ctx.before.isEmpty() || ctx.before.last().isWhitespace()
+        // Empty field or a new sentence: show starter words right away. The computed predictions below need the
+        // bundled data, which can still be loading for 1-3 s after the keyboard starts; they replace these
+        // (same words) when ready.
+        if (prefix.isEmpty() && canPredict && ctx.atSentenceStart && state.suggestions.isEmpty()) {
+            val starters = SentenceStarters.forLanguage(state.settings.typingLanguage.code).map { word ->
+                AutocompleteSuggestion(if (policy.autoCapitalize || word == "I") word.replaceFirstChar { it.titlecase() } else word,
+                    0, SuggestionKind.PREDICTION, state.settings.typingLanguage.code ?: "en")
+            }
+            _uiState.update { it.copy(suggestions = starters, autoCorrection = null) }
+        }
+        val language = state.settings.typingLanguage.code ?: languageDetector.detect(ctx.currentSentence.ifEmpty { ctx.currentWord })
         val result = if (!canPredict) com.keylingo.app.domain.model.SuggestionResult.EMPTY else generateSuggestions(
             SuggestionRequest(
                 prefix = prefix,

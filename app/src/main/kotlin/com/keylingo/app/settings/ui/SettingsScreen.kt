@@ -40,14 +40,13 @@ import com.keylingo.app.data.settings.HintSizeOption
 import com.keylingo.app.data.settings.TypingLanguageOption
 import com.keylingo.app.domain.model.LearningMode
 import com.keylingo.app.settings.SettingsViewModel
-import com.keylingo.app.ui.theme.KeyboardThemes
-import androidx.compose.foundation.isSystemInDarkTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenLearnedWords: () -> Unit = {},
+    onOpenThemes: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
@@ -63,8 +62,11 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
+            // ---- Theme: first, so it is easy to find
+            ThemeEntryRow(settings, onClick = onOpenThemes)
+
             // ---- Typing
-            SectionHeader(stringResource(R.string.settings_section_typing), first = true)
+            SectionHeader(stringResource(R.string.settings_section_typing))
             ToggleRow(
                 title = stringResource(R.string.settings_autocorrect),
                 description = stringResource(R.string.settings_autocorrect_desc),
@@ -97,19 +99,6 @@ fun SettingsScreen(
 
             // ---- Appearance
             SectionHeader(stringResource(R.string.settings_section_appearance))
-            Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(8.dp))
-            val systemDark = isSystemInDarkTheme()
-            ThemePickerSection(
-                selected = settings.themePreset,
-                customAccentArgb = settings.customAccentArgb,
-                darkPreview = { preset ->
-                    KeyboardThemes.useDark(preset, settings.darkMode == DarkModeOption.SYSTEM, settings.darkMode == DarkModeOption.DARK, systemDark)
-                },
-                onSelectPreset = viewModel::setThemePreset,
-                onSelectCustom = viewModel::setCustomAccent
-            )
-            Gap()
             DarkModeSection(selected = settings.darkMode, onSelect = viewModel::setDarkMode)
             Gap()
             HintSizeSection(selected = settings.hintSize, onSelect = viewModel::setHintSize)

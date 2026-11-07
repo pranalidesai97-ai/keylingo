@@ -34,7 +34,7 @@ import com.keylingo.app.R
  * on Android, so this screen just opens the right system UI for each.
  */
 @Composable
-fun OnboardingScreen(onOpenSettings: () -> Unit) {
+fun OnboardingScreen(onOpenSettings: () -> Unit, onOpenThemes: () -> Unit = {}) {
     val context = LocalContext.current
 
     Scaffold { padding ->
@@ -78,6 +78,13 @@ fun OnboardingScreen(onOpenSettings: () -> Unit) {
                 description = stringResource(R.string.onboarding_step3_desc),
                 actionLabel = stringResource(R.string.onboarding_step3_action),
                 onAction = onOpenSettings
+            )
+
+            OnboardingStepCard(
+                title = stringResource(R.string.onboarding_step4_title),
+                description = stringResource(R.string.onboarding_step4_desc),
+                actionLabel = stringResource(R.string.onboarding_step4_action),
+                onAction = onOpenThemes
             )
 
             Spacer(modifier = Modifier.height(8.dp))

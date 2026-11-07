@@ -18,11 +18,11 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 
 ## 2. Current results (2026-11-06)
 
-**182 tests, 0 failures, 24 suites** (2026-11-07, after the cross-app fix).
+**195 tests, 0 failures, 25 suites** (2026-11-07, after the starter-words and theme-screen change).
 
 | Suite | Tests | What it covers |
 |---|---|---|
-| `KeyboardViewModelTest` | 30 | Real typing sequences into a simulated text field. Covers auto-caps, grapheme backspace, double-space and autocorrect with undo. Also picks, prediction, learning, password/incognito/email fields, Enter actions, translation and hints. New: forced Spanish mode, grammar suggested but not applied, translation of the corrected source, grammar waits for a finished word, grammar off. |
+| `KeyboardViewModelTest` | 37 | Real typing sequences into a simulated text field. Covers auto-caps, grapheme backspace, double-space and autocorrect with undo. Also picks, prediction, learning, password/incognito/email fields, Enter actions, translation and hints. New: forced Spanish mode, grammar suggested but not applied, translation of the corrected source, grammar waits for a finished word, grammar off. |
 | `GenerateAutocompleteSuggestionsUseCaseTest` | 21 | Ranking, case, typos, curated misspellings (`becuase`, `definately`, `tomorow`, `recieve`, `teh`). No junk beside good completions; proper nouns in the top 3; rare real words never corrected; Spanish misspellings; learned words; context re-ranking. |
 | `EnglishToSpanishTranslatorTest` | 14 | 96 sentences: the 9 requested examples, `adónde`, tenses, modals, clitics, gustar, ser/estar/tener, questions, subjunctive, agreement, idioms, alignments. |
 | `SpanishToEnglishTranslatorTest` | 13 | 112 sentences: the 6 requested examples, dropped subjects, negation, questions, ages, unaccented questions, verb chains, gustar/doler, idioms, ser/estar, prepositions, set phrases. Unknown words must lower coverage. |
@@ -37,13 +37,14 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `TextContextTest` | 4 | Word/sentence extraction. |
 | `KeyboardThemesTest` | 4 | Every preset plus 14 custom swatches, light and dark, reach WCAG contrast. Sunlight Yellow is the default; dark-mode rules. |
 | `KeyboardScreenshotTest` (Robolectric Compose) | 4 | Renders every theme, the grammar row, the translation row and the theme picker to PNG. |
-| `SettingsScreensTest` (Robolectric Compose) | 4 | Learned-words filter, single delete, delete-all confirmation, empty state. Settings sections and persisted changes. Renders PNGs. |
+| `SettingsScreensTest` (Robolectric Compose) | 8 | Learned-words filter, single delete, delete-all confirmation, empty state. Settings sections and persisted changes. Theme screen: six themes, selected marker, persistence after restart, Settings entry, setup step. Renders PNGs. |
 | `KeyFeedbackTest` | 3 | Vibration and sound are independent, off by default, with the right sound per key. |
 | `BackspaceGestureTest` (Robolectric Compose) | 2 | Hold repeats; release stops immediately. |
 | `SettingsPersistenceTest` | 2 | Vibration/sound and theme survive a new DataStore instance. |
 | `AssistanceLatencyTest` | 1 | Per-sentence grammar / EN→ES / ES→EN / full analysis under budget (measured < 1 ms each). |
 | `VocabularyMetricsTest` | 1 | Prints vocabulary counts (`VOCAB …` lines). |
-| `StripLayoutTest` (Robolectric Compose) | 6 | Strip height per field and setting (86 dp assisted, 40 dp otherwise); unchanged while typing; Large hint size; renders `strip-*.png`. |
+| `SentenceStartersTest` | 1 | Immediate starter words equal the bundled sentence-start row (EN and ES). |
+| `StripLayoutTest` (Robolectric Compose) | 7 | Strip height per field and setting (86 dp assisted, 40 dp otherwise); unchanged while typing; Large hint size; renders `strip-*.png`. |
 | `SpanishGrammarNotesTest` | 8 | Production Spanish note patterns: progressive constructions, accents, capitals, NFD, punctuation, word boundaries, English, empty input, all ten rules, and the real `LearningAssistant` path. |
 | `AndroidRegexCompatibilityTest` | 3 | No Android-incompatible regex syntax in any production pattern. A checker self-test uses the exact pattern that crashed. Writes the cases for the ICU check. |
 

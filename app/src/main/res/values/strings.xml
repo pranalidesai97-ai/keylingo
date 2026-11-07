@@ -78,4 +78,12 @@
     </plurals>
     <string name="learned_words_delete">Delete %1$s</string>
     <string name="learned_words_back">Back</string>
+    <string name="theme_selected">Selected</string>
+    <string name="theme_current">Current theme</string>
+    <string name="theme_screen_desc">Tap a theme to use it. The keyboard changes the next time it opens, and your choice is kept after restarting.</string>
+    <string name="theme_back">Back</string>
+    <string name="settings_theme_entry_desc">Change the keyboard colours</string>
+    <string name="onboarding_step4_title">4. Choose a theme</string>
+    <string name="onboarding_step4_desc">Six colour themes, or your own colour. Sunlight Yellow is the default.</string>
+    <string name="onboarding_step4_action">Choose keyboard theme</string>
 </resources>

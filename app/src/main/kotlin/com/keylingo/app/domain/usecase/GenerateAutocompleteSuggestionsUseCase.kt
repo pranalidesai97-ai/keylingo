@@ -82,6 +82,7 @@ class GenerateAutocompleteSuggestionsUseCase @Inject constructor(
         val suggestions = scores.entries
             .sortedByDescending { it.value }
             .map { it.key }
+            .filterNot { it.equals(previous, ignoreCase = true) } // never suggest "the" right after "the"
             .distinctBy { it.lowercase() }
             .take(request.maxSuggestions)
             .map { word ->

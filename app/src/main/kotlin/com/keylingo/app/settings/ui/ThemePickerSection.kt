@@ -152,5 +152,14 @@ private fun ThemeCard(name: String, colors: KeyboardColors, isSelected: Boolean,
         }
         Spacer(Modifier.height(6.dp))
         Text(name, style = MaterialTheme.typography.labelLarge, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        if (isSelected) {
+            Text(
+                "✓ " + stringResource(R.string.theme_selected),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }

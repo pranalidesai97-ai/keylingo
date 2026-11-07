@@ -105,7 +105,8 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 |---|---|---|
 | Personal bigrams | ✅ | |
 | Personal trigrams (Context DB v2, non-destructive migration) | ✅ | migration test validates schema |
-| Cold-start model (EN 76 heads, ES 21 heads, sentence start) | ✅ | `predictsNextWordWithNoHistory` |
+| Cold-start model (EN 79 heads, ES 21 heads, sentence start) | ✅ | `predictsNextWordWithNoHistory` |
+| Starter words in an empty field / new sentence, shown immediately even while data loads; never the previous word repeated; empty row (not guesses) without context | ✅ | `KeyboardViewModelTest`, `SentenceStartersTest`, `StripLayoutTest` |
 | Context only re-ranks prefix matches | ✅ | `contextReranksButNeverIntroduces…` |
 | Capitalised predictions at sentence start | ✅ / 🟨 | |
 
@@ -130,6 +131,7 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 |---|---|---|
 | Sections: Typing · Appearance · Learning & translation · Personal dictionary · About | ✅ / 🖼 | `SettingsScreensTest` |
 | Typing: autocorrect, number row, vibration (off), sound (off), typing language | ✅ | whole row is the touch target |
-| Appearance: theme presets + custom swatches/hue, dark mode, hint size | ✅ / 🖼 | |
+| Keyboard theme screen (current theme, six presets + custom, "✓ Selected"), opened from the top of Settings and setup step 4 | ✅ / 🖼 | `SettingsScreensTest` |
+| Appearance: dark mode, hint size | ✅ / 🖼 | |
 | Learning: learning row, sentence translation, grammar suggestions, learning mode, learning language | ✅ | |
 | Personal dictionary: learned-words manager, delete all | ✅ / 🖼 | |

@@ -142,4 +142,14 @@ class StripLayoutTest {
         snapshot("chat-large-grammar")
         assertDp(WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT + keys, height())
     }
+
+    @Test fun emptyFieldShowsStarterWordsWithoutChangingTheHeight() {
+        val kb = show(chat)
+        assertEquals(listOf("I", "The", "Thanks", "Hi", "Ok"), kb.vm.uiState.value.suggestions.map { it.word })
+        snapshot("empty-field-starters")
+        val empty = height()
+        kb.type("I want ")
+        assertEquals("to", kb.vm.uiState.value.suggestions.first().word)
+        assertDp(empty, height())
+    }
 }
