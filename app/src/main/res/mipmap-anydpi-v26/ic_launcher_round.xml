@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  KeyLingo launcher icon, built from the approved master logo
+  (tools/branding/keylingo-logo-master.webp, see make_launcher_assets.py).
+  The whole artwork is in the background layer exactly as supplied; the
+  foreground is empty. The monochrome layer is the white K-and-bubble
+  silhouette for Android 13+ themed icons.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
-    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@android:color/transparent" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>

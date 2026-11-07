@@ -43,14 +43,20 @@ fun OnboardingScreen(onOpenSettings: () -> Unit, onOpenThemes: () -> Unit = {}) 
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             com.keylingo.app.ui.brand.KeyLingoWordmark(markSize = 52.dp)
+            Text(
+                text = stringResource(R.string.onboarding_tagline),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Text(
                 text = stringResource(R.string.onboarding_title),
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(top = 8.dp)
             )
 
             OnboardingStepCard(
@@ -103,15 +109,16 @@ private fun OnboardingStepCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(text = title, style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(6.dp))
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(14.dp))

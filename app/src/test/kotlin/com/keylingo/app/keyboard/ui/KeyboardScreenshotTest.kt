@@ -105,7 +105,7 @@ class KeyboardScreenshotTest {
 
     @Test fun renderThemePicker() {
         compose.setContent {
-            com.keylingo.app.ui.theme.KeyLingoTheme(darkTheme = false) {
+            com.keylingo.app.ui.theme.KeyLingoAppTheme(darkTheme = false) {
                 androidx.compose.material3.Surface {
                     Box(Modifier.width(380.dp).padding(16.dp)) {
                         com.keylingo.app.settings.ui.ThemePickerSection(

@@ -121,7 +121,7 @@ fun ThemePickerSection(
 private fun ThemeCard(name: String, colors: KeyboardColors, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
     Column(
         modifier = modifier
-            .border(if (isSelected) 3.dp else 1.dp, if (isSelected) colors.accent else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+            .border(if (isSelected) 3.dp else 1.dp, if (isSelected) colors.accent else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
             .padding(6.dp)
             .semantics { role = Role.RadioButton; this.selected = isSelected },

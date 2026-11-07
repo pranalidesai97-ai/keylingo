@@ -16,8 +16,8 @@ object StarterPhrases {
     )
 
     val SPANISH: List<String> = listOf(
-        "Hola", "Gracias", "Buenos días", "Buenas noches", "¿Cómo estás?", "¿Cómo está usted?", "Mucho gusto",
-        "Por favor", "Lo siento", "De nada", "Hasta luego", "Buena suerte", "Que tengas un buen día",
+        "Hola", "Gracias", "Buenos días", "Buenas noches", "¿Cómo estás?", "Por favor", "Sí", "No", "Hasta luego", "¿Qué tal?",
+        "¿Cómo está usted?", "Mucho gusto", "Lo siento", "De nada", "Buena suerte", "Que tengas un buen día",
         // Learning-related
         "Curso básico", "Aprende español", "Más",
     )

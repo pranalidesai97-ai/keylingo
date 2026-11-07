@@ -15,6 +15,10 @@ thread (≈0.4–0.8 s on the build JVM with the 111.8k-word lexicon). All files
 | `prediction/en_next_words.tsv` | 79 heads | 3.8 KB | `previous  next1  next2 ...` (`<s>` = sentence start) | Hand-authored cold-start model. |
 | `prediction/es_next_words.tsv` | 21 heads | 0.8 KB | same | Hand-authored. |
 
+### Other bundled files
+- `assets/licenses/PlusJakartaSans-OFL.txt`: licence for the bundled app font (`res/font/plus_jakarta_sans_*.ttf`, converted from Fontsource 5.3.0 WOFF2; Latin subset incl. Spanish characters).
+- `tools/branding/keylingo-logo-master.webp`: the approved logo, source of all icon assets (not shipped).
+
 ### Dictionary rules (`en_es.tsv`)
 - One row per (English lemma, part of speech). POS: `noun verb adj adv pron prep conj other`.
 - Verbs: Spanish **infinitive** (reflexive `-se` and multi-word verbs such as

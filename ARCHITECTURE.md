@@ -180,7 +180,7 @@ There are five presets plus a custom colour. `KeyLingoSettings.themePreset` is s
 
 The default for new installs is Ocean Mist; a saved choice is never replaced.
 
-**Ocean Mist** is the approved former Ocean Blue. It is still derived by HSL rules from one accent colour and is flat: single-stop "gradients". `KeyboardThemesTest` pins every value to the pre-change palette. The custom colour uses the same derivation.
+**Ocean Mist** is the approved former Ocean Blue. Its colours are still derived by HSL rules from one accent colour, and `KeyboardThemesTest` pins every value. `oceanMistGradients` adds three-stop gradients whose middle stop is each approved colour. The custom colour uses the same derivation and stays flat.
 
 **Sunset Bloom, Aqua Breeze, Golden Dune, Slate Grey** are hand-tuned three-stop gradients in `gradientThemes`, each with light and dark variants. Gradients are drawn on:
 - the keyboard background: one diagonal brush behind the strip and the keys;
@@ -201,10 +201,15 @@ Letter keys stay a flat off-white tint with dark text. `KeyboardColors` keeps on
 - Nothing is learned from phrases.
 - Typing switches to normal autocomplete; deleting everything brings the phrases back.
 
-**Branding.**
-- Adaptive launcher icon: `ic_launcher_background` (brand gradient), `ic_launcher_foreground` (two speech bubbles, gradient K with a coral acute accent) and `ic_launcher_monochrome` (themed icons).
-- `ic_keylingo_mark` is the same artwork on a rounded square for in-app use.
-- `ui/brand/KeyLingoWordmark` combines the mark with "Key" and "Lingo" (the latter in the brand gradient) on the setup screen and in Settings → About.
+**Branding.** The approved logo `tools/branding/keylingo-logo-master.webp` is the source of truth. `tools/branding/make_launcher_assets.py` generates:
+- `mipmap-*/ic_launcher_background.png`: the whole artwork, square filling the visible 72 dp;
+- `mipmap-*/ic_launcher_monochrome.png`: themed-icon silhouette;
+- `drawable-nodpi/ic_keylingo_mark.png`: in-app mark;
+- `ic_launcher-playstore.png`.
+
+The adaptive icon's foreground is transparent. `ui/brand/KeyLingoWordmark` shows the mark with "Key" and "Lingo" (the latter in the logo's gradient).
+
+**App theme.** `KeyLingoAppTheme` (Plus Jakarta Sans from `res/font`, app shapes, page colours) wraps the app screens. The keyboard keeps `KeyLingoTheme` with the system font, so keyboard rendering is independent of app typography.
 
 ## 6. Translator design (`EnglishToSpanishTranslator`)
 

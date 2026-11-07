@@ -458,10 +458,12 @@ class KeyboardViewModel(
         val ctx = context()
         // Empty field: everyday starter phrases instead of single-word guesses. Constants, so no data is awaited.
         if (isEmptyField(ctx)) {
-            val phrases = StarterPhrases.forLanguage(phraseLanguage())
+            val language = phraseLanguage()
+            val phrases = StarterPhrases.forLanguage(language)
             suggestionsComputedFor = null
-            if (state.starterPhrases != phrases || state.suggestions.isNotEmpty() || state.autoCorrection != null) {
-                _uiState.update { it.copy(starterPhrases = phrases, suggestions = emptyList(), autoCorrection = null) }
+            // Also record the language, so the space bar reads "Español" in an empty field in Spanish mode.
+            if (state.starterPhrases != phrases || state.suggestions.isNotEmpty() || state.autoCorrection != null || state.typingLanguage != language) {
+                _uiState.update { it.copy(starterPhrases = phrases, suggestions = emptyList(), autoCorrection = null, typingLanguage = language) }
             }
             return
         }

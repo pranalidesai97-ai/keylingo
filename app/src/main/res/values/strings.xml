@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">KeyLingo</string>
     <string name="onboarding_title">Set up KeyLingo</string>
+    <string name="onboarding_tagline">Type in English, learn Spanish as you go. Everything stays on your phone.</string>
     <string name="onboarding_step1_title">1. Enable the keyboard</string>
     <string name="onboarding_step1_desc">Turn on KeyLingo in your system keyboard list.</string>
     <string name="onboarding_step1_action">Open keyboard settings</string>

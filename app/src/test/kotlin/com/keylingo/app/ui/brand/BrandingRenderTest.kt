@@ -21,7 +21,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.unit.dp
 import com.keylingo.app.R
-import com.keylingo.app.ui.theme.KeyLingoTheme
+import com.keylingo.app.ui.theme.KeyLingoAppTheme
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -36,8 +36,9 @@ import kotlin.math.pow
 import kotlin.math.sign
 
 /**
- * The launcher icon and in-app mark: resources inflate (adaptive icon with a
- * monochrome layer for themed icons), and previews are rendered to
+ * The launcher icon and in-app mark, built from the approved master logo
+ * (tools/branding): resources inflate (adaptive icon with a monochrome layer
+ * for themed icons), and previews are rendered to
  * build/keyboard-screenshots/brand-*.png in common launcher shapes and sizes.
  * JVM (Robolectric) renders for review, not device screenshots.
  */
@@ -122,24 +123,25 @@ class BrandingRenderTest {
         }
         save(dark, "launcher-icon-dark-wallpaper")
 
-        // The mark is legible at small sizes: the white front bubble and the dark K both survive at 48px.
+        // Legible at small sizes: at 48px the white K-and-bubble and the vivid gradient both survive.
         val small = renderIcon(icon, 48, circle)
-        var white = 0; var deep = 0
+        var white = 0; var vivid = 0
         for (yy in 0 until 48) for (xx in 0 until 48) {
             val p = small.getPixel(xx, yy)
-            if (Color.red(p) > 235 && Color.green(p) > 235 && Color.blue(p) > 235) white++
-            if (Color.blue(p) > 80 && Color.red(p) < 60 && Color.green(p) < 90) deep++
+            val mx = maxOf(Color.red(p), Color.green(p), Color.blue(p)); val mn = minOf(Color.red(p), Color.green(p), Color.blue(p))
+            if (mn > 215) white++
+            if (Color.alpha(p) > 200 && mx - mn > 150) vivid++
         }
-        assertTrue("front bubble visible at 48px ($white px)", white > 250)
-        assertTrue("deep brand tones visible at 48px ($deep px)", deep > 40)
+        assertTrue("white K and bubble visible at 48px ($white px)", white > 120)
+        assertTrue("vivid gradient visible at 48px ($vivid px)", vivid > 900)
     }
 
     @Test fun wordmarkRendersOnLightAndDark() {
         compose.setContent {
             androidx.compose.foundation.layout.Column {
-                KeyLingoTheme(darkTheme = false) { Surface { Box(Modifier.padding(24.dp)) { KeyLingoWordmark(markSize = 56.dp) } } }
-                KeyLingoTheme(darkTheme = true) { Surface { Box(Modifier.padding(24.dp)) { KeyLingoWordmark(markSize = 56.dp) } } }
-                KeyLingoTheme(darkTheme = false) { Surface { Box(Modifier.padding(24.dp)) { KeyLingoWordmark(markSize = 32.dp) } } }
+                KeyLingoAppTheme(darkTheme = false) { Surface { Box(Modifier.padding(24.dp)) { KeyLingoWordmark(markSize = 56.dp) } } }
+                KeyLingoAppTheme(darkTheme = true) { Surface { Box(Modifier.padding(24.dp)) { KeyLingoWordmark(markSize = 56.dp) } } }
+                KeyLingoAppTheme(darkTheme = false) { Surface { Box(Modifier.padding(24.dp)) { KeyLingoWordmark(markSize = 32.dp) } } }
             }
         }
         compose.waitForIdle()
@@ -150,7 +152,7 @@ class BrandingRenderTest {
     }
 
     @Test fun setupScreenShowsTheWordmark() {
-        compose.setContent { KeyLingoTheme(darkTheme = false) { com.keylingo.app.ui.onboarding.OnboardingScreen(onOpenSettings = {}) } }
+        compose.setContent { KeyLingoAppTheme(darkTheme = false) { com.keylingo.app.ui.onboarding.OnboardingScreen(onOpenSettings = {}) } }
         compose.onNodeWithContentDescription("KeyLingo").assertIsDisplayed()
         compose.waitForIdle()
         val root = compose.activity.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)

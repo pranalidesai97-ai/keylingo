@@ -32,6 +32,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -80,13 +82,13 @@ fun ThemeScreenContent(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
-            Text(stringResource(R.string.theme_current).uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.theme_current).uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.2.sp), color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(4.dp))
             Text(presetName(settings.themePreset), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(6.dp))
             Text(
                 stringResource(R.string.theme_screen_desc),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(16.dp))
@@ -111,9 +113,11 @@ fun ThemeEntryRow(settings: KeyLingoSettings, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(22.dp))
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Two overlapping dots: keyboard background and accent.
@@ -122,8 +126,8 @@ fun ThemeEntryRow(settings: KeyLingoSettings, onClick: () -> Unit) {
             Box(Modifier.padding(start = 14.dp).size(30.dp).background(colors.accentGradient.toBrush(), CircleShape).border(2.dp, MaterialTheme.colorScheme.surface, CircleShape))
         }
         Column(Modifier.weight(1f).padding(start = 14.dp)) {
-            Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleLarge)
-            Text(presetName(settings.themePreset), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleMedium)
+            Text(presetName(settings.themePreset), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.settings_theme_entry_desc))
     }

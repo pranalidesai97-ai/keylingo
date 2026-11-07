@@ -25,7 +25,7 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 | Visual pressed state (face tint + 0.95 scale) on every key | 🖼 | `KeyboardScreenshotTest` |
 | Keyboard geometry: keys 260 dp in all modes and themes; strip 40 dp word row + 46 dp learning row, or the word row alone in fields without language help / with learning and grammar off; constant while typing | ✅ / 🖼 | `StripLayoutTest` (measured heights, renders); landscape not adapted |
 | Translation, word hints and grammar chips in browser address bars, search boxes (`textUri`, `textFilter`, web inputs, SearchView) and untyped fields; never in passwords or e-mail fields; URLs/e-mails typed in them are skipped | ✅ | `InputFieldPolicyTest` (21 field configurations), `KeyboardViewModelTest` cross-app tests; **device-confirmed only for WhatsApp so far** |
-| Themes: Ocean Mist (approved design, unchanged; default), Sunset Bloom, Aqua Breeze, Golden Dune, Slate Grey + custom colour; gradients on the keyboard background, special keys, chips and accent surfaces; light/dark; persisted; older saved themes mapped | ✅ / 🖼 | `KeyboardThemesTest` (contrast on every stop, gradient visibility and hues, Ocean Mist pinned), `ThemeRenderingTest` (pixels), `SettingsPersistenceTest`, renders |
+| Themes: Ocean Mist (approved colours with a gradient; default), Sunset Bloom, Aqua Breeze, Golden Dune, Slate Grey + custom colour; gradients on the keyboard background, special keys, chips and accent surfaces; light/dark; persisted; older saved themes mapped | ✅ / 🖼 | `KeyboardThemesTest` (contrast on every stop, gradient visibility and hues, Ocean Mist pinned), `ThemeRenderingTest` (pixels), `SettingsPersistenceTest`, renders |
 | Number/phone fields open symbols layer | ✅ | `numberFieldsOpenTheSymbolsLayer` |
 | TalkBack labels and click actions on keys/chips | 🟨 | |
 | Keyboard switching (globe) | ❌ | system switcher only (`supportsSwitchingToNextInputMethod` declared, no key) |
@@ -133,7 +133,8 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 | Sections: Typing · Appearance · Learning & translation · Personal dictionary · About | ✅ / 🖼 | `SettingsScreensTest` |
 | Typing: autocorrect, number row, vibration (off), sound (off), typing language | ✅ | whole row is the touch target |
 | Keyboard theme screen (current theme, five gradient previews + custom, "✓ Selected"), opened from the top of Settings and setup step 4 | ✅ / 🖼 | `SettingsScreensTest` |
-| App icon (adaptive + themed monochrome) and KeyLingo wordmark on setup screen and About | ✅ / 🖼 | `BrandingRenderTest` (inflation, small-size legibility, renders) |
+| App icon from the approved supplied logo (adaptive + themed monochrome, store icon) and KeyLingo wordmark on setup screen and About | ✅ / 🖼 | `BrandingRenderTest` (inflation, small-size legibility, renders) |
+| App typography (bundled Plus Jakarta Sans, offline) and card-based settings/setup UI; keyboard font unchanged | 🖼 | renders in `SettingsScreensTest` / `BrandingRenderTest` |
 | Appearance: dark mode, hint size | ✅ / 🖼 | |
 | Learning: learning row, sentence translation, grammar suggestions, learning mode, learning language | ✅ | |
 | Personal dictionary: learned-words manager, delete all | ✅ / 🖼 | |

@@ -23,7 +23,7 @@ import com.keylingo.app.settings.ui.LearnedWordsContent
 import com.keylingo.app.settings.ui.SettingsScreen
 import com.keylingo.app.testing.FakeContextPrediction
 import com.keylingo.app.testing.FakeLearnedVocabulary
-import com.keylingo.app.ui.theme.KeyLingoTheme
+import com.keylingo.app.ui.theme.KeyLingoAppTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -66,7 +66,7 @@ class SettingsScreensTest {
     @Test fun learnedWordsCanBeFilteredAndDeletedOneByOne() {
         val forgotten = mutableListOf<String>()
         compose.setContent {
-            KeyLingoTheme(darkTheme = false) { Surface { LearnedWordsContent(sample, {}, { forgotten += it.word }, {}) } }
+            KeyLingoAppTheme(darkTheme = false) { Surface { LearnedWordsContent(sample, {}, { forgotten += it.word }, {}) } }
         }
         snapshot("settings-learned-words")
         compose.onNodeWithText("Used 2 times", substring = true).assertIsDisplayed()
@@ -80,7 +80,7 @@ class SettingsScreensTest {
     @Test fun deleteAllAsksForConfirmation() {
         var cleared = false
         compose.setContent {
-            KeyLingoTheme(darkTheme = false) { Surface { LearnedWordsContent(sample, {}, {}, { cleared = true }) } }
+            KeyLingoAppTheme(darkTheme = false) { Surface { LearnedWordsContent(sample, {}, {}, { cleared = true }) } }
         }
         compose.onNodeWithText("Delete learned words").performClick()
         assertEquals(false, cleared)
@@ -89,7 +89,7 @@ class SettingsScreensTest {
     }
 
     @Test fun emptyStateExplainsHowWordsAreLearned() {
-        compose.setContent { KeyLingoTheme(darkTheme = false) { Surface { LearnedWordsContent(emptyList(), {}, {}, {}) } } }
+        compose.setContent { KeyLingoAppTheme(darkTheme = false) { Surface { LearnedWordsContent(emptyList(), {}, {}, {}) } } }
         compose.onNodeWithText("No learned words yet", substring = true).assertIsDisplayed()
     }
 
@@ -99,7 +99,7 @@ class SettingsScreensTest {
         val vm = SettingsViewModel(store, FakeLearnedVocabulary(), FakeContextPrediction())
         var openedLearnedWords = false
         compose.setContent {
-            KeyLingoTheme(darkTheme = false) { SettingsScreen(onBack = {}, onOpenLearnedWords = { openedLearnedWords = true }, viewModel = vm) }
+            KeyLingoAppTheme(darkTheme = false) { SettingsScreen(onBack = {}, onOpenLearnedWords = { openedLearnedWords = true }, viewModel = vm) }
         }
         snapshot("settings-screen")
         listOf("TYPING", "APPEARANCE", "LEARNING & TRANSLATION", "PERSONAL DICTIONARY", "ABOUT").forEach {
@@ -126,7 +126,7 @@ class SettingsScreensTest {
     @Test fun themeScreenShowsAllFiveThemesAndMarksTheCurrentOne() {
         var picked: com.keylingo.app.data.settings.KeyboardThemePreset? = null
         compose.setContent {
-            KeyLingoTheme(darkTheme = false) { Surface { com.keylingo.app.settings.ui.ThemeScreenContent(KeyLingoSettings(), {}, { picked = it }, {}) } }
+            KeyLingoAppTheme(darkTheme = false) { Surface { com.keylingo.app.settings.ui.ThemeScreenContent(KeyLingoSettings(), {}, { picked = it }, {}) } }
         }
         snapshot("settings-theme-screen")
         fiveThemes.forEach { name -> assertTrue("missing $name", compose.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty()) }
@@ -141,7 +141,7 @@ class SettingsScreensTest {
     @Test fun selectedThemeIsKeptAfterRestart() {
         val store = SettingsDataStore(ApplicationProvider.getApplicationContext())
         val vm = SettingsViewModel(store, FakeLearnedVocabulary(), FakeContextPrediction())
-        compose.setContent { KeyLingoTheme(darkTheme = false) { com.keylingo.app.settings.ui.ThemeScreen(onBack = {}, viewModel = vm) } }
+        compose.setContent { KeyLingoAppTheme(darkTheme = false) { com.keylingo.app.settings.ui.ThemeScreen(onBack = {}, viewModel = vm) } }
         compose.onNodeWithText("Aqua Breeze").performClick()
         repeat(10) { Thread.sleep(50); compose.waitForIdle() } // DataStore write resumes on the main looper
         // A fresh DataStore reader stands in for an app/keyboard restart.
@@ -156,7 +156,7 @@ class SettingsScreensTest {
         val store = SettingsDataStore(ApplicationProvider.getApplicationContext())
         val vm = SettingsViewModel(store, FakeLearnedVocabulary(), FakeContextPrediction())
         var opened = false
-        compose.setContent { KeyLingoTheme(darkTheme = false) { SettingsScreen(onBack = {}, onOpenThemes = { opened = true }, viewModel = vm) } }
+        compose.setContent { KeyLingoAppTheme(darkTheme = false) { SettingsScreen(onBack = {}, onOpenThemes = { opened = true }, viewModel = vm) } }
         snapshot("settings-top-theme-entry")
         // Visible without scrolling, with the current theme's name.
         compose.onNodeWithText("Keyboard theme").assertIsDisplayed()
@@ -167,7 +167,7 @@ class SettingsScreensTest {
 
     @Test fun setupScreenOffersTheThemeStep() {
         var opened = false
-        compose.setContent { KeyLingoTheme(darkTheme = false) { com.keylingo.app.ui.onboarding.OnboardingScreen(onOpenSettings = {}, onOpenThemes = { opened = true }) } }
+        compose.setContent { KeyLingoAppTheme(darkTheme = false) { com.keylingo.app.ui.onboarding.OnboardingScreen(onOpenSettings = {}, onOpenThemes = { opened = true }) } }
         compose.onNodeWithText("4. Choose a theme").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Choose keyboard theme").performScrollTo().performClick()
         assertTrue(opened)

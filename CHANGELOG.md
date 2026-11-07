@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-11-07 — UI polish, Spanish starter phrases, gradient refinements, approved logo
+
+**Spanish starter phrases.**
+- In Spanish mode an empty field shows: Hola, Gracias, Buenos días, Buenas noches, ¿Cómo estás?, Por favor, Sí, No, Hasta luego, ¿Qué tal?, then the earlier extras.
+- Shown immediately; never mixed with English in either explicit mode.
+- The keyboard's current language is now set in the empty-field path, so the space bar reads "Español" before typing.
+- Tests cover a setting that arrives after the field opens, live switching, an explicit language beating the last-typed one, single insertion, delete-all restoring the phrases, and password/e-mail fields.
+
+**Gradients** (Golden Dune and Sunset Bloom untouched: same values, pixel-identical renders).
+- Ocean Mist keeps its approved colours as the middle stop of new three-stop gradients on background, special keys, chips, accent and translation surfaces.
+- Aqua Breeze and Slate Grey get stronger stops.
+- Measured on the rendered keyboard (CIELAB ΔE between opposite corners), against Golden Dune / Sunset Bloom at 20.5 / 19.5:
+
+  | Theme | Light | Dark |
+  |---|---|---|
+  | Ocean Mist | 0 → 21.7 | 0 → 12.5 |
+  | Aqua Breeze | 11.6 → 21.6 | 15.7 → 20.8 |
+  | Slate Grey | 9.5 → 20.3 | 8.7 → 16.5 |
+
+- All text still passes WCAG AA on every stop.
+
+**Logo.**
+- The supplied logo (`tools/branding/keylingo-logo-master.webp`) is used as the source of truth, not redrawn.
+- `tools/branding/make_launcher_assets.py` builds the adaptive-icon background layer (five densities; the square fills the visible 72 dp, corners and bleed extended smoothly), the themed-icon silhouette (white K and bubble), the in-app mark and the 512 px store icon.
+- The previous vector logo is removed. The wordmark gradient now uses the logo's purple, blue and cyan.
+
+**App UI.**
+- Bundled Plus Jakarta Sans (OFL 1.1, offline) for app screens only; the keyboard keeps its font.
+- New type scale, rounded settings cards with hairline dividers, refined setup and theme screens, a tagline on the setup screen, and consistent 12/16/22 dp radii.
+- No navigation or behaviour changes.
+
 ## 2026-11-07 — Ocean Mist is the default theme
 
 - New installs start with Ocean Mist (its colours unchanged). Golden Dune stays one of the five selectable themes.

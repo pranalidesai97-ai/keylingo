@@ -45,7 +45,7 @@ import kotlin.math.abs
 /**
  * Checks the pixels of the real KeyboardScreen, not just the palette values:
  * the gradient is drawn on the keyboard itself (background, special keys),
- * letter keys stay flat off-white, Ocean Mist stays flat, and choosing a
+ * letter keys stay flat off-white (Ocean Mist included), and choosing a
  * theme recolours the open keyboard immediately.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -115,13 +115,13 @@ class ThemeRenderingTest {
         assertTrue("letter key now ${keyPixel(bmp, "q", 0.2f)} vs ${aqua.key}", close(keyPixel(bmp, "q", 0.2f), aqua.key))
         assertTrue(distance(bmp.at(2, 2), aqua.backgroundGradient.first()) < distance(bmp.at(2, 2), sunset.backgroundGradient.first()))
 
-        // Ocean Mist: the approved flat design -- the same colour in both corners and across Shift.
+        // Ocean Mist: approved colours with a visible gradient -- corners and the Shift face differ; letter keys stay the approved key colour.
         settings.value = settings.value.copy(themePreset = KeyboardThemePreset.OCEAN_MIST)
         settle()
         val mist = KeyboardThemes.palette(KeyboardThemePreset.OCEAN_MIST, null, dark = false)
         bmp = bitmap()
-        assertTrue(close(bmp.at(2, 2), mist.background)); assertTrue(close(bmp.at(bmp.width - 3, bmp.height - 3), mist.background))
-        assertTrue(close(keyPixel(bmp, "Shift", 0.12f), mist.specialKey)); assertTrue(close(keyPixel(bmp, "Shift", 0.88f), mist.specialKey))
-        assertEquals(1, mist.backgroundGradient.size)
+        assertTrue("Ocean Mist background is flat", distance(bmp.at(2, 2), bmp.at(bmp.width - 3, bmp.height - 3)) > 0.08f)
+        assertTrue("Ocean Mist Shift face is flat", distance(keyPixel(bmp, "Shift", 0.12f), keyPixel(bmp, "Shift", 0.88f)) > 0.02f)
+        assertTrue(close(keyPixel(bmp, "q", 0.2f), mist.key))
     }
 }

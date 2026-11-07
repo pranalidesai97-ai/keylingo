@@ -18,7 +18,7 @@ import com.keylingo.app.settings.ui.LearnedWordsScreen
 import com.keylingo.app.settings.ui.SettingsScreen
 import com.keylingo.app.settings.ui.ThemeScreen
 import com.keylingo.app.ui.onboarding.OnboardingScreen
-import com.keylingo.app.ui.theme.KeyLingoTheme
+import com.keylingo.app.ui.theme.KeyLingoAppTheme
 import com.keylingo.app.ui.theme.KeyboardThemes
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -57,7 +57,7 @@ private fun KeyLingoApp() {
     }
 
     val keyboardPalette = KeyboardThemes.palette(settings.themePreset, settings.customAccentArgb, darkTheme)
-    KeyLingoTheme(darkTheme = darkTheme, accent = keyboardPalette.accent, onAccent = keyboardPalette.onAccent) {
+    KeyLingoAppTheme(darkTheme = darkTheme, accent = keyboardPalette.accent, onAccent = keyboardPalette.onAccent) {
         NavHost(navController = navController, startDestination = Routes.ONBOARDING) {
             composable(Routes.ONBOARDING) {
                 OnboardingScreen(
