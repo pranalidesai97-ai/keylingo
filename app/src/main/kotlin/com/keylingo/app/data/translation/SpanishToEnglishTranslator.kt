@@ -131,8 +131,8 @@ class SpanishToEnglishTranslator(
         return if (verbReadings(base).isNotEmpty()) base to found.filter { it.isNotEmpty() } else null
     }
     private fun encliticsOf(w: String): List<String> = if (verbReadings(w).isNotEmpty()) emptyList() else splitEnclitic(w)?.second.orEmpty()
-    /** Preferred English sense when one Spanish noun has several (casa: house rather than home). */
-    private val preferredNounSense = mapOf("casa" to "house")
+    /** Preferred English sense when one Spanish noun has several (casa: house rather than home; US English soccer). */
+    private val preferredNounSense = mapOf("casa" to "house", "futbol" to "soccer") // keys are accent-folded
     private fun noun(w: String): SpanishFormMatch? {
         val nouns = readings(w).filter { it.entry.partOfSpeech == PartOfSpeech.NOUN }
         val preferred = preferredNounSense[SpanishText.fold(w).removeSuffix("s")]

@@ -62,9 +62,23 @@ class BundledDataIntegrityTest {
         val keys = lines.map { it.substringBefore('\t').lowercase() }
         assertEquals("duplicate words", keys.size, keys.toSet().size)
         assertTrue(lines.all { it.split('\t')[1].toIntOrNull()?.let { r -> r > 0 } == true })
-        assertEquals(listOf("I", "you", "the"), lines.take(3).map { it.substringBefore('\t') })
-        // Profanity is recognised but never proactively suggested.
+        // Ranked by real frequency: the most common words lead, ranks are unique and increasing.
+        assertTrue(lines.take(5).map { it.substringBefore('\t') }.containsAll(listOf("I", "you", "the")))
+        val ranks = lines.map { it.split('\t')[1].toInt() }
+        assertEquals("ranks must be strictly increasing", ranks.indices.map { it + 1 }, ranks)
+        // Misspelled forms are not words (autocorrect must be able to fix them).
+        assertTrue(listOf("agreeed", "disagreeed", "understanded").none { it in keys })
+        // Conversational words keep their curated chat ranks; common written words rise to their real frequency.
+        val rank = lines.associate { it.substringBefore('\t').lowercase() to it.split('\t')[1].toInt() }
+        for (w in listOf("hello", "thanks", "tomorrow", "okay", "please")) assertTrue("$w ${rank[w]}", rank.getValue(w) < 400)
+        for (w in listOf("state", "system", "information", "video", "online")) assertTrue("$w ${rank[w]}", rank.getValue(w) < 1000)
+        // wordfreq is case-folded: name forms ("john", "tom") must not be promoted into lowercase completions.
+        for (w in listOf("john", "tom", "tony", "york")) assertTrue("$w ${rank[w]}", rank.getValue(w) > 30_000)
+        // Crude words and slurs are recognised but never offered, inflections included.
         val flags = lines.associate { it.substringBefore('\t').lowercase() to it.split('\t').getOrElse(2) { "" } }
+        for (w in listOf("fucks", "motherfucker", "assholes", "porn", "bullshit", "goddamn")) assertEquals(w, "n", flags[w])
+        for (w in listOf("sex", "cocktail", "peacock", "scrumptious", "shitake").filter { it in flags }) assertEquals(w, "", flags[w])
+        // Profanity is recognised but never proactively suggested.
         assertEquals("n", flags["fuck"])
     }
 
