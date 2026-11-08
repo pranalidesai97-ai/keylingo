@@ -58,6 +58,8 @@ class BundledLanguageData(
 
     companion object {
         const val ENGLISH_LEXICON = "lexicon/en_words.tsv"
+        /** 50k Spanish words in real frequency order (wordfreq, CC BY-SA 4.0; spellings Hunspell-validated). */
+        const val SPANISH_LEXICON = "lexicon/es_words.tsv"
         const val DICTIONARY = "dictionary/en_es.tsv"
         const val IDIOMS = "dictionary/idioms_en_es.tsv"
         const val ES_EN_EXTRA = "dictionary/es_en_extra.tsv"
@@ -94,7 +96,7 @@ class BundledLanguageData(
             }.toList()
             return BundledLanguageData(
                 englishLexicon = english,
-                spanishLexicon = buildSpanishLexicon(dictionary),
+                spanishLexicon = buildSpanishLexicon(dictionary, Lexicon.parseWords(read(SPANISH_LEXICON))),
                 dictionary = dictionary,
                 idioms = idioms,
                 englishNextWords = SeedNextWords.parseTsv(read(EN_NEXT_WORDS)),
@@ -112,13 +114,18 @@ class BundledLanguageData(
          * with finite verb forms slightly behind their lemma so common nouns
          * aren't buried under 30 forms of one verb.
          */
-        private fun buildSpanishLexicon(dictionary: BundledDictionary): Lexicon {
-            val words = ArrayList<LexiconWord>(30_000)
-            spanishCore.forEachIndexed { index, w -> words.add(LexiconWord(w, index + 1, true)) }
+        private fun buildSpanishLexicon(dictionary: BundledDictionary, frequencyList: List<LexiconWord>): Lexicon {
+            // Real frequency ranks first (1..50k). Function words and generated dictionary forms that the
+            // frequency list lacks rank after it, so they are known (no false autocorrect) without
+            // outranking genuinely common words. Lexicon keeps the best rank per word.
+            val listed = frequencyList.size
+            val words = ArrayList<LexiconWord>(listed + 30_000)
+            words.addAll(frequencyList)
+            spanishCore.forEachIndexed { index, w -> words.add(LexiconWord(w, listed + index + 1, true)) }
             for (matches in dictionary.allSpanishForms()) {
                 for (m in matches) {
                     if (m.surface.contains(' ')) continue
-                    val base = m.entry.frequencyRank.coerceAtMost(40_000) + 150
+                    val base = listed + m.entry.frequencyRank.coerceAtMost(40_000) + 150
                     val penalty = when {
                         m.entry.partOfSpeech != PartOfSpeech.VERB -> 0
                         m.kind == null -> 0

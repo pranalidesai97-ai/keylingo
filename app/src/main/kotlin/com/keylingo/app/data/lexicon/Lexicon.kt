@@ -166,17 +166,20 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
         const val MAX_COMPLETION_RANK = 30_000
 
         /** Parses the bundled TSV format: word, rank, flags ("n" = known but never suggested). */
-        fun parseTsv(lines: Sequence<String>, foldAccents: Boolean): Lexicon {
+        fun parseTsv(lines: Sequence<String>, foldAccents: Boolean): Lexicon = Lexicon(parseWords(lines), foldAccents)
+
+        /** `word<TAB>rank<TAB>flags` lines (flag n = known, never suggested); `#` comments ignored. */
+        fun parseWords(lines: Sequence<String>): List<LexiconWord> {
             val words = ArrayList<LexiconWord>(70_000)
             for (line in lines) {
                 if (line.isEmpty() || line.startsWith("#")) continue
-                val parts = line.split('\t')
-                if (parts.size < 2) continue
-                val rank = parts[1].toIntOrNull() ?: continue
-                val flags = parts.getOrNull(2).orEmpty()
-                words.add(LexiconWord(parts[0], rank, suggestable = !flags.contains('n')))
+                val tab1 = line.indexOf('\t'); if (tab1 <= 0) continue
+                val tab2 = line.indexOf('\t', tab1 + 1)
+                val rank = (if (tab2 < 0) line.substring(tab1 + 1) else line.substring(tab1 + 1, tab2)).toIntOrNull() ?: continue
+                val suggestable = tab2 < 0 || line.indexOf('n', tab2 + 1) < 0
+                words.add(LexiconWord(line.substring(0, tab1), rank, suggestable))
             }
-            return Lexicon(words, foldAccents)
+            return words
         }
     }
 }

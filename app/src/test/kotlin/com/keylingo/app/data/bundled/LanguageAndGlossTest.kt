@@ -61,4 +61,12 @@ class LanguageAndGlossTest {
         val advanced = assistant.analyze(data, sentence, LearningMode.ADVANCED, null).hints.size
         assertTrue("beginner=$beginner advanced=$advanced", beginner > advanced && advanced <= 3)
     }
+
+    @Test fun detectionStaysCorrectWithTheLargerSpanishVocabulary() {
+        // English sentences full of words that are also Spanish ("video", "final", "real", "general", "no", "me").
+        for (en in listOf("I saw the final video", "the general idea is real", "no way, call me later", "send me the total cost", "I have a meeting at noon"))
+            assertEquals("\"$en\"", "en", data.languageDetector.detect(en))
+        for (es in listOf("vamos a la playa", "no sé qué hacer", "el video final es muy bueno", "tengo una reunión mañana", "entonces nos vemos luego"))
+            assertEquals("\"$es\"", "es", data.languageDetector.detect(es))
+    }
 }
