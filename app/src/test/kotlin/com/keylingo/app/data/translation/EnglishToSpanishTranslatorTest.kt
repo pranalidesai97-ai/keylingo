@@ -171,4 +171,48 @@ class EnglishToSpanishTranslatorTest {
         assertEquals("", subject.targetText) // dropped in the sentence...
         assertEquals("yo", subject.hintText) // ...but still taught as a hint
     }
+
+    @Test fun everydayContentWordsAddedFromTheFrequencyAudit() = check(
+        "I need more information about the service." to "Necesito más información sobre el servicio.",
+        "The police are here." to "La policía está aquí.",
+        "She is a journalist." to "Ella es periodista.",
+        "I have a question about my account." to "Tengo una pregunta sobre mi cuenta.",
+        "The data is correct." to "Los datos son correctos.",
+        "This is a common problem." to "Esto es un problema común.",
+        "I bought new headphones." to "Compré auriculares nuevos.",
+        "The patients are waiting." to "Los pacientes están esperando.",
+        "We need a new strategy." to "Necesitamos una estrategia nueva.",
+        "The movie was fantastic." to "La película era fantástica.",
+        "It is extremely important." to "Es extremadamente importante.",
+        "Our team won the championship." to "Nuestro equipo ganó el campeonato.",
+        "She works for a foreign company." to "Ella trabaja para una empresa extranjera.",
+        "The pressure is high." to "La presión es alta.",
+        "What is the difference?" to "¿Cuál es la diferencia?",
+        "I lost my notebook." to "Perdí mi cuaderno.",
+    )
+
+    @Test fun nounVerbWordsAfterPleaseAreImperatives() = check(
+        "Press the button." to "Presiona el botón.",
+        "Please press the button." to "Por favor presiona el botón.",
+        "Please review the document." to "Por favor revisa el documento.",
+        "I will ship the order tomorrow." to "Enviaré el pedido mañana.",
+        "It doesn't matter." to "No importa.",
+        "That's not fair." to "Eso no es justo.",
+    )
+
+    @Test fun senseAndStructureChoices() = check(
+        // Machines "work" by functioning.
+        "The server doesn't work." to "El servidor no funciona.",
+        "My phone is not working." to "Mi teléfono no está funcionando.",
+        "It works!" to "¡Funciona!",
+        "My friends work hard." to "Mis amigos trabajan mucho.",
+        "This exam is hard." to "Este examen es difícil.",
+        // great before a noun is gran/grandes, not genial.
+        "We watched a great video." to "Vimos un gran video.",
+        "They are great friends." to "Ellos son grandes amigos.",
+        // realize takes "de que"; a supplier is contacted with personal "a".
+        "I realized that it was late." to "Me di cuenta de que era tarde.",
+        "I realized it was late." to "Me di cuenta de que era tarde.",
+        "Can you contact the supplier?" to "¿Puedes contactar al proveedor?",
+    )
 }

@@ -131,7 +131,9 @@ class EnglishToSpanishTranslator(
         val spanish: String,
         val plural: Boolean = person.isPlural,
         /** True for "it"/impersonal subjects (weather, "it is good"). */
-        val impersonal: Boolean = false
+        val impersonal: Boolean = false,
+        /** English head noun of a noun-phrase subject ("the server" -> server), for verb sense choice. */
+        val head: String? = null
     )
 
     private val subjectPronouns: Map<String, Pair<Subject, String>> = mapOf(
@@ -187,7 +189,8 @@ class EnglishToSpanishTranslator(
 
     /** Adjectives describing a state/condition, which take "estar". */
     private val estarAdjectives = setOf(
-        "tired", "happy", "sad", "sick", "ill", "busy", "ready", "angry", "bored", "worried", "nervous", "excited", "scared",
+        "tired", "happy", "sad", "cold", "hot", "warm", // temperature of a thing: "la sopa está fría" (people: tener frío; weather: hace frío)
+        "sick", "ill", "busy", "ready", "angry", "bored", "worried", "nervous", "excited", "scared",
         "surprised", "married", "alone", "calm", "open", "closed", "full", "empty", "dirty", "clean", "wet", "dry", "dead",
         "alive", "sure", "wrong", "upset", "confused", "glad", "free", "available", "quiet", "comfortable", "lost", "drunk",
         "awake", "asleep", "broken", "finished", "done", "pregnant", "jealous", "lonely", "proud", "grateful", "unhappy", "cheerful",
@@ -200,6 +203,12 @@ class EnglishToSpanishTranslator(
         "hot" to Pair("calor", Gender.MASCULINE), "lucky" to Pair("suerte", Gender.FEMININE), "right" to Pair("razón", Gender.FEMININE),
     )
 
+    private val determinerWords = setOf("the", "a", "an", "my", "your", "his", "her", "our", "their", "this", "that", "these", "those")
+    private val weekdays = setOf("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+    private val partsOfDay = mapOf("morning" to "por la mañana", "afternoon" to "por la tarde", "evening" to "por la tarde", "night" to "por la noche")
+    private val clockHours = mapOf("one" to "una", "two" to "dos", "three" to "tres", "four" to "cuatro", "five" to "cinco", "six" to "seis",
+        "seven" to "siete", "eight" to "ocho", "nine" to "nueve", "ten" to "diez", "eleven" to "once", "twelve" to "doce") +
+        (1..12).associate { it.toString() to if (it == 1) "una" else it.toString() }
     private val weatherWithHacer = mapOf("cold" to "frío", "hot" to "calor", "sunny" to "sol", "windy" to "viento", "warm" to "calor")
 
     /** Spanish verbs that need a preposition before a following infinitive. */
@@ -224,7 +233,14 @@ class EnglishToSpanishTranslator(
         "summer", "winter", "spring", "autumn", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
     /** Verbs that take a finite clause complement, introduced by "que" even when English omits "that". */
-    private val clauseTakingVerbs = setOf("think", "hope", "know", "say", "believe", "guess", "feel", "wish", "tell", "want", "suppose", "promise", "see", "hear", "mean", "understand", "remember", "forget", "imagine", "expect")
+    private val clauseTakingVerbs = setOf("think", "hope", "know", "say", "believe", "guess", "feel", "wish", "tell", "want", "suppose", "promise", "see", "hear", "mean", "understand", "remember", "forget", "imagine", "expect", "realize")
+    /** Verbs whose clause complement is introduced by "de que" ("me di cuenta de que..."). */
+    private val deQueVerbs = setOf("realize")
+    /** Things that "work" in the sense of function: "the server is not working" -> "el servidor no funciona", not "trabaja". */
+    private val functioningNouns = setOf("phone", "computer", "server", "system", "app", "application", "internet", "wifi", "car", "printer",
+        "machine", "website", "site", "laptop", "tv", "television", "engine", "camera", "battery", "network", "link", "button", "screen",
+        "keyboard", "program", "software", "device", "radio", "light", "fridge", "microwave", "washer", "dishwasher", "clock", "watch",
+        "code", "plan", "idea", "method", "elevator", "heater", "monitor", "scanner", "microphone", "cable", "browser", "database")
     /** ...of which these require the subjunctive in the subordinate clause. */
     private val subjunctiveVerbs = setOf("hope", "want", "wish", "prefer", "need", "ask", "expect")
     private val humanNouns = setOf("mother", "father", "mom", "dad", "son", "daughter", "brother", "sister", "family", "friend", "wife", "husband",
@@ -304,6 +320,8 @@ class EnglishToSpanishTranslator(
         var lastInfinitiveSegment = -1
         var nonFiniteVerbs = 0
         var mainVerbLemma: String? = null
+        /** Main verb of the clause just closed, for its complementizer ("realize" -> "de que"). */
+        var previousClauseVerb: String? = null
         /** Last conjugated lexical verb: segment index, tense, person -- so "think" can become "creer" once a clause follows. */
         var lastFinite: Triple<Int, SpanishTense, SpanishPerson>? = null
         var gustarActive = false
@@ -340,6 +358,18 @@ class EnglishToSpanishTranslator(
         fun isPureNounAt(k: Int): Boolean {
             val w = wordAt(k) ?: return false
             return nouns(w).isNotEmpty() && verbs(w).isEmpty()
+        }
+
+        /** A determiner + noun followed by a verb: the subject of a new clause ("the plan is", "my sister works"). */
+        fun nounPhraseThenVerbAt(k: Int): Boolean {
+            val first = wordAt(k) ?: return false
+            if (first in setOf("this", "that") && wordAt(k + 1) in auxiliaries) return true
+            if (first !in setOf("the", "my", "your", "his", "her", "our", "their", "this", "that", "these", "those")) return false
+            var j = k + 1
+            while (wordAt(j)?.let { adjectives(it).isNotEmpty() && nouns(it).isEmpty() } == true) j++
+            if (wordAt(j)?.let { nouns(it).isNotEmpty() } != true) return false
+            val v = wordAt(j + 1) ?: return false
+            return v in auxiliaries || (isVerbAt(j + 1) && !isPureNounAt(j + 1))
         }
 
         fun looksLikeSubjectAt(k: Int): Boolean {
@@ -381,7 +411,12 @@ class EnglishToSpanishTranslator(
             }
         }
 
+        /** "work" said of a device, plan or "it" means function: funcionar. */
+        private fun functioning(lemma: String, subject: Subject): String? =
+            if (lemma == "work" && (subject.head in functioningNouns || subject.impersonal)) "funcionar" else null
+
         private fun resetClause() {
+            previousClauseVerb = mainVerbLemma
             cliticSlot = -1; mainVerbLemma = null; gustarActive = false; clauseHasVerb = false
             negatedClause = false; lastInfinitiveSegment = -1; nonFiniteVerbs = 0
             subjunctiveClause = pendingSubjunctive; pendingSubjunctive = false
@@ -464,7 +499,7 @@ class EnglishToSpanishTranslator(
                 return
             }
             // No subject: an imperative ("call me", "please come") or a fragment ("at home", "tomorrow").
-            if (atClauseStart() && isVerbAt(i) && !isPureNounAt(i)) {
+            if (atClauseStartOrAfterPlease() && isVerbAt(i) && !isPureNounAt(i)) { // "please press the button" -> presiona, not "prensa"
                 futureContext = true
                 parseImperative()
                 parseComplements(Subject(SpanishPerson.TU, Gender.MASCULINE, ""))
@@ -499,6 +534,7 @@ class EnglishToSpanishTranslator(
         }
 
         private fun conjunction(w: String, es: String): String = when (w) {
+            "that" -> if (previousClauseVerb in deQueVerbs) "de que" else es
             "and" -> SpanishText.conjunctionAnd(nextSpanishWord())
             "or" -> SpanishText.conjunctionOr(nextSpanishWord())
             else -> es
@@ -540,8 +576,12 @@ class EnglishToSpanishTranslator(
             val tok = peek()!!
             val w = tok.w
             if (atClauseStart()) markQuestion()
+            // "what time does it start" -> "¿a qué hora empieza?" (not "qué el tiempo"); "what time is it" is an idiom.
+            val whatTime = w == "what" && word(1) == "time" && word(2) in auxiliaries
             if (w == "how" && (word(1) == "much" || word(1) == "many")) {
                 out.add(rawOf(i, i + 2), if (word(1) == "many") "cuántos" else "cuánto", PartOfSpeech.PRONOUN, "question word"); i += 2
+            } else if (whatTime) {
+                out.add(rawOf(i, i + 2), "a qué hora", PartOfSpeech.PRONOUN, "question word"); i += 2
             } else {
                 out.add(tok.raw, whWords.getValue(w), PartOfSpeech.PRONOUN, "question word"); i++
             }
@@ -570,7 +610,7 @@ class EnglishToSpanishTranslator(
                 val verb = conj(if (estar) "estar" else "ser", tense, subject.person)
                 out.segments.add(verbIndex, TranslationSegment(be.raw, verb, PartOfSpeech.VERB, "${if (estar) "estar" else "ser"} · ${label(tense, subject.person)}", null, false, 0.9f))
                 val subjectText = out.segments.getOrNull(verbIndex + 1)?.targetText.orEmpty()
-                if (w == "what" && subjectText !in setOf("esto", "eso")) {
+                if (w == "what" && !whatTime && subjectText !in setOf("esto", "eso")) {
                     out.segments[whSegment] = out.segments[whSegment].copy(targetText = "cuál", hintText = "cuál")
                 }
                 parseComplements(subject)
@@ -618,17 +658,20 @@ class EnglishToSpanishTranslator(
             }
             val save = i
             val segmentsBefore = out.segments.size
+            val totalBefore = out.contentTotal; val translatedBefore = out.contentTranslated
             val np = parseNounPhrase(definiteIfBare = true)
             if (np == null) { i = save; return null }
+            // "the price of gas is high" -> "el precio del gas es alto": an of-phrase stays inside the subject.
+            if (word() == "of" && wordAt(i + 1)?.let { it in determinerWords || nouns(it).isNotEmpty() } == true) prepositionalPhrase("of", "de")
             val next = word()
             val verbFollows = next == null || next in auxiliaries || isVerbAt(i)
             if (!verbFollows) { // not a subject after all -- roll back and let complements handle it
                 while (out.segments.size > segmentsBefore) out.segments.removeAt(out.segments.size - 1)
-                out.contentTotal -= np.contentWords; out.contentTranslated -= np.contentWords
+                out.contentTotal = totalBefore; out.contentTranslated = translatedBefore
                 i = save
                 return null
             }
-            return Subject(if (np.plural) SpanishPerson.ELLOS else SpanishPerson.EL, np.gender, np.text, np.plural)
+            return Subject(if (np.plural) SpanishPerson.ELLOS else SpanishPerson.EL, np.gender, np.text, np.plural, head = np.head)
         }
 
         // --------------------------------------------------- verb group
@@ -808,7 +851,7 @@ class EnglishToSpanishTranslator(
             if (ing != null) {
                 out.add(aux.raw, conj("estar", tense, subject.person), PartOfSpeech.VERB, "estar · ${label(tense, subject.person)}")
                 val tok = peek()!!; i++
-                val parts = SpanishConjugator.parse(ing.first.baseTranslation)
+                val parts = SpanishConjugator.parse(functioning(ing.first.sourceWord, subject) ?: ing.first.baseTranslation)
                 if (parts.reflexive) { out.insertAt(cliticSlot, "", SpanishConjugator.reflexivePronoun(subject.person), "reflexive"); cliticSlot++ }
                 val ger = SpanishConjugator.gerund(parts.infinitive) + if (parts.tail.isNotEmpty()) " ${parts.tail}" else ""
                 out.add(tok.raw, ger, PartOfSpeech.VERB, "gerund", ing.first, content = true, conf = 0.9f)
@@ -837,9 +880,16 @@ class EnglishToSpanishTranslator(
             val adjIndex = when { degree == "un poco" -> i + 2; degree != null -> i + 1; else -> i }
             val adjWord = wordAt(adjIndex)
             if (adjWord != null) {
-                val personSubject = !subject.impersonal
-                if (subject.impersonal && adjWord in weatherWithHacer) {
+                // "the soup is cold" is a thing being cold (estar fría), not "tener frío"; only people "have" cold.
+                val personSubject = !subject.impersonal && (subject.head == null || subject.head in humanNouns ||
+                    dictionary.sense(subject.head, PartOfSpeech.NOUN)?.gender == "mf")
+                val weatherSubject = subject.head == "weather" && adjWord in weatherWithHacer
+                if ((subject.impersonal || weatherSubject) && adjWord in weatherWithHacer) {
                     i = adjIndex + 1
+                    if (weatherSubject) { // "the weather is cold" -> "hace frío", not "el clima tiene frío"
+                        val k = out.segments.indexOfLast { it.entry?.sourceWord == "weather" }
+                        if (k >= 0) out.segments.removeAt(k)
+                    }
                     val hace = conj("hacer", tense, SpanishPerson.EL)
                     out.add("${aux.raw} ${t[adjIndex].raw}", "$hace ${if (degree != null) "mucho " else ""}${weatherWithHacer.getValue(adjWord)}",
                         PartOfSpeech.VERB, "weather · hacer", content = true)
@@ -963,7 +1013,7 @@ class EnglishToSpanishTranslator(
             i++
             val ownPast = resolved.second.form == EnglishForm.PAST || resolved.second.form == EnglishForm.PAST_OR_PARTICIPLE
             val effectiveTense = if (finite && !forcedTense && ownPast) SpanishTense.PRETERITE else tense
-            val parts = SpanishConjugator.parse(entry.baseTranslation)
+            val parts = SpanishConjugator.parse(functioning(entry.sourceWord, subject) ?: entry.baseTranslation)
             val form = if (finite) conj(parts.infinitive, effectiveTense, subject.person) else parts.infinitive
             if (parts.reflexive) { out.insertAt(cliticSlot, "", SpanishConjugator.reflexivePronoun(subject.person), "reflexive"); cliticSlot++ }
             val text = if (parts.tail.isEmpty()) form else "$form ${parts.tail}"
@@ -1069,6 +1119,10 @@ class EnglishToSpanishTranslator(
                 val w = tok.w
                 if (matchIdiom()) continue
                 if (w == "so" && word(1) == "much") { out.add(rawOf(i, i + 2), "mucho", PartOfSpeech.ADVERB, "adverb", content = true); i += 2; continue }
+                // After an action verb "hard" is an adverb: "work hard" -> "trabajar mucho", not "difícil".
+                if (w == "hard" && mainVerbLemma != null && mainVerbLemma !in setOf("be", "get", "seem", "look", "become", "feel", "sound", "find", "make")) {
+                    out.add(tok.raw, "mucho", PartOfSpeech.ADVERB, "adverb", content = true); i++; continue
+                }
                 if (w == "so" && word(1)?.let { adjectives(it).isNotEmpty() } == true) { out.add(tok.raw, "tan", PartOfSpeech.ADVERB, "adverb"); i++; continue }
                 if (w in conjunctions && w != "that") return
                 if (w == "that" && looksLikeSubjectAt(i + 1)) {
@@ -1077,12 +1131,13 @@ class EnglishToSpanishTranslator(
                     return
                 }
                 if (w in setOf("until", "before") && futureContext && looksLikeSubjectAt(i + 1)) return
-                val startsClause = (w in subjectPronouns && w != "it" && w != "you" && (word(1) in auxiliaries || isVerbAt(i + 1))) ||
+                val startsClause = (mainVerbLemma in clauseTakingVerbs && nounPhraseThenVerbAt(i)) || // "I think the plan is good"
+                    (w in subjectPronouns && w != "it" && w != "you" && (word(1) in auxiliaries || isVerbAt(i + 1))) ||
                     ((w == "you" || w == "it") && (word(1) in auxiliaries || (isVerbAt(i + 1) && !isPureNounAt(i + 1) && clauseHasVerb && word(1) !in setOf("too", "so", "very"))))
                 if (startsClause) {
                     if (mainVerbLemma in clauseTakingVerbs) { // "I think you're right" -> "creo que tienes razón"
                         thinkAsBelieve()
-                        out.add("", "que", PartOfSpeech.CONJUNCTION, "conjunction")
+                        out.add("", if (mainVerbLemma in deQueVerbs) "de que" else "que", PartOfSpeech.CONJUNCTION, "conjunction")
                         if (mainVerbLemma in subjunctiveVerbs || (negatedClause && mainVerbLemma in setOf("think", "believe"))) pendingSubjunctive = true
                     }
                     return
@@ -1143,6 +1198,23 @@ class EnglishToSpanishTranslator(
                 if (w == "last" && word(1) == "night") { out.add(rawOf(i, i + 2), "anoche", PartOfSpeech.ADVERB, "adverb", content = true); i += 2; continue }
                 if (w in setOf("last", "next", "this", "every") && word(1) in timeNouns && dictionary.sense(word(1)!!, PartOfSpeech.NOUN) != null) { timeExpression(); continue }
 
+                if (w == "on" && word(1)?.removeSuffix("s") in weekdays) { dayExpression(); continue } // "on Friday morning" -> "el viernes por la mañana"
+                if (w == "at" && word(1) in clockHours) { // "at eight" -> "a las ocho", "at one" -> "a la una"
+                    val h = word(1)!!
+                    val es = clockHours.getValue(h)
+                    var end = i + 2
+                    if (word(2) == "o'clock" || word(2) == "oclock") end++
+                    out.add(rawOf(i, end), if (es == "una") "a la una" else "a las $es", PartOfSpeech.PREPOSITION, "time · a las", content = true)
+                    i = end; continue
+                }
+                // "works as a mechanic" -> "trabaja como mecánico": a role takes "como" and no article.
+                if (w == "as" && word(1) in setOf("a", "an") && wordAt(i + 2)?.let { n -> nouns(n).any { it.first.gender == "mf" || it.first.sourceWord in humanNouns } } == true) {
+                    val entry = nouns(wordAt(i + 2)!!).first { it.first.gender == "mf" || it.first.sourceWord in humanNouns }.first
+                    val es = if (entry.gender == "mf" && subject.gender == Gender.FEMININE) feminineNoun(entry.baseTranslation) else entry.baseTranslation
+                    out.add(tok.raw, "como", PartOfSpeech.PREPOSITION, "preposition")
+                    out.add(rawOf(i + 1, i + 3), es, PartOfSpeech.NOUN, "noun · role", entry, content = true)
+                    i += 3; continue
+                }
                 val prep = prepositions[w]
                 if (prep != null) {
                     if (w == "to" && isVerbAt(i + 1) && !isPureNounAt(i + 1)) { // purpose: "to learn" -> "para aprender"
@@ -1160,6 +1232,8 @@ class EnglishToSpanishTranslator(
                     out.add(tok.raw, adv.first.baseTranslation, PartOfSpeech.ADVERB, "adverb", adv.first, content = true)
                     continue
                 }
+                // "please press the button": after "please" a verb is an imperative, even if it is also a noun (press, review).
+                if (!clauseHasVerb && i > 0 && t[i - 1].w == "please" && isVerbAt(i)) { parseImperative(); continue }
                 val save = i
                 val npIndex = out.segments.size
                 val np = parseNounPhrase(definiteIfBare = gustarActive)
@@ -1187,6 +1261,20 @@ class EnglishToSpanishTranslator(
                 if (w in auxiliaries || w in subjectPronouns) return
                 unknown(tok); i++
             }
+        }
+
+        /** "on Friday" -> "el viernes", "on Fridays" -> "los viernes", "on Friday morning" -> "el viernes por la mañana". */
+        private fun dayExpression() {
+            val start = i
+            i++ // on
+            val dayTok = peek()!!
+            val base = dayTok.w.removeSuffix("s")
+            val plural = dayTok.w != base
+            val day = (dictionary.sense(base, PartOfSpeech.NOUN)?.baseTranslation ?: dayTok.raw).lowercase()
+            i++
+            var text = if (plural) "los " + SpanishMorphology.plural(day) else "el $day"
+            partsOfDay[word()]?.let { text += " $it"; i++ }
+            out.add(rawOf(start, i), text, PartOfSpeech.NOUN, "time · el + day", content = true)
         }
 
         private fun timeExpression() {
@@ -1257,7 +1345,7 @@ class EnglishToSpanishTranslator(
 
         // ---------------------------------------------------- noun phrase
 
-        inner class NP(val text: String, val gender: Gender, val plural: Boolean, val contentWords: Int)
+        inner class NP(val text: String, val gender: Gender, val plural: Boolean, val contentWords: Int, val head: String? = null)
 
         fun parseNounPhrase(definiteIfBare: Boolean): NP? {
             val start = i
@@ -1329,7 +1417,8 @@ class EnglishToSpanishTranslator(
             val pre = mutableListOf<String>()
             val post = mutableListOf<String>()
             for ((tok, a) in adjectivesFound) {
-                if (tok.w in preNominalAdjectives) pre.add(SpanishMorphology.apocopate(a.baseTranslation, gender, plural))
+                // "a great video" -> "un gran video" (not "un genial video"): before the noun, great is grande/gran.
+                if (tok.w in preNominalAdjectives) pre.add(SpanishMorphology.apocopate(if (tok.w == "great") "grande" else a.baseTranslation, gender, plural))
                 else post.add((if (degree != null) "$degree " else "") + SpanishMorphology.agreeAdjective(a.baseTranslation, gender, plural))
             }
             val determiner = determinerFor(det, nounForm, gender, plural, definiteIfBare)
@@ -1337,7 +1426,7 @@ class EnglishToSpanishTranslator(
             val contentWords = 1 + adjectivesFound.size + modifiers.size
             out.add(rawOf(start, i), text, PartOfSpeech.NOUN, "noun · ${genderLabel(gender, plural)}", entry, content = true, conf = 0.9f)
             out.contentTotal += contentWords - 1; out.contentTranslated += contentWords - 1
-            return NP(text, gender, plural, contentWords)
+            return NP(text, gender, plural, contentWords, entry.sourceWord)
         }
 
         private val meals = setOf("cena", "almuerzo", "desayuno", "comida")

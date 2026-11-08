@@ -184,4 +184,19 @@ class SpanishToEnglishTranslatorTest {
         assertEquals("Where do you live?", r.text)
         assertEquals("Thanks!", translator.translate("¡Gracias!").text)
     }
+
+    @Test fun functioningNeedAndContextualAdjectives() = check(
+        "El sistema no funciona." to "The system doesn't work.",
+        "Mi teléfono no funciona." to "My phone doesn't work.",
+        "Me falta tiempo." to "I need time.",
+        "La presión es alta." to "The pressure is high.",
+        "Mi hermano es alto." to "My brother is tall.",
+        "El edificio es alto." to "The building is tall.",
+    )
+
+    @Test fun negationSurvivesAnUnknownVerb() {
+        // Not in the dictionary: the word is kept as typed, but the sentence must not read as positive.
+        val text = translator.translate("El perro no ladra.").text
+        assertTrue(text, text.contains("not"))
+    }
 }

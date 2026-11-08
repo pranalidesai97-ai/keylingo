@@ -65,7 +65,7 @@ class SpanishToEnglishTranslator(
         "me" to Subject(SpanishPerson.YO, "I", true), "te" to Subject(SpanishPerson.TU, "you", true), "le" to Subject(SpanishPerson.EL, "he/she", true),
         "nos" to Subject(SpanishPerson.NOSOTROS, "we", true), "les" to Subject(SpanishPerson.ELLOS, "they", true),
     )
-    private val gustarLike = mapOf("gustar" to "like", "encantar" to "love", "importar" to "care about", "doler" to "hurt")
+    private val gustarLike = mapOf("gustar" to "like", "encantar" to "love", "importar" to "care about", "doler" to "hurt", "faltar" to "need")
 
     private val determiners = mapOf(
         "el" to "the", "la" to "the", "los" to "the", "las" to "the", "un" to "a", "una" to "a", "unos" to "some", "unas" to "some",
@@ -138,7 +138,18 @@ class SpanishToEnglishTranslator(
         val preferred = preferredNounSense[SpanishText.fold(w).removeSuffix("s")]
         return nouns.firstOrNull { it.entry.sourceWord == preferred } ?: nouns.minByOrNull { it.entry.frequencyRank }
     }
-    private fun adjective(w: String) = readings(w).firstOrNull { it.entry.partOfSpeech == PartOfSpeech.ADJECTIVE }
+    private fun adjective(w: String, about: String? = null): SpanishFormMatch? {
+        val all = readings(w).filter { it.entry.partOfSpeech == PartOfSpeech.ADJECTIVE }
+        // alto: a person, building or tree is "tall"; pressure, prices, levels, temperatures are "high".
+        if (about != null && all.any { it.entry.sourceWord == "tall" } && all.any { it.entry.sourceWord == "high" }) {
+            val head = about.substringAfterLast(' ').lowercase()
+            val tall = head in tallThings || head in personNouns || head in setOf("i", "you", "he", "she", "we", "they")
+            return all.first { it.entry.sourceWord == if (tall) "tall" else "high" }
+        }
+        return all.firstOrNull()
+    }
+    private val tallThings = setOf("building", "buildings", "tree", "trees", "tower", "towers", "mountain", "mountains", "wall", "walls",
+        "man", "men", "woman", "women", "boy", "boys", "girl", "girls", "person", "people", "player", "players", "kid", "kids", "child", "children")
     private fun otherWord(w: String) = readings(w).firstOrNull { it.entry.partOfSpeech != PartOfSpeech.VERB && it.entry.partOfSpeech != PartOfSpeech.NOUN }
 
     /** English lemma of a Spanish verb entry ("be called" stays multi-word). */
@@ -292,6 +303,9 @@ class SpanishToEnglishTranslator(
         /** Whether the current clause is negated (nada -> anything, nadie -> anybody). */
         var clauseNegative = false
 
+        /** English subject of the current clause, for adjective senses ("la presión es alta" -> high, "mi hermano es alto" -> tall). */
+        var clauseSubjectEnglish: String? = null
+
         /** Set when the wh-phrase itself is plural ("cuántas personas hay" -> "are there"). */
         var whPlural = false
 
@@ -334,6 +348,7 @@ class SpanishToEnglishTranslator(
                     subject = Subject(if (np.second) SpanishPerson.ELLOS else SpanishPerson.EL, np.first, true)
                 } else { i = save; known = k; total = tt }
             }
+            clauseSubjectEnglish = subject?.english
             val preAdverbs = mutableListOf<String>()
             while (w() in setOf("siempre", "nunca", "ya", "todavía", "casi", "solo", "también", "tampoco") && w() != null) {
                 val a = w()!!
@@ -371,6 +386,8 @@ class SpanishToEnglishTranslator(
                 // No finite verb: a fragment ("en casa", "la casa grande", "mañana").
                 if (wh != null) out += wh
                 subjectNp?.let { out += it }
+                // Keep the negation even when the verb is unknown: "el perro no ladra" must not read as a positive.
+                if (negative) out += "not"
                 complements(null, negative)
                 return
             }
@@ -637,7 +654,7 @@ class SpanishToEnglishTranslator(
                 // After "be" a bare singular noun takes "a": "era niño" -> "I was a child", "soy estudiante" -> "I am a student".
                 val np = nounPhrase(dropGenericArticle = dropGeneric, bareArticle = verbEnglish == "be")
                 if (np != null) { out += np.first; continue }
-                val adj = adjective(x)
+                val adj = adjective(x, about = clauseSubjectEnglish)
                 if (adj != null) { out += englishCasing(adj.entry.sourceWord); i++; countKnown(); continue }
                 val inf = nonFinite(x, VerbFormKind.INFINITIVE)
                 if (inf != null) { out += listOf("to", lemmaOf(inf)); i++; countKnown(); continue }
@@ -676,7 +693,7 @@ class SpanishToEnglishTranslator(
             if (plural && !n.entry.pluralOnly) nounEn = mixedPlurals[surface] ?: EnglishMorphology.plural(nounEn)
             val post = mutableListOf<String>()
             while (w() != null) {
-                val a = adjective(w()!!) ?: break
+                val a = adjective(w()!!, about = nounEn) ?: break
                 if (noun(w()!!) != null && finite(w()!!) == null && dictionary.lookupSpanish(w()!!).first().entry.partOfSpeech == PartOfSpeech.NOUN) break
                 post += a.entry.sourceWord; i++
             }

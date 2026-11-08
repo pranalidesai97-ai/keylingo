@@ -1230,7 +1230,7 @@ camera	cámara	noun	f
 valley	valle	noun	m
 cave	cueva	noun	f
 waterfall	cascada	noun	f
-laptop	portátil	noun	f
+laptop	portátil	noun	m
 tablet	tableta	noun	f
 smartphone	teléfono inteligente	noun	m
 software	software	noun	m
@@ -1327,3 +1327,616 @@ classroom	salón de clases	noun	m
 professor	profesor	noun	mf
 lecture	clase	noun	f
 lot	mucho	adv	
+# Everyday content words missing from the list above (frequent in wordfreq English); curated for KeyLingo,
+# Spanish spellings checked with Hunspell es (RLA-ES).
+state	estado	noun	m
+system	sistema	noun	m
+case	caso	noun	m
+service	servicio	noun	m
+area	zona	noun	f
+course	curso	noun	m
+video	video	noun	m
+court	tribunal	noun	m
+mind	mente	noun	f
+south	sur	noun	m
+north	norte	noun	m
+west	oeste	noun	m
+matter	asunto	noun	m
+series	serie	noun	f
+data	datos	noun	mp
+police	policía	noun	f
+development	desarrollo	noun	m
+form	formulario	noun	m
+media	medios	noun	mp
+process	proceso	noun	m
+action	acción	noun	f
+force	fuerza	noun	f
+issue	problema	noun	m
+space	espacio	noun	m
+term	término	noun	m
+land	tierra	noun	f
+site	sitio	noun	m
+account	cuenta	noun	f
+period	período	noun	m
+position	posición	noun	f
+film	película	noun	f
+county	condado	noun	m
+couple	pareja	noun	f
+sense	sentido	noun	m
+view	vista	noun	f
+event	evento	noun	m
+training	entrenamiento	noun	m
+interest	interés	noun	m
+policy	política	noun	f
+average	promedio	noun	m
+ink	tinta	noun	f
+tunnel	túnel	noun	m
+jungle	selva	noun	f
+performance	rendimiento	noun	m
+press	prensa	noun	f
+role	rol	noun	m
+dust	polvo	noun	m
+iron	hierro	noun	m
+steel	acero	noun	m
+cloth	tela	noun	f
+width	ancho	noun	m
+ground	suelo	noun	m
+length	longitud	noun	f
+source	fuente	noun	f
+value	valor	noun	m
+edge	borde	noun	m
+evidence	evidencia	noun	f
+triangle	triángulo	noun	m
+production	producción	noun	f
+rate	tasa	noun	f
+sum	suma	noun	f
+quarter	cuarto	noun	m
+tax	impuesto	noun	m
+amount	cantidad	noun	f
+debate	debate	noun	m
+league	liga	noun	f
+management	gestión	noun	f
+model	modelo	noun	m
+step	paso	noun	m
+range	rango	noun	m
+review	reseña	noun	f
+attention	atención	noun	f
+strike	huelga	noun	f
+character	personaje	noun	m
+chief	jefe	noun	mf
+property	propiedad	noun	f
+style	estilo	noun	m
+hell	infierno	noun	m
+oil	aceite	noun	m
+stage	etapa	noun	f
+battle	batalla	noun	f
+title	título	noun	m
+article	artículo	noun	m
+technology	tecnología	noun	f
+choice	elección	noun	f
+exit	salida	noun	f
+election	elección	noun	f
+race	carrera	noun	f
+stain	mancha	noun	f
+union	unión	noun	f
+guide	guía	noun	f
+figure	figura	noun	f
+loss	pérdida	noun	f
+version	versión	noun	f
+compliment	cumplido	noun	m
+insult	insulto	noun	m
+request	solicitud	noun	f
+access	acceso	noun	m
+base	base	noun	f
+mark	marca	noun	f
+restoration	restauración	noun	f
+researcher	investigador	noun	mf
+district	distrito	noun	m
+minister	ministro	noun	mf
+note	nota	noun	f
+responsibility	responsabilidad	noun	f
+piece	pedazo	noun	m
+product	producto	noun	m
+residence	residencia	noun	f
+resident	residente	noun	mf
+resistance	resistencia	noun	f
+resolution	resolución	noun	f
+resource	recurso	noun	m
+fan	aficionado	noun	mf
+growth	crecimiento	noun	m
+lime	lima	noun	f
+officer	oficial	noun	mf
+melon	melón	noun	m
+coconut	coco	noun	m
+broccoli	brócoli	noun	m
+album	álbum	noun	m
+spinach	espinaca	noun	f
+effect	efecto	noun	m
+network	red	noun	f
+track	pista	noun	f
+association	asociación	noun	f
+mustard	mostaza	noun	f
+capital	capital	noun	f
+mayonnaise	mayonesa	noun	f
+committee	comité	noun	m
+jam	mermelada	noun	f
+jelly	gelatina	noun	f
+difference	diferencia	noun	f
+pancake	panqueque	noun	m
+gas	gas	noun	m
+sausage	salchicha	noun	f
+population	población	noun	f
+pressure	presión	noun	f
+radio	radio	noun	f
+appetizer	aperitivo	noun	m
+beverage	bebida	noun	f
+campaign	campaña	noun	f
+focus	enfoque	noun	m
+ice	hielo	noun	m
+motel	motel	noun	m
+hostel	albergue	noun	m
+region	región	noun	f
+traveler	viajero	noun	mf
+section	sección	noun	f
+itinerary	itinerario	noun	m
+contact	contacto	noun	m
+terminal	terminal	noun	f
+fair	feria	noun	f
+customs	aduana	noun	f
+exchange	intercambio	noun	m
+link	enlace	noun	m
+souvenir	recuerdo	noun	m
+sale	venta	noun	f
+postcard	postal	noun	f
+photograph	fotografía	noun	f
+sightseeing	turismo	noun	m
+canyon	cañón	noun	m
+volcano	volcán	noun	m
+glacier	glaciar	noun	m
+application	aplicación	noun	f
+programming	programación	noun	f
+developer	desarrollador	noun	mf
+database	base de datos	noun	f
+server	servidor	noun	m
+construction	construcción	noun	f
+webpage	página web	noun	f
+episode	episodio	noun	m
+browser	navegador	noun	m
+income	ingresos	noun	mp
+username	nombre de usuario	noun	m
+justice	justicia	noun	f
+movement	movimiento	noun	m
+safety	seguridad	noun	f
+scene	escena	noun	f
+spreadsheet	hoja de cálculo	noun	f
+statement	declaración	noun	f
+presentation	presentación	noun	f
+monitor	monitor	noun	m
+scanner	escáner	noun	m
+ability	habilidad	noun	f
+microphone	micrófono	noun	m
+headphone	auricular	noun	m
+collection	colección	noun	f
+cable	cable	noun	m
+backup	copia de seguridad	noun	f
+gun	pistola	noun	f
+encryption	cifrado	noun	m
+executive	ejecutivo	noun	mf
+author	autor	noun	mf
+proposal	propuesta	noun	f
+expense	gasto	noun	m
+invoice	factura	noun	f
+shareholder	accionista	noun	mf
+investor	inversor	noun	mf
+investment	inversión	noun	f
+judge	juez	noun	mf
+warehouse	almacén	noun	m
+shipment	envío	noun	m
+material	material	noun	m
+supplier	proveedor	noun	mf
+vendor	vendedor	noun	mf
+negotiation	negociación	noun	f
+strategy	estrategia	noun	f
+advertising	publicidad	noun	f
+secretary	secretario	noun	mf
+unit	unidad	noun	f
+teamwork	trabajo en equipo	noun	m
+leadership	liderazgo	noun	m
+brain	cerebro	noun	m
+assignment	tarea	noun	f
+attic	ático	noun	m
+staircase	escalera	noun	f
+hallway	pasillo	noun	m
+cabinet	armario	noun	m
+majority	mayoría	noun	f
+rug	alfombra	noun	f
+armchair	sillón	noun	m
+sheet	sábana	noun	f
+administration	administración	noun	f
+approach	enfoque	noun	m
+cancer	cáncer	noun	m
+dishwasher	lavavajillas	noun	m
+washer	lavadora	noun	f
+defense	defensa	noun	f
+vacuum	aspiradora	noun	f
+broom	escoba	noun	f
+master	maestro	noun	mf
+bucket	cubo	noun	m
+sponge	esponja	noun	f
+detergent	detergente	noun	m
+ship	barco	noun	m
+band	banda	noun	f
+effort	esfuerzo	noun	m
+impact	impacto	noun	m
+lack	falta	noun	f
+sweatshirt	sudadera	noun	f
+sneaker	zapatilla	noun	f
+operation	operación	noun	f
+organization	organización	noun	f
+sandal	sandalia	noun	f
+glove	guante	noun	m
+secret	secreto	noun	m
+tie	corbata	noun	f
+underwear	ropa interior	noun	f
+pajamas	pijama	noun	m
+swimsuit	traje de baño	noun	m
+activity	actividad	noun	f
+analysis	análisis	noun	m
+handbag	bolso	noun	m
+bracelet	pulsera	noun	f
+earring	arete	noun	m
+commission	comisión	noun	f
+competition	competencia	noun	f
+detail	detalle	noun	m
+volleyball	voleibol	noun	m
+cycling	ciclismo	noun	m
+hiking	senderismo	noun	m
+skiing	esquí	noun	m
+skating	patinaje	noun	m
+surfing	surf	noun	m
+patient	paciente	noun	mf
+boxing	boxeo	noun	m
+gymnastics	gimnasia	noun	f
+referee	árbitro	noun	mf
+tournament	torneo	noun	m
+championship	campeonato	noun	m
+medal	medalla	noun	f
+trophy	trofeo	noun	m
+congress	congreso	noun	m
+doubt	duda	noun	f
+trainer	entrenador	noun	mf
+clinic	clínica	noun	f
+medication	medicamento	noun	m
+prescription	receta	noun	f
+surgery	cirugía	noun	f
+machine	máquina	noun	f
+symptom	síntoma	noun	m
+diagnosis	diagnóstico	noun	m
+checkup	chequeo	noun	m
+vaccine	vacuna	noun	f
+vaccination	vacunación	noun	f
+therapy	terapia	noun	f
+therapist	terapeuta	noun	mf
+captain	capitán	noun	mf
+crime	delito	noun	m
+allergy	alergia	noun	f
+painkiller	analgésico	noun	m
+bandage	venda	noun	f
+plant	planta	noun	f
+reality	realidad	noun	f
+forecast	pronóstico	noun	m
+hurricane	huracán	noun	m
+tornado	tornado	noun	m
+blizzard	ventisca	noun	f
+advice	consejo	noun	m
+drought	sequía	noun	f
+award	premio	noun	m
+raincoat	impermeable	noun	m
+challenge	desafío	noun	m
+comment	comentario	noun	m
+equipment	equipo	noun	m
+grade	calificación	noun	f
+diploma	diploma	noun	m
+graduation	graduación	noun	f
+mathematics	matemáticas	noun	fp
+geography	geografía	noun	f
+literature	literatura	noun	f
+purpose	propósito	noun	m
+chemistry	química	noun	f
+physics	física	noun	f
+biology	biología	noun	f
+theory	teoría	noun	f
+textbook	libro de texto	noun	m
+notebook	cuaderno	noun	m
+eraser	borrador	noun	m
+ruler	regla	noun	f
+agency	agencia	noun	f
+calculator	calculadora	noun	f
+scholarship	beca	noun	f
+tuition	matrícula	noun	f
+cell	célula	noun	f
+coast	costa	noun	f
+decade	década	noun	f
+drug	droga	noun	f
+calendar	calendario	noun	m
+environment	medio ambiente	noun	m
+anniversary	aniversario	noun	m
+celebration	celebración	noun	f
+hall	sala	noun	f
+architect	arquitecto	noun	mf
+mass	masa	noun	f
+scientist	científico	noun	mf
+musician	músico	noun	mf
+mission	misión	noun	f
+actress	actriz	noun	f
+politics	política	noun	f
+journalist	periodista	noun	mf
+photographer	fotógrafo	noun	mf
+designer	diseñador	noun	mf
+programmer	programador	noun	mf
+accountant	contador	noun	mf
+banker	banquero	noun	mf
+trial	juicio	noun	m
+receptionist	recepcionista	noun	mf
+cashier	cajero	noun	mf
+baker	panadero	noun	mf
+farmer	agricultor	noun	mf
+driver	conductor	noun	mf
+pilot	piloto	noun	m
+firefighter	bombero	noun	mf
+condition	condición	noun	f
+plumber	fontanero	noun	mf
+division	división	noun	f
+electrician	electricista	noun	mf
+mechanic	mecánico	noun	mf
+carpenter	carpintero	noun	mf
+tailor	sastre	noun	m
+heat	calor	noun	m
+location	ubicación	noun	f
+murder	asesinato	noun	m
+final	final	adj	
+former	antiguo	adj	
+total	total	adj	
+common	común	adj	
+likely	probable	adj	
+military	militar	adj	
+personal	personal	adj	
+medical	médico	adj	
+original	original	adj	
+official	oficial	adj	
+federal	federal	adj	
+central	central	adj	
+natural	natural	adj	
+rough	áspero	adj	
+dull	aburrido	adj	
+complete	completo	adj	
+wealthy	rico	adj	
+economic	económico	adj	
+entire	entero	adj	
+financial	financiero	adj	
+foreign	extranjero	adj	
+legal	legal	adj	
+direct	directo	adj	
+daily	diario	adj	
+professional	profesional	adj	
+respectful	respetuoso	adj	
+recent	reciente	adj	
+straight	recto	adj	
+specific	específico	adj	
+limited	limitado	adj	
+double	doble	adj	
+potential	potencial	adj	
+western	occidental	adj	
+female	femenino	adj	
+roasted	asado	adj	
+individual	individual	adj	
+previous	anterior	adj	
+positive	positivo	adj	
+additional	adicional	adj	
+extra	extra	adj	
+significant	significativo	adj	
+global	global	adj	
+regular	regular	adj	
+annual	anual	adj	
+physical	físico	adj	
+stupid	estúpido	adj	
+successful	exitoso	adj	
+active	activo	adj	
+civil	civil	adj	
+independent	independiente	adj	
+energetic	enérgico	adj	
+commercial	comercial	adj	
+uncomfortable	incómodo	adj	
+multiple	múltiple	adj	
+dental	dental	adj	
+basic	básico	adj	
+effective	eficaz	adj	
+male	masculino	adj	
+humid	húmedo	adj	
+primary	primario	adj	
+complex	complejo	adj	
+mobile	móvil	adj	
+powerful	poderoso	adj	
+religious	religioso	adj	
+critical	crítico	adj	
+digital	digital	adj	
+mental	mental	adj	
+sexual	sexual	adj	
+negative	negativo	adj	
+wild	salvaje	adj	
+rare	raro	adj	
+unique	único	adj	
+technical	técnico	adj	
+cultural	cultural	adj	
+criminal	criminal	adj	
+excellent	excelente	adj	
+fantastic	fantástico	adj	
+lovely	encantador	adj	
+classic	clásico	adj	
+electric	eléctrico	adj	
+flat	plano	adj	
+initial	inicial	adj	
+massive	enorme	adj	
+proper	adecuado	adj	
+regional	regional	adj	
+upper	superior	adj	
+willing	dispuesto	adj	
+advanced	avanzado	adj	
+alternative	alternativo	adj	
+industrial	industrial	adj	
+domestic	doméstico	adj	
+historical	histórico	adj	
+native	nativo	adj	
+supreme	supremo	adj	
+illegal	ilegal	adj	
+golden	dorado	adj	
+appropriate	apropiado	adj	
+scientific	científico	adj	
+emotional	emocional	adj	
+internal	interno	adj	
+liberal	liberal	adj	
+fake	falso	adj	
+numerous	numeroso	adj	
+democratic	democrático	adj	
+nuclear	nuclear	adj	
+solid	sólido	adj	
+aware	consciente	adj	
+environmental	ambiental	adj	
+minimum	mínimo	adj	
+possibly	posiblemente	adv	
+honestly	sinceramente	adv	
+obviously	obviamente	adv	
+apparently	aparentemente	adv	
+basically	básicamente	adv	
+normally	normalmente	adv	
+typically	típicamente	adv	
+frequently	frecuentemente	adv	
+occasionally	ocasionalmente	adv	
+constantly	constantemente	adv	
+gradually	gradualmente	adv	
+previously	anteriormente	adv	
+quietly	silenciosamente	adv	
+happily	felizmente	adv	
+sadly	tristemente	adv	
+nervously	nerviosamente	adv	
+hardly	apenas	adv	
+barely	apenas	adv	
+totally	totalmente	adv	
+entirely	completamente	adv	
+slightly	ligeramente	adv	
+extremely	extremadamente	adv	
+incredibly	increíblemente	adv	
+specifically	específicamente	adv	
+precisely	precisamente	adv	
+approximately	aproximadamente	adv	
+roughly	aproximadamente	adv	
+mostly	principalmente	adv	
+certainly	ciertamente	adv	
+nearly	casi	adv	
+clearly	claramente	adv	
+directly	directamente	adv	
+fully	completamente	adv	
+highly	sumamente	adv	
+literally	literalmente	adv	
+generally	generalmente	adv	
+simply	simplemente	adv	
+currently	actualmente	adv	
+eventually	finalmente	adv	
+truly	verdaderamente	adv	
+particularly	particularmente	adv	
+relatively	relativamente	adv	
+originally	originalmente	adv	
+act	actuar	verb	
+handle	manejar	verb	
+provide	proporcionar	verb	
+include	incluir	verb	
+apply	aplicar	verb	
+ensure	asegurar	verb	
+reduce	reducir	verb	
+remove	quitar	verb	
+treat	tratar	verb	
+perform	realizar	verb	
+prove	demostrar	verb	
+exist	existir	verb	
+realize	darse cuenta	verb	
+mention	mencionar	verb	
+appreciate	apreciar	verb	
+produce	producir	verb	
+attempt	intentar	verb	
+confirm	confirmar	verb	
+feed	alimentar	verb	
+grant	otorgar	verb	
+advance	avanzar	verb	
+commit	cometer	verb	
+express	expresar	verb	
+supply	suministrar	verb	
+copy	copiar	verb	
+shoot	disparar	verb	
+stick	pegar	verb	
+roast	asar	verb	
+weigh	pesar	verb	
+select	seleccionar	verb	
+release	publicar	verb	
+permit	permitir	verb	
+launch	lanzar	verb	
+reveal	revelar	verb	
+subtract	restar	verb	
+multiply	multiplicar	verb	
+divide	dividir	verb	
+blend	mezclar	verb	
+combine	combinar	verb	
+separate	separar	verb	
+shrink	encoger	verb	
+expand	expandir	verb	
+vanish	desaparecer	verb	
+operate	operar	verb	
+block	bloquear	verb	
+discourage	desanimar	verb	
+threaten	amenazar	verb	
+resign	renunciar	verb	
+employ	emplear	verb	
+reject	rechazar	verb	
+criticize	criticar	verb	
+demand	exigir	verb	
+inspire	inspirar	verb	
+motivate	motivar	verb	
+overcome	superar	verb	
+restore	restaurar	verb	
+reserve	reservar	verb	
+resist	resistir	verb	
+vote	votar	verb	
+complete	completar	verb	
+wonder	preguntarse	verb	
+pick	elegir	verb	
+commence	comenzar	verb	
+fair	justo	adj	
+ship	enviar	verb	
+tie	atar	verb	
+press	presionar	verb	
+review	revisar	verb	
+contact	contactar	verb	
+exchange	intercambiar	verb	
+access	acceder	verb	
+request	solicitar	verb	
+vote	voto	noun	m
+approach	acercarse	verb	
+doubt	dudar	verb	
+comment	comentar	verb	
+plant	plantar	verb	
+heat	calentar	verb	
+murder	asesinar	verb	
+copy	copia	noun	f
+attempt	intento	noun	m
+form	formar	verb	
+process	procesar	verb	
+secret	secreto	adj	
+guide	guiar	verb	
+interest	interesar	verb	
+force	obligar	verb	
+land	aterrizar	verb	
+matter	importar	verb	
+button	botón	noun	m
+correct	correcto	adj	
+traffic	tráfico	noun	m
+announce	anunciar	verb	
+connection	conexión	noun	f
