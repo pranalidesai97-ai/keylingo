@@ -70,7 +70,13 @@ class KeyboardViewModel(
     private val languagePack: LanguagePack,
     private val textConnection: KeyboardTextConnection,
     private val scope: CoroutineScope,
-    private val clock: () -> Long = System::currentTimeMillis
+    private val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * Diagnostics for language/field state (tag KeyLingoLang on the device). Only settings values,
+     * which phrase list is shown and character counts are reported -- never typed text -- and only in
+     * fields that allow language help (never passwords).
+     */
+    private val diagnostics: (String) -> Unit = {}
 ) {
     private val _uiState = MutableStateFlow(KeyboardUiState())
     val uiState: StateFlow<KeyboardUiState> = _uiState.asStateFlow()
@@ -103,6 +109,10 @@ class KeyboardViewModel(
         }
         scope.launch {
             settingsFlow.collect { settings ->
+                if (settings.typingLanguage != state.settings.typingLanguage || !settingsReceived) {
+                    diagnostics("typing language setting = ${settings.typingLanguage} (learning language = ${settings.targetLanguageCode})")
+                }
+                settingsReceived = true
                 _uiState.update { it.copy(settings = settings) }
                 scheduleRefresh(immediate = true)
             }
@@ -113,12 +123,19 @@ class KeyboardViewModel(
         TextContext(textConnection.textBeforeCursor(CONTEXT_WINDOW), textConnection.textAfterCursor(4))
 
     private val state get() = _uiState.value
+
+    /** False until the saved settings have been read (defaults are used until then). */
+    private var settingsReceived = false
+    private var lastLoggedEmpty: Boolean? = null
+    private var lastLoggedPhrases: String? = null
     private val policy get() = state.policy
 
     // ------------------------------------------------------------ lifecycle
 
     /** A new field gained focus (or the same field restarted). */
     fun onStartInput(newPolicy: InputFieldPolicy, restarting: Boolean) {
+        lastLoggedEmpty = null; lastLoggedPhrases = null
+        diagnostics("field started (restarting=$restarting): suggestions=${newPolicy.showSuggestions}, language help=${newPolicy.allowLearningHints}")
         lastCorrection = null
         phantomSpace = false
         lastKeyWasSpace = false
@@ -457,9 +474,21 @@ class KeyboardViewModel(
         }
         val ctx = context()
         // Empty field: everyday starter phrases instead of single-word guesses. Constants, so no data is awaited.
+        if (policy.allowLearningHints) {
+            val empty = isEmptyField(ctx)
+            if (empty != lastLoggedEmpty) {
+                diagnostics("field empty=$empty (chars before=${ctx.before.length}, after=${ctx.after.length}, selection=${textConnection.hasSelection()})")
+                lastLoggedEmpty = empty
+            }
+        }
         if (isEmptyField(ctx)) {
             val language = phraseLanguage()
             val phrases = StarterPhrases.forLanguage(language)
+            val tag = "$language/${state.settings.typingLanguage}/settingsLoaded=$settingsReceived"
+            if (tag != lastLoggedPhrases) {
+                diagnostics("starter phrases: $language (${phrases.size}) -- typing language ${state.settings.typingLanguage}, settings loaded=$settingsReceived")
+                lastLoggedPhrases = tag
+            }
             suggestionsComputedFor = null
             // Also record the language, so the space bar reads "Español" in an empty field in Spanish mode.
             if (state.starterPhrases != phrases || state.suggestions.isNotEmpty() || state.autoCorrection != null || state.typingLanguage != language) {

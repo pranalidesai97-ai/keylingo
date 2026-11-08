@@ -588,4 +588,23 @@ class KeyboardViewModelTest {
         val pw = harness(policy = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD, EditorInfo.IME_ACTION_DONE))
         assertTrue("nothing in a password field", pw.state.suggestions.isEmpty() && pw.state.starterPhrases.isEmpty())
     }
+
+    @Test fun languageDiagnosticsNeverContainTypedText() = runTest {
+        val log = mutableListOf<String>()
+        val learned = FakeLearnedVocabulary(); val ctx = FakeContextPrediction(); val editor = FakeEditor("")
+        val vm = KeyboardViewModel(GenerateHintsUseCase(realHintProvider()), GenerateAutocompleteSuggestionsUseCase(realAutocompleteProvider(), learned, ctx),
+            learned, ctx, realLanguageDetector(), MutableStateFlow(KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH)),
+            SpanishLanguagePack(), editor, CoroutineScope(StandardTestDispatcher(testScheduler) + Job()), diagnostics = { log += it })
+        vm.onStartInput(chat, restarting = false); testScheduler.advanceUntilIdle()
+        for (c in "secreto privado ") vm.onKeyAction(if (c == ' ') KeyAction.Space else KeyAction.Character(c.toString(), c.uppercase())).also { testScheduler.advanceUntilIdle() }
+        assertTrue(log.toString(), log.any { it.startsWith("starter phrases: es") })
+        assertTrue(log.toString(), log.any { it.startsWith("field empty=false") })
+        assertTrue("typed text leaked into diagnostics: $log", log.none { it.contains("secreto") || it.contains("privado") })
+        // Password fields: nothing about the field's contents is logged.
+        log.clear()
+        vm.onStartInput(InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD, EditorInfo.IME_ACTION_DONE), restarting = false)
+        testScheduler.advanceUntilIdle()
+        for (c in "abc") vm.onKeyAction(KeyAction.Character(c.toString(), c.uppercase())).also { testScheduler.advanceUntilIdle() }
+        assertTrue(log.toString(), log.none { it.startsWith("field empty") || it.startsWith("starter phrases") })
+    }
 }

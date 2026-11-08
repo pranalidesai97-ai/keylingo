@@ -321,9 +321,14 @@ private fun LearningModeSection(selected: LearningMode, onSelect: (LearningMode)
 private fun LanguageSection(selectedCode: String, onSelect: (String) -> Unit) {
     // Only Spanish is bundled in this MVP; the list is data-driven so
     // adding a new LanguagePack later just means adding an entry here.
-    val languages = listOf("es" to "Spanish")
+    val languages = listOf("es" to stringResource(R.string.settings_language_spanish))
 
     Text(stringResource(R.string.settings_language), style = MaterialTheme.typography.titleMedium)
+    Text(
+        stringResource(R.string.settings_language_desc),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
     Spacer(modifier = Modifier.height(8.dp))
     Column(modifier = Modifier.selectableGroup()) {
         languages.forEach { (code, label) ->

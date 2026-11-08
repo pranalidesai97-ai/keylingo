@@ -38,7 +38,9 @@
     <string name="theme_custom">Custom colour</string>
     <string name="theme_custom_preview">Your colour</string>
     <string name="theme_custom_hue">Fine-tune hue</string>
-    <string name="settings_language">Learning language</string>
+    <string name="settings_language">Translate into</string>
+    <string name="settings_language_desc">Language of translations and learning hints. To type in Spanish, choose Spanish under Typing language.</string>
+    <string name="settings_language_spanish">Spanish translations</string>
     <string name="settings_dark_mode">Dark mode</string>
     <string name="settings_hint_size">Hint text size</string>
     <string name="settings_hint_size_small">Small</string>
@@ -58,7 +60,7 @@
     <string name="settings_section_learning">Learning &amp; translation</string>
     <string name="settings_section_personal">Personal dictionary</string>
     <string name="settings_typing_language">Typing language</string>
-    <string name="settings_typing_language_desc">Which dictionary drives suggestions and autocorrect. Auto detects English or Spanish from what you type.</string>
+    <string name="settings_typing_language_desc">The language you type in: suggestions, autocorrect, starter phrases and the space-bar label follow it. Auto-detect switches as you type.</string>
     <string name="settings_typing_language_auto">Auto-detect</string>
     <string name="settings_typing_language_en">English</string>
     <string name="settings_typing_language_es">Spanish</string>

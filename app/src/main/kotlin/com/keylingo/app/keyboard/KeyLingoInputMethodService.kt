@@ -129,7 +129,8 @@ class KeyLingoInputMethodService :
             settingsFlow = settingsDataStore.settingsFlow,
             languagePack = languagePack,
             textConnection = this,
-            scope = serviceScope
+            scope = serviceScope,
+            diagnostics = { Log.i(LANGUAGE_TAG, it) }
         )
 
         // Parse the bundled lexicons/dictionary in the background right away,
@@ -282,5 +283,7 @@ class KeyLingoInputMethodService :
 
     private companion object {
         const val TAG = "KeyLingoIME"
+        /** `adb logcat -s KeyLingoLang`: typing-language and empty-field state, no typed text. */
+        const val LANGUAGE_TAG = "KeyLingoLang"
     }
 }
