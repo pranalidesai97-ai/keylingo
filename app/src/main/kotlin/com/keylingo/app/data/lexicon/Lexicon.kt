@@ -19,7 +19,12 @@ data class Correction(val word: LexiconWord, val distance: Double, val isPrefixM
  * beyond the result list; everything is array-backed and sorted once at
  * construction (on a background thread).
  */
-class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) {
+class Lexicon(
+    words: Collection<LexiconWord>,
+    private val foldAccents: Boolean,
+    /** Spanish: sound-alike spellings (s/c/z, b/v, silent h) are cheap typos, see [TypoDistance]. */
+    private val spanishPhonetics: Boolean = false,
+) {
 
     private val sorted: Array<LexiconWord>
     private val keys: Array<String>
@@ -110,6 +115,7 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
         val key = matchKey(typed)
         if (key.length < 2) return emptyList()
         val maxCost = when {
+            key.length <= 2 -> 0.6 // one slip: replacing both letters of a two-letter word ("xq" -> "da") is not a typo
             key.length <= 3 -> 0.95
             key.length <= 6 -> 1.45
             else -> 1.7
@@ -119,7 +125,10 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
         val firstLetters = buildSet {
             if (key.length <= 6) addAll(TypoDistance.neighbourhood(key[0]))
             add(key[0]); add(key[1])
+            if (spanishPhonetics) addAll(TypoDistance.soundAlikes(key[0])) // "sena" -> cena, "vien" -> bien
         }
+        // Spanish silent h ("ola" -> hola, "aber" -> haber): only words "h" + what was typed, so that bucket is filtered tightly.
+        val silentH = spanishPhonetics && 'h' !in firstLetters
         val out = ArrayList<Correction>()
         val scratch = TypoDistance.Scratch()
         val result = TypoDistance.ScanResult()
@@ -128,6 +137,7 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
         // the 1st/3rd letter, or drops/doubles a letter (then the candidate's 3rd letter matches the typed 2nd).
         val secondLetters: Set<Char> = buildSet {
             addAll(TypoDistance.neighbourhood(key[1])); add(key[1]); add(key[0]); key.getOrNull(2)?.let { add(it) }
+            if (spanishPhonetics) addAll(TypoDistance.soundAlikes(key[1])) // "nesecito"; "aora" -> ahora passes the dropped-letter rule
         }
         fun consider(idx: Int, allowPrefix: Boolean) {
             val w = sorted[idx]
@@ -136,7 +146,7 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
             if (cand == key) return
             if (key.length >= 3 && cand[1] !in secondLetters && !(cand.length > 2 && cand[2] == key[1])) return
             val tryPrefix = allowPrefix && cand.length > key.length && w.rank <= MAX_COMPLETION_RANK
-            TypoDistance.scan(key, cand, maxCost, tryPrefix, scratch, result)
+            TypoDistance.scan(key, cand, maxCost, tryPrefix, scratch, result, spanishPhonetics)
             var dist = result.whole
             var prefix = false
             if (tryPrefix && result.prefix + 0.15 < dist && result.prefix <= maxCost - 0.4) { dist = result.prefix + 0.15; prefix = true }
@@ -148,6 +158,9 @@ class Lexicon(words: Collection<LexiconWord>, private val foldAccents: Boolean) 
             for (len in (key.length - 2).coerceAtLeast(2)..(key.length + 2)) {
                 byLetterAndLength[bucket(letter, len)]?.forEach { consider(it, prefixHere) }
             }
+        }
+        if (silentH) {
+            for (len in key.length + 1..key.length + 2) byLetterAndLength[bucket('h', len)]?.forEach { if (keys[it][1] == key[0]) consider(it, false) }
         }
         if (wantPrefix) {
             // Longer words (beyond the +-2 window) can only be typo'd completions of what was typed so far.

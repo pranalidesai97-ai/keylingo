@@ -136,7 +136,7 @@ class BundledLanguageData(
                     words.add(LexiconWord(m.surface, base + penalty, true))
                 }
             }
-            return Lexicon(words, foldAccents = true)
+            return Lexicon(words, foldAccents = true, spanishPhonetics = true)
         }
     }
 }

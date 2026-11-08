@@ -87,5 +87,16 @@ class BundledDataIntegrityTest {
         val unknown = TestData.assetLines(BundledLanguageData.EN_NEXT_WORDS).filter { !it.startsWith("#") && it.isNotBlank() }
             .flatMap { it.split('\t').drop(1) }.filter { !data.englishLexicon.contains(it) }.toSet()
         assertTrue("predictions not in lexicon: $unknown", unknown.isEmpty())
+        // Spanish: every prediction is a known, suggestable word with exactly the lexicon's accents; no duplicates per row.
+        val esRows = TestData.assetLines(BundledLanguageData.ES_NEXT_WORDS).filter { !it.startsWith("#") && it.isNotBlank() }.map { it.split('\t') }
+        assertTrue("only ${esRows.size} Spanish heads", esRows.size >= 80)
+        assertEquals("duplicate heads", esRows.size, esRows.map { it[0] }.toSet().size)
+        for (row in esRows) {
+            assertEquals("duplicate prediction after ${row[0]}", row.size - 1, row.drop(1).toSet().size)
+            for (w in row.drop(1)) {
+                val entry = data.spanishLexicon.find(w)
+                assertTrue("'$w' after '${row[0]}' is not a suggestable Spanish word", entry != null && entry.suggestable && entry.display == w)
+            }
+        }
     }
 }

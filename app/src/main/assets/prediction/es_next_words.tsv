@@ -1,22 +1,91 @@
 # Cold-start next-word model for Spanish: previous word <TAB> likely next words, most likely first.
-<s>	hola	yo	no	sí	qué	cómo	gracias	buenos	la	el	me	te	por
-yo	soy	estoy	tengo	quiero	no	creo	también	voy	sé
-no	sé	puedo	quiero	tengo	es	me	te	hay	estoy	hay	problema
-me	gusta	encanta	voy	siento	llamo	parece	gustaría
-te	quiero	amo	extraño	llamo	veo	gusta	espero
-qué	tal	es	haces	pasa	quieres	hora
-cómo	estás	está	te	se
-estoy	bien	en	cansado	cansada	muy	aquí	trabajando	feliz
-voy	a	al	para
-vamos	a	al
-tengo	que	un	una	hambre	sueño	frío	calor
-quiero	ir	comer	un	una	saber	que
-muchas	gracias
-por	favor	qué	la	el
+# Authored for KeyLingo from common conversational Spanish patterns (no corpus data). Personal history always outranks this.
+<s>	hola	yo	no	sí	qué	cómo	gracias	buenos	me	te	la	el	por	estoy	tengo	es	ya	bueno	vale	nos
+yo	soy	estoy	tengo	quiero	no	creo	también	voy	sé	puedo	te	me	lo	pienso	estaba	era	fui
+tú	eres	estás	tienes	quieres	puedes	sabes	también	no	vas
+él	es	está	tiene	quiere	no	dijo	va	puede
+ella	es	está	tiene	quiere	no	dijo	va	puede
+nosotros	somos	estamos	tenemos	vamos	queremos	podemos	no
+ellos	son	están	tienen	quieren	van	no	dicen
+usted	es	está	tiene	puede	quiere
+no	sé	puedo	quiero	tengo	es	me	te	hay	estoy	lo	se	está	creo	pasa	importa
+sí	claro	señor	es	que	por
+me	gusta	encanta	voy	siento	llamo	parece	gustaría	gustan	alegro	dijo	da	pasa	quedo	duele
+te	quiero	amo	extraño	llamo	veo	gusta	espero	echo	mando	aviso	paso	digo
+se	puede	llama	va	fue	me	te	lo	siente	dice
+lo	que	siento	sé	tengo	hago	mismo	mejor	antes	quiero
+la	casa	verdad	semana	vida	gente	mañana	próxima	familia	ciudad	escuela	comida	noche
+el	fin	trabajo	día	mundo	año	tiempo	lunes	próximo	coche	problema	viernes	sábado	domingo
+los	niños	días	demás	dos	padres	amigos
+las	cosas	dos	tres	personas	chicas
+un	poco	día	momento	año	amigo	buen	rato	mes	beso	abrazo	saludo
+una	vez	pregunta	semana	cosa	persona	buena	hora	casa
+qué	tal	es	haces	pasa	quieres	hora	bien	te	hiciste	piensas	opinas	día	bueno
+cómo	estás	está	te	se	va	fue	es	así
+dónde	estás	está	vives	vas	es
+cuándo	vienes	llegas	es	vas	nos
+por	favor	qué	la	el	eso	fin	cierto	supuesto	ejemplo	lo	ahora	aquí
+para	que	mí	ti	el	la	ir	ver	comer	nada	siempre	mañana	hoy
+con	mi	el	la	tu	los	mucho	ella	él
+en	la	el	casa	serio	mi	un	una	cuanto	general	realidad	punto
+de	nada	la	el	acuerdo	verdad	mi	que	los	todo	nuevo	vez	repente	hecho	todos
+del	trabajo	mundo	día	año
+al	final	menos	principio	lado	día	trabajo
+a	la	las	los	ver	mi	casa	veces	tiempo	qué	partir	lo
+muy	bien	bueno	buena	mal	importante	feliz	cansado	cansada	contento	contenta	tarde	rico	pronto
+mi	casa	madre	padre	mamá	papá	amigo	amiga	familia	vida	hermano	hermana	novio	novia	trabajo
+tu	casa	madre	padre	mamá	amigo	nombre	número	vida
+su	casa	familia	nombre	madre
+es	un	una	muy	el	la	que	verdad	mejor	importante	posible	cierto	bueno	tarde
+está	bien	en	muy	aquí	listo	lista	claro	lloviendo	haciendo
+son	las	los	muy	de	unos
+estoy	bien	en	muy	aquí	trabajando	feliz	cansado	cansada	seguro	segura	de	llegando	listo	lista
+estás	bien	en	aquí	listo	lista	seguro	segura	haciendo
+estamos	bien	en	aquí	listos	llegando
+soy	de	un	una	muy	el	la	yo
+eres	muy	el	la	un	una	tú
+hay	que	un	una	mucho	mucha	algo	nada	alguien
+voy	a	al	para	bien	tarde	contigo
+vas	a	al	bien
+va	a	al	bien	ser
+vamos	a	al	bien	juntos
+tengo	que	un	una	hambre	sueño	frío	calor	miedo	ganas	tiempo	razón	prisa	dudas
+tienes	que	razón	tiempo	un	una	hambre
+tiene	que	un	una	razón
+quiero	ir	comer	un	una	saber	que	verte	hablar	decirte	ver
+quieres	ir	comer	que	algo	venir	salir
+puedo	ir	hacer	ayudarte	ver	llamarte	pasar
+puedes	ayudarme	venir	llamarme	hacer	decirme	ir
+podemos	hablar	ir	hacer	vernos	quedar
+necesito	ayuda	un	una	hablar	que	tu	ir
+creo	que	no	sí
+sé	que	qué	si	cómo	nada
+espero	que	verte	tu
+hace	frío	calor	mucho	tiempo	un	una	sol	buen
+hoy	es	no	en	tengo	voy	hace	estoy
+mañana	por	es	nos	voy	tengo	te
+ayer	fui	estuve	me	fue	no
+ahora	mismo	no	estoy	voy	es	te
+también	es	me	te	yo
+pero	no	es	yo	también	me	te	ya	si	creo
+porque	no	es	me	yo	estoy	tengo	te	si
+si	no	quieres	puedes	es	te	me	tienes
+cuando	llegues	puedas	quieras	te	me	tengas	estés
+que	no	es	te	me	se	lo	estás	tengas	sí	vengas
+ya	no	está	es	estoy	voy	sé	te	lo	me	llegué
+muchas	gracias	veces	cosas	personas
+mucho	gusto	tiempo	trabajo	más	mejor
+gracias	por	a	señor
 buenos	días
 buenas	noches	tardes
-hasta	luego	mañana	pronto
-de	nada	la	el	acuerdo
-es	un	una	muy	el	la	que
-la	casa	verdad	semana
-el	fin	trabajo	día
+hasta	luego	mañana	pronto	la	el	ahora
+nos	vemos	vamos	quedamos	hablamos
+todo	bien	el	lo	está	es
+todos	los	las
+otra	vez	cosa	persona
+otro	día	año
+más	o	que	tarde	tiempo	de
+bueno	pues	sí	no	es	vale
+vale	pues	gracias	sí
+claro	que	sí
+feliz	cumpleaños	navidad	año	día

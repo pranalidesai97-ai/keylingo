@@ -163,7 +163,12 @@ class GenerateAutocompleteSuggestionsUseCase @Inject constructor(
         val hasCompletions = candidates.values.any { it.kind == SuggestionKind.COMPLETION && !it.word.equals(prefix, ignoreCase = true) }
         for (c in corrections) {
             if (hasCompletions && !c.isCompletion && c.distance > CLOSE_TYPO_DISTANCE) continue
-            val score = frequencyScore(c.frequencyRank) + contextBonus(c.word) - DISTANCE_PENALTY * c.distance -
+            // A different word that shares little with what was typed is noise, not a correction ("becuz" -> nexus).
+            if (!c.isCompletion && c.distance > maxShownDistance(prefix.length)) continue
+            // After one or two letters the user is usually still typing the word: a one-slip two-letter word
+            // ("pr" -> or, "se" -> we) may be offered, but not ahead of the common words that start with them.
+            val shortPrefixPenalty = if (prefix.length <= 2 && hasCompletions && !c.isCompletion) SHORT_PREFIX_TYPO_PENALTY else 0.0
+            val score = frequencyScore(c.frequencyRank) + contextBonus(c.word) - DISTANCE_PENALTY * c.distance - shortPrefixPenalty -
                 if (knownTyped) KNOWN_WORD_CORRECTION_PENALTY else 0.0
             offer(c.word, score, if (c.isCompletion) SuggestionKind.COMPLETION else SuggestionKind.CORRECTION, c.frequencyRank)
         }
@@ -223,6 +228,9 @@ class GenerateAutocompleteSuggestionsUseCase @Inject constructor(
             .map { AutocompleteSuggestion(matchCase(it.word, prefix), it.rank, it.kind, lang) }
             .distinctBy { it.word }
             .toMutableList()
+        // Never echo exactly what was typed: committing it is what space does. (With an autocorrection pending,
+        // the typed word comes back below as the explicit "keep what I typed" choice.)
+        ranked.removeAll { it.word == prefix }
         if (autoCorrection != null) {
             ranked.removeAll { it.word.equals(autoCorrection.word, ignoreCase = true) }
             ranked.add(0, autoCorrection)
@@ -267,6 +275,12 @@ class GenerateAutocompleteSuggestionsUseCase @Inject constructor(
             }
         }
 
+        /**
+         * Largest typo distance at which a different whole word is still shown: any single slip or dropped
+         * letter up to three letters ("cmo" -> como), then about one slip per four letters ("becuz" -> not nexus).
+         */
+        private fun maxShownDistance(length: Int): Double = if (length <= 3) 0.95 else 0.08 + 0.25 * length
+
         private fun frequencyScore(rank: Int): Double = FREQUENCY_SCALE - ln((rank.coerceAtLeast(1) + 10).toDouble()) * FREQUENCY_SLOPE
 
         // Tunable weights (deterministic, documented in ARCHITECTURE.md).
@@ -292,5 +306,6 @@ class GenerateAutocompleteSuggestionsUseCase @Inject constructor(
         private const val COMMON_VARIANT_RANK = 2_000
         /** Adjacent-key slip or transposition: close enough to show beside real completions. */
         private const val CLOSE_TYPO_DISTANCE = 0.6
+        private const val SHORT_PREFIX_TYPO_PENALTY = 12.0
     }
 }
