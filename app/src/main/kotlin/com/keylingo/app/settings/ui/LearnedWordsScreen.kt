@@ -1,5 +1,8 @@
 package com.keylingo.app.settings.ui
 
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
+import com.keylingo.app.ui.layout.AppSpacing
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,7 +74,8 @@ fun LearnedWordsContent(
             )
         }
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
+        // Centred and capped like the other screens on tablets / landscape; 20 dp margins match AppSpacing.ScreenHorizontal.
+        Column(Modifier.padding(padding).fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = AppSpacing.MaxContentWidth)) {
             when {
                 words == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 words.isEmpty() -> Text(
@@ -86,7 +90,7 @@ fun LearnedWordsContent(
                         onValueChange = { filter = it },
                         label = { Text(stringResource(R.string.learned_words_filter)) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
+                        modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = AppSpacing.ScreenTop, bottom = 8.dp)
                     )
                     val shown = words.filter { filter.isBlank() || it.word.contains(filter.trim(), ignoreCase = true) }
                     LazyColumn(Modifier.weight(1f)) {

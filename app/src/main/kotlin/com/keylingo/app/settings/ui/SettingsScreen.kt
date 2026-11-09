@@ -1,13 +1,17 @@
 package com.keylingo.app.settings.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import com.keylingo.app.ui.layout.AppCard
+import com.keylingo.app.ui.layout.AppSpacing
+import com.keylingo.app.ui.layout.appContentWidth
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.clip
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.border
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,9 +37,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -60,14 +64,20 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.settings_title)) })
+            TopAppBar(
+                title = { Text(stringResource(R.string.settings_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.theme_back)) }
+                }
+            )
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .appContentWidth()
+                .padding(top = AppSpacing.ScreenTop)
         ) {
             // ---- Theme: first, so it is easy to find
             ThemeEntryRow(settings, onClick = onOpenThemes)
@@ -181,29 +191,24 @@ fun SettingsScreen(
     }
 }
 
-/** A group of related settings on one rounded surface. */
+/** A group of related settings on one rounded surface (same card as every other app screen). */
 @Composable
-private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    val shape = RoundedCornerShape(22.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), shape)
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-        content = content
-    )
-}
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) = AppCard(content = content)
+
+/**
+ * RadioButton reserves a 48 dp touch target with its circle 12 dp inside it; pulling the row back
+ * by that much puts the circle on the same left edge as the card's titles and text.
+ */
+private val RadioRowInset = (-12).dp
 
 @Composable
 private fun SectionHeader(title: String) {
-    Spacer(modifier = Modifier.height(28.dp))
+    Spacer(modifier = Modifier.height(AppSpacing.SectionGap))
     Text(
         title.uppercase(),
         style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.2.sp),
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 6.dp)
+        modifier = Modifier.padding(start = AppSpacing.CardHorizontal) // aligned with the card text below it
     )
     Spacer(modifier = Modifier.height(10.dp))
 }
@@ -235,6 +240,7 @@ private fun TypingLanguageSection(selected: TypingLanguageOption, onSelect: (Typ
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .offset(x = RadioRowInset)
                     .selectable(selected = option == selected, onClick = { onSelect(option) }),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -305,6 +311,7 @@ private fun LearningModeSection(selected: LearningMode, onSelect: (LearningMode)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .offset(x = RadioRowInset)
                     .selectable(selected = mode == selected, onClick = { onSelect(mode) })
                     .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.Top
@@ -341,6 +348,7 @@ private fun LanguageSection(selectedCode: String, onSelect: (String) -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .offset(x = RadioRowInset)
                     .selectable(selected = code == selectedCode, onClick = { onSelect(code) }),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -360,6 +368,7 @@ private fun DarkModeSection(selected: DarkModeOption, onSelect: (DarkModeOption)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .offset(x = RadioRowInset)
                     .selectable(selected = option == selected, onClick = { onSelect(option) }),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -384,6 +393,7 @@ private fun HintSizeSection(selected: HintSizeOption, onSelect: (HintSizeOption)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .offset(x = RadioRowInset)
                     .selectable(selected = option == selected, onClick = { onSelect(option) }),
                 verticalAlignment = Alignment.CenterVertically
             ) {

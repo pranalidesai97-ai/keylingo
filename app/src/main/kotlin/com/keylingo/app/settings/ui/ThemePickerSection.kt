@@ -80,6 +80,8 @@ fun ThemePickerSection(
                         modifier = Modifier.weight(1f)
                     )
                 }
+                // A short last row keeps the same column width: every theme card is the same size.
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
         Spacer(Modifier.height(4.dp))
@@ -92,7 +94,8 @@ fun ThemePickerSection(
             modifier = Modifier.fillMaxWidth()
         )
         KeyboardThemes.customSwatches.chunked(7).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Swatches span the content width, so both rows end on the same right edge as the cards above.
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 row.forEach { argb ->
                     val isSel = selected == KeyboardThemePreset.CUSTOM && argb == customAccentArgb
                     Box(

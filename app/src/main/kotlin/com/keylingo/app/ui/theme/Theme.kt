@@ -6,6 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 
 private val LightColors = lightColorScheme(
@@ -61,6 +62,8 @@ private val AppLightColors = LightColors.copy(
     outlineVariant = Color(0xFFDCDEE6),
 )
 private val AppDarkColors = DarkColors.copy(
+    // Dark text on the pale fallback primary (used only when no keyboard accent is passed): readable buttons and switch thumbs.
+    onPrimary = Color(0xFF1B1D4D),
     background = Color(0xFF121317),
     surface = Color(0xFF1D1E23),
     surfaceVariant = Color(0xFF272930),
@@ -89,6 +92,12 @@ fun KeyLingoAppTheme(
     content: @Composable () -> Unit
 ) {
     val base = if (darkTheme) AppDarkColors else AppLightColors
-    val colorScheme = if (accent != null && onAccent != null) base.copy(primary = accent, onPrimary = onAccent) else base
+    // Tonal buttons ("Manage learned words") use a tint of the theme accent rather than Material's default lavender,
+    // so every button on a screen belongs to the selected keyboard theme, in light and dark.
+    val colorScheme = if (accent != null && onAccent != null) base.copy(
+        primary = accent, onPrimary = onAccent,
+        secondaryContainer = lerp(base.surface, accent, if (darkTheme) 0.24f else 0.14f),
+        onSecondaryContainer = base.onSurface,
+    ) else base
     MaterialTheme(colorScheme = colorScheme, typography = KeyLingoAppTypography, shapes = KeyLingoAppShapes, content = content)
 }

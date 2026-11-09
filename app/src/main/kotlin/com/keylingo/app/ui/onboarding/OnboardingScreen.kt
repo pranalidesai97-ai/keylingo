@@ -1,5 +1,8 @@
 package com.keylingo.app.ui.onboarding
 
+import com.keylingo.app.ui.layout.AppCard
+import com.keylingo.app.ui.layout.AppSpacing
+import com.keylingo.app.ui.layout.appContentWidth
 import android.content.Intent
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
@@ -7,20 +10,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -43,8 +41,9 @@ fun OnboardingScreen(onOpenSettings: () -> Unit, onOpenThemes: () -> Unit = {}) 
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .appContentWidth()
+                .padding(vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.CardGap)
         ) {
             com.keylingo.app.ui.brand.KeyLingoWordmark(markSize = 52.dp)
             Text(
@@ -107,27 +106,18 @@ private fun OnboardingStepCard(
     actionLabel: String,
     onAction: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            Button(
-                onClick = onAction,
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Text(actionLabel)
-            }
+    // Same card, inset and button alignment as Settings: the action starts on the text's left edge.
+    AppCard {
+        Text(text = title, style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(14.dp))
+        Button(onClick = onAction) {
+            Text(actionLabel)
         }
     }
 }

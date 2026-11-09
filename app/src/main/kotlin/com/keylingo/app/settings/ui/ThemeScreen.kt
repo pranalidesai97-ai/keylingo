@@ -1,5 +1,7 @@
 package com.keylingo.app.settings.ui
 
+import com.keylingo.app.ui.layout.AppSpacing
+import com.keylingo.app.ui.layout.appContentWidth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -80,7 +81,8 @@ fun ThemeScreenContent(
             Modifier
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .appContentWidth()
+                .padding(vertical = AppSpacing.ScreenTop)
         ) {
             Text(stringResource(R.string.theme_current).uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.2.sp), color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(4.dp))
@@ -113,11 +115,11 @@ fun ThemeEntryRow(settings: KeyLingoSettings, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(AppSpacing.CardShape)
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(22.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), AppSpacing.CardShape)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 16.dp),
+            .padding(horizontal = AppSpacing.CardHorizontal, vertical = AppSpacing.CardVertical),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Two overlapping dots: keyboard background and accent.
