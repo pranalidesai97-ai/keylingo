@@ -44,5 +44,11 @@ KeyLingo, and follow the onboarding to enable and switch to the keyboard.
 | `CHANGELOG.md` | What changed |
 | `KNOWN_ISSUES_AND_BACKLOG.md` | Limitations and prioritised roadmap |
 
-Regenerating the English lexicon: see `tools/build_english_lexicon.py`
-(needs the `wordlist-english` npm package's SCOWL lists).
+Regenerating the lexicons: English = `tools/build_english_lexicon.py`
+(SCOWL lists from the `wordlist-english` npm package) → `tools/rerank_english_by_frequency.py`
+(wordfreq data) → `tools/sort_lexicon_by_key.py … en`; Spanish =
+`tools/build_spanish_lexicon.py` → `tools/sort_lexicon_by_key.py … es`.
+
+Third-party data: the two lexicon files contain material adapted from wordfreq
+(CC BY-SA 4.0). See `DATABASE_AND_DICTIONARY_INVENTORY.md` §5 and the bundled
+`app/src/main/assets/licenses/` before distributing the APK.

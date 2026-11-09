@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-11-08/09 — Keyboard quality, vocabulary and UI round (Stages 1–7)
+
+Commits `3ed158b` … this commit on `claude/eager-dijkstra-jsufzj` (baseline `015f63f`).
+All measurements are **desktop-JVM**; nothing in this round was run on a phone.
+
+- **Stage 1 — typing language (`3ed158b`).** Real-service Robolectric tests (fresh launch, settings loading before/after the field opens, live EN↔ES switching, 25 create/destroy cycles, password fields). `adb logcat -s KeyLingoLang` diagnostics, which never log typed text. Settings wording separates "Typing language" from "Translate into".
+- **Stage 2 — Spanish vocabulary (`ddf5dfe`).** 50,000 Spanish words in real frequency order from wordfreq 3.1.1 (CC BY-SA 4.0), each validated with the RLA-ES Hunspell dictionary. Spanish known words in the top 1k/5k/10k/20k: 67/41/30/20% → 97/96/93/88%.
+- **Stage 3 — English ranking (`27950d6`).** Ranks from wordfreq merged with the curated chat ranks. Name forms (john, tom) are not promoted. Crude words and slurs, inflections included, are never suggested. Three misspelled entries removed.
+- **Stage 4 — suggestion strip (`bc20b12`).**
+  - Short prefixes favour real completions ("pr" → probably, not "or").
+  - Distant lookalikes are dropped, and the typed word is not echoed back.
+  - Spanish sound-alike misspellings are understood (nesecito → necesito, ola → offers hola).
+  - Spanish next-word table grows from 21 to 89 heads.
+  - Per-keystroke p95: 4.3 ms EN, 6.2 ms ES.
+- **Stage 5 — translation (`69c54bf`).**
+  - +611 curated EN→ES entries; top-3,000 coverage 59% → 81%.
+  - Everyday 40-sentence corpus: 16/40 → 40/40 fully and correctly translated.
+  - New constructions: please + verb, funcionar for devices, gran, de que, a qué hora, el viernes, a las ocho, como + role, NP-subject clauses, hace frío, temperature with estar.
+  - ES→EN keeps negation before unknown verbs; alto → high/tall by context.
+- **Stage 6 — load time (`55424b8`).** Lexicons stored in match-key order; cold load median 246 → 208 ms.
+- **Stage 7 — UI alignment, docs, release prep.**
+  - Shared layout tokens (`ui/layout/AppLayout.kt`) for setup, Settings/About, Theme picker and Learned words. Effects:
+    - one page margin (Settings was 16 dp) and one card inset (setup cards were 20/18 dp);
+    - content capped at 600 dp and centred on wide screens;
+    - section headers and radio buttons on the card text edge;
+    - setup buttons start-aligned like Settings;
+    - Settings gets a back arrow;
+    - equal-width theme cards, and swatches spanning the width.
+  - Tonal buttons are tinted from the theme accent, and the dark fallback scheme gets a readable onPrimary.
+  - Keyboard renders pixel-identical (all five themes, light and dark).
+  - Licensing: bundled notice rewritten (which files, changes, copyright, disclaimer) and the full CC BY-SA 4.0 text bundled. Analysis in DATABASE_AND_DICTIONARY_INVENTORY.md §5, with items needing legal review flagged.
+  - Translation limitations K27–K31 documented.
+
+Unchanged: key layout, Ocean Mist / Golden Dune / Sunset Bloom / Aqua Breeze / Slate Grey palettes and names, logo, font, vibration off by default, no INTERNET permission, backup disabled, minSdk 26, Room schemas and settings keys.
+
 ## 2026-11-07 — UI polish, Spanish starter phrases, gradient refinements, approved logo
 
 **Spanish starter phrases.**

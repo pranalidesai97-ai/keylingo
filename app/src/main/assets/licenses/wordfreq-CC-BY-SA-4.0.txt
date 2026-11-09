@@ -1,15 +1,32 @@
 KeyLingo word-frequency data
 ============================
 
-app/src/main/assets/lexicon/es_words.tsv (and, from Stage 3, the frequency ranks in
-lexicon/en_words.tsv) are derived from wordfreq 3.1.1 by Robyn Speer
-(https://github.com/rspeer/wordfreq), "large" word lists.
+Which files: these two bundled data files contain material adapted from
+wordfreq 3.1.1 by Robyn Speer (https://github.com/rspeer/wordfreq), "large"
+word lists (wordfreq: Copyright 2022 Robyn Speer):
+
+  * assets/lexicon/es_words.tsv  -- the whole file (Spanish word list and ranks)
+  * assets/lexicon/en_words.tsv  -- the rank column (the English words themselves
+    come from SCOWL, under SCOWL's own permissive terms)
 
 These KeyLingo data files are licensed under the Creative Commons
 Attribution-ShareAlike 4.0 International licence (CC BY-SA 4.0):
 https://creativecommons.org/licenses/by-sa/4.0/
-Changes made: words filtered to alphabetic tokens; Spanish spellings validated
-against the RLA-ES Hunspell dictionary; converted to rank order.
+The full licence text is bundled as licenses/CC-BY-SA-4.0-legalcode.txt.
+
+The material is provided as-is, without warranties of any kind; see Section 5
+(Disclaimer of Warranties and Limitation of Liability) of the licence.
+
+Changes made by KeyLingo (as required by Section 3(a)(1)(B)):
+  * words filtered to alphabetic tokens; frequency values converted to rank order;
+  * Spanish: spellings validated against the RLA-ES Hunspell dictionary;
+    profanity marked "never suggest";
+  * English: ranks merged with KeyLingo's own curated conversational ranks
+    (the better of the two is kept); lowercase forms of personal names not
+    promoted; crude words and slurs marked "never suggest";
+  * rows re-ordered by the keyboard's match key (no change to the ranks).
+Tools: tools/build_spanish_lexicon.py, tools/rerank_english_by_frequency.py,
+tools/sort_lexicon_by_key.py in the KeyLingo source.
 
 The wordfreq attribution and source terms follow, verbatim:
 

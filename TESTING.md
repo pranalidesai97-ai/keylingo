@@ -16,22 +16,22 @@ data, not fixtures. Database tests use Robolectric (`@Config(sdk = [34])`);
 the first run downloads Robolectric's Android runtime jar (~150 MB) from
 Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 
-## 2. Current results (2026-11-06)
+## 2. Current results (2026-11-09)
 
-**216 tests, 0 failures, 27 suites** (2026-11-07, after UI polish, Spanish phrases, gradient refinements and the approved logo).
+**249 tests, 0 failures, 34 suites** (end of the 2026-11-08/09 quality round, Stages 1–7).
 
 | Suite | Tests | What it covers |
 |---|---|---|
-| `KeyboardViewModelTest` | 48 | Real typing sequences into a simulated text field. Covers auto-caps, grapheme backspace, double-space and autocorrect with undo. Also picks, prediction, learning, password/incognito/email fields, Enter actions, translation and hints. New: forced Spanish mode, grammar suggested but not applied, translation of the corrected source, grammar waits for a finished word, grammar off. |
+| `KeyboardViewModelTest` | 49 | Real typing sequences into a simulated text field. Covers auto-caps, grapheme backspace, double-space and autocorrect with undo. Also picks, prediction, learning, password/incognito/email fields, Enter actions, translation and hints. New: forced Spanish mode, grammar suggested but not applied, translation of the corrected source, grammar waits for a finished word, grammar off. |
 | `GenerateAutocompleteSuggestionsUseCaseTest` | 21 | Ranking, case, typos, curated misspellings (`becuase`, `definately`, `tomorow`, `recieve`, `teh`). No junk beside good completions; proper nouns in the top 3; rare real words never corrected; Spanish misspellings; learned words; context re-ranking. |
-| `EnglishToSpanishTranslatorTest` | 14 | 96 sentences: the 9 requested examples, `adónde`, tenses, modals, clitics, gustar, ser/estar/tener, questions, subjunctive, agreement, idioms, alignments. |
-| `SpanishToEnglishTranslatorTest` | 13 | 112 sentences: the 6 requested examples, dropped subjects, negation, questions, ages, unaccented questions, verb chains, gustar/doler, idioms, ser/estar, prepositions, set phrases. Unknown words must lower coverage. |
+| `EnglishToSpanishTranslatorTest` | 17 | 96 sentences: the 9 requested examples, `adónde`, tenses, modals, clitics, gustar, ser/estar/tener, questions, subjunctive, agreement, idioms, alignments. |
+| `SpanishToEnglishTranslatorTest` | 15 | 112 sentences: the 6 requested examples, dropped subjects, negation, questions, ages, unaccented questions, verb chains, gustar/doler, idioms, ser/estar, prepositions, set phrases. Unknown words must lower coverage. |
 | `UserDatabasesTest` (Robolectric SQLite) | 11 | Concurrency, threshold, validation, language separation, n-grams, clear-all, v1→v2 migration. New: retention, sequence caps, listing, forgetting a word everywhere. |
 | `SpanishConjugatorTest` | 10 | Full paradigms. |
 | `EnglishGrammarCheckerTest` | 8 | Repeated words, agreement, past tense, articles, confusables, capitalisation. Also: no flags on informal or incomplete sentences or compound nouns, and edits are spliced correctly. |
-| `BundledDataIntegrityTest` | 7 | Asset rows, senses, conjugation, gender, accents, lexicon, seeds. |
+| `BundledDataIntegrityTest` | 8 | Asset rows, senses, conjugation, gender, accents, lexicon, seeds. |
 | `InputFieldPolicyTest` | 11 | Field-type rules, including 21 cross-app field configurations (chat, browser address bar, web/app search fields, TYPE_NULL, passwords, e-mail, numbers). |
-| `LanguageAndGlossTest` | 5 | Detection, glosses, assistant consistency. New: the Spanish sentence chip with notes, hidden for partial or single-word input. |
+| `LanguageAndGlossTest` | 6 | Detection, glosses, assistant consistency. New: the Spanish sentence chip with notes, hidden for partial or single-word input. |
 | `SpanishMorphologyTest` | 5 | Plurals, agreement, articles, stress. |
 | `LexiconTest` | 5 | Size, prefix keys, distances, speed (< 15 ms per typo lookup; measured 6–10 ms). |
 | `TextContextTest` | 4 | Word/sentence extraction. |
@@ -42,12 +42,19 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `SettingsScreensTest` (Robolectric Compose) | 8 | Learned-words filter, single delete, delete-all confirmation, empty state. Settings sections and persisted changes. Theme screen: six themes, selected marker, persistence after restart, Settings entry, setup step. Renders PNGs. |
 | `KeyFeedbackTest` | 3 | Vibration and sound are independent, off by default, with the right sound per key. |
 | `BackspaceGestureTest` (Robolectric Compose) | 2 | Hold repeats; release stops immediately. |
-| `SettingsPersistenceTest` | 2 | Vibration/sound and theme survive a new DataStore instance. |
+| `SettingsPersistenceTest` | 3 | Vibration/sound and theme survive a new DataStore instance. |
 | `AssistanceLatencyTest` | 1 | Per-sentence grammar / EN→ES / ES→EN / full analysis under budget (measured < 1 ms each). |
 | `VocabularyMetricsTest` | 1 | Prints vocabulary counts (`VOCAB …` lines). |
 | `SentenceStartersTest` | 1 | Immediate starter words equal the bundled sentence-start row (EN and ES). |
 | `StripLayoutTest` (Robolectric Compose) | 7 | Strip height per field and setting (86 dp assisted, 40 dp otherwise); unchanged while typing; Large hint size; renders `strip-*.png`. |
 | `SpanishGrammarNotesTest` | 8 | Production Spanish note patterns: progressive constructions, accents, capitals, NFD, punctuation, word boundaries, English, empty input, all ten rules, and the real `LearningAssistant` path. |
+| `KeyLingoInputMethodServiceTest` (Robolectric, real Hilt service) | 5 | The real keyboard service with real DataStore settings: Spanish phrases on a fresh launch whichever loads first, live EN↔ES switching of phrases and space-bar language, Translate-into does not change the typing language, 25 create/start/finish/destroy cycles, no phrases or suggestions in password fields. |
+| `SpanishVocabularyTest` | 5 | 50k Spanish words: everyday accented words known and suggestable, frequency ordering, completions, typos and accent restoration, profanity never suggested, proper nouns. |
+| `SuggestionQualityTest` | 8 | Strip quality on sentences, search queries and typos, EN and ES: common before rare, 2-letter typo words never lead, no distant lookalikes, no echo, no duplicates, typo fixes, Spanish sound-alike spellings, accents, Spanish next-word prediction. |
+| `SuggestionLatencyTest` | 1 | Times one refresh per keystroke over typed messages, search queries and misspelled text in both languages; prints `LATENCY` lines; asserts p95 < 20 ms and median < 5 ms on the JVM. |
+| `EverydayTranslationTest` | 2 | 38 everyday messages must translate to exactly the expected correct Spanish at full coverage; top-3,000 English dictionary coverage ≥ 80%. |
+| `AppLayoutAlignmentTest` (Robolectric Compose) | 3 | Measured geometry of setup, Settings and Theme screens: card margins, header/text and button/text alignment, equal theme cards, 600 dp cap centred on a 900 dp screen. |
+| `AppScreensRenderTest` (Robolectric Compose) | 1 | Full-page renders (`ui-*.png`) of setup, Settings incl. About, Theme picker and Learned words, light and dark, with the Ocean Mist accent as in the app. |
 | `AndroidRegexCompatibilityTest` | 3 | No Android-incompatible regex syntax in any production pattern. A checker self-test uses the exact pattern that crashed. Writes the cases for the ICU check. |
 
 PNG renders are written to `app/build/keyboard-screenshots/`. They are
@@ -66,6 +73,24 @@ tools/android-regex-check/run.sh
 ```
 
 It needs `g++` and ICU headers (`apt-get install libicu-dev`). It compiles every production pattern with ICU and replays the match checks; it must report 0 failures.
+
+### Performance measurements — desktop JVM only
+
+These numbers come from the build container's desktop JVM (OpenJDK 21, x86-64
+cloud CPU). **They are not phone measurements.** No KeyLingo build has been
+timed on a phone; a mid-range Android phone is commonly several times slower
+than a desktop JVM, but that factor has not been measured for KeyLingo.
+
+| What | Desktop-JVM result (2026-11-09) | Source |
+|---|---|---|
+| Suggestion refresh per keystroke, English messages (300 keystrokes) | median 0.36 ms, p95 3.04 ms, max 7.08 ms | `SuggestionLatencyTest` |
+| … English with typos (157) | median 0.30 ms, p95 2.85 ms, max 6.33 ms | same |
+| … Spanish messages (210) | median 0.34 ms, p95 4.77 ms, max 7.45 ms | same |
+| … Spanish with typos (139) | median 0.22 ms, p95 3.41 ms, max 9.27 ms | same |
+| Learning row per sentence (ES→EN / EN→ES / grammar / full analysis) | 0.08 / 0.17 / 0.05 / 0.23 ms | `AssistanceLatencyTest` |
+| Bundled data load, cold, fresh JVM | median 208 ms (5 runs, 182–267 ms); was 246 ms (228–325) before Stage 6 | `VocabularyMetricsTest` in 5 fresh JVMs |
+
+Timings vary run to run by roughly ±50% on this shared machine (Stage 4/6 runs measured p95 up to 6.2 ms for Spanish).
 
 ## 3. What is NOT automatically tested
 - The `InputMethodService` itself, and the InputConnection behaviour of real apps.
@@ -93,3 +118,42 @@ It needs `g++` and ICU headers (`apt-get install libicu-dev`). It compiles every
 16. Each theme (and a custom colour) looks right in light and dark on a real screen; key geometry identical across themes; pressed state visible.
 17. Grammar chip: type "Yesterday I go to the market. " → chip offers "Yesterday I went to the market."; text changes only after tapping it.
 18. Spanish: type "Estoy aprendiendo español." → chip "I am learning Spanish." with the estar + gerund note.
+
+## 5. Real-device checklist for this build (vivo phone)
+
+Install over the existing app (no uninstall, no "clear data"); see the install
+instructions in the delivery notes. Then tick each line and note anything odd.
+Useful while testing: `adb logcat -s KeyLingoLang KeyLingoData KeyLingoIME`.
+
+**Update and data**
+- [ ] The update installs without uninstalling; the KeyLingo keyboard is still enabled and selected.
+- [ ] Settings kept (theme, typing language, vibration off/on as before); learned words still listed in Settings → Manage learned words.
+- [ ] `adb logcat -s KeyLingoData` shows "Bundled data loaded in N ms" once per keyboard start — note N (first time after install, and after a reboot).
+
+**Speed (by feel; note any lag)**
+- [ ] Open the keyboard in WhatsApp right after a reboot: keys appear immediately; starter phrases appear in an empty field; word suggestions appear within about a second.
+- [ ] Type a long message fast: no dropped letters, the suggestion row keeps up, no flicker or height jumps.
+- [ ] Hold Backspace on a long message: smooth repeat, stops the instant you lift.
+- [ ] Open and close the keyboard 20 times across apps: no crash, no blank keyboard.
+
+**Typing and suggestions**
+- [ ] English: "hel" → hello/help; "sta" → state/stay/start; "teh " → the (Backspace restores teh); "plz " → please.
+- [ ] Spanish mode (Settings → Typing language → Spanish): empty field shows Hola, Gracias, Buenos días…; space bar reads "Español".
+- [ ] Spanish: "nesecito " → necesito; "tambien " → también; "ola" offers hola but "ola " stays ola; after "para", "con", "muy", the row predicts words.
+- [ ] Switch Typing language back to English: phrases and space bar change at once.
+
+**Translation chip**
+- [ ] "Thanks for your help with the project" → "Gracias por tu ayuda con el proyecto."
+- [ ] "The movie starts at eight" → "La película empieza a las ocho."
+- [ ] "My phone is not working" → "Mi teléfono no está funcionando."
+- [ ] Known limits (expected, K27–K31): "the app is free" → libre; "we meet on Mondays" → conocemos.
+
+**Screens (light and dark mode)**
+- [ ] Setup, Settings (scroll to About), Keyboard theme, Learned words: cards line up on both sides, buttons start under the text, back arrow on Settings works.
+- [ ] Each theme looks as before on the keyboard (Golden Dune and Sunset Bloom unchanged).
+- [ ] Rotate to landscape on the Settings screen: content stays readable and centred.
+
+**Privacy**
+- [ ] Airplane mode on: everything above still works (offline).
+- [ ] Password field: no suggestions, no phrases.
+

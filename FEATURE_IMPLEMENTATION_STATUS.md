@@ -35,8 +35,12 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 
 | Feature | Status | Notes |
 |---|---|---|
-| 111,795-word English lexicon (77,137 suggestable + 34,658 recognised-only; 48,652 inflected forms; proper nouns) | ✅ | `LexiconTest`, `VocabularyMetricsTest`, `BundledDataIntegrityTest` |
-| Curated misspellings (108: `becuase`, `definately`, `tomorow`, `recieve`, `teh`, `alot`…) preferred as the autocorrection | ✅ | `GenerateAutocompleteSuggestionsUseCaseTest` |
+| 111,792-word English lexicon (77,062 suggestable + 34,730 recognised-only; 48,649 inflected forms; proper nouns) | ✅ | `LexiconTest`, `VocabularyMetricsTest`, `BundledDataIntegrityTest` |
+| Real frequency ranks: English from wordfreq merged with curated chat ranks; 50,000-word Spanish list from wordfreq (Hunspell-validated) | ✅ | `SuggestionQualityTest`, `SpanishVocabularyTest`; licence CC BY-SA 4.0 (K30) |
+| Spanish sound-alike misspellings (s/c/z, b/v, g/j, y/ll, silent h) as typos; real words never replaced | ✅ | `SuggestionQualityTest.spanishSpellingByEarIsUnderstood` |
+| No echo of the typed word; 2-letter typo words never lead; distant lookalikes dropped | ✅ | `SuggestionQualityTest` |
+| Per-keystroke latency regression test (desktop JVM; not a device measurement) | ✅ | `SuggestionLatencyTest` |
+| Curated misspellings (111: `becuase`, `definately`, `tomorow`, `recieve`, `teh`, `alot`…) preferred as the autocorrection | ✅ | `GenerateAutocompleteSuggestionsUseCaseTest` |
 | No unrelated typo suggestions next to good completions; best completion always visible | ✅ | same |
 | Prefix search (case/apostrophe-insensitive), frequency ranking | ✅ | |
 | Case preservation (`Hel`→`Hello`, `HEL`→`HELLO`, `i`→`I`) | ✅ | |
@@ -47,7 +51,7 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 | Spanish suggestions with accent restoration (`tambien`→`también`, `manana`→`mañana`) | ✅ | |
 | EN/ES separation (per-sentence detection, per-language personal data) | ✅ | `languagesDoNotMix`, `detectsTheTypingLanguage` |
 | Typing language setting (Auto / English / Spanish); forced Spanish gives no English suggestions | ✅ | `KeyboardViewModelTest`, `SettingsScreensTest` |
-| True corpus frequency for words outside the curated top ~1,900 | 🟧 | SCOWL tier + length heuristic (see backlog) |
+| True corpus frequency for words outside the curated top ~1,900 | ✅ | wordfreq ranks (32,863 rare words wordfreq lacks keep SCOWL order) |
 
 ## C. Translation intelligence
 
@@ -135,6 +139,7 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 | Keyboard theme screen (current theme, five gradient previews + custom, "✓ Selected"), opened from the top of Settings and setup step 4 | ✅ / 🖼 | `SettingsScreensTest` |
 | App icon from the approved supplied logo (adaptive + themed monochrome, store icon) and KeyLingo wordmark on setup screen and About | ✅ / 🖼 | `BrandingRenderTest` (inflation, small-size legibility, renders) |
 | App typography (bundled Plus Jakarta Sans, offline) and card-based settings/setup UI; keyboard font unchanged | 🖼 | renders in `SettingsScreensTest` / `BrandingRenderTest` |
+| Shared layout across setup, Settings/About, Theme picker, Learned words: one margin and card inset, headers/radios/buttons on the text edge, 600 dp max width centred, back arrow on every sub-screen | ✅ / 🖼 | `AppLayoutAlignmentTest` (measured geometry), `AppScreensRenderTest` (light + dark renders) |
 | Appearance: dark mode, hint size | ✅ / 🖼 | |
 | Learning: learning row, sentence translation, grammar suggestions, learning mode, learning language | ✅ | |
 | Personal dictionary: learned-words manager, delete all | ✅ / 🖼 | |

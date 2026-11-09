@@ -112,6 +112,16 @@ whole-word and prefix distance, banded (Ukkonen) to the cost limit. Candidates c
 
 Curated misspellings (`en_misspellings.tsv`) are offered first and preferred as the autocorrection when the typed word is not learned. Distant typo candidates (distance > 0.6) are suppressed when real completions exist. The best completion is guaranteed a visible slot.
 
+Strip hygiene (2026-11-08):
+- A different whole word is shown only within `maxShownDistance` (any single slip up to 3 letters, then `0.08 + 0.25·length`).
+- With 1–2 typed letters, whole-word typo candidates take −12 so they never lead real completions ("pr" → probably).
+- A two-letter word may not have both letters replaced (Lexicon cost cap 0.6).
+- The exact typed word is never echoed, except as the LITERAL "keep what I typed" choice beside a pending autocorrection.
+
+**Spanish phonetics.** The Spanish `Lexicon` is built with `spanishPhonetics = true`: s/c/z, b/v, g/j, y/l, c/k/q substitutions and a missing or extra `h` cost 0.5 (`TypoDistance.PHONETIC_COST`). The silent-h bucket is scanned only for words equal to "h" + the typed word. Real Spanish words are still never autocorrected (`ola` offers `hola` but keeps `ola`).
+
+**Ranks and load.** `en_words.tsv` ranks come from wordfreq merged with curated chat ranks; `es_words.tsv` is wordfreq's Spanish top 50k (details and licence in DATABASE_AND_DICTIONARY_INVENTORY.md). Both files are stored in match-key order, so `Lexicon`'s one-time sort is a single linear pass; ranks and behaviour do not depend on row order. `BundledDataIntegrityTest` keeps them sorted.
+
 ## 5. Learning row (`LearningAssistant`)
 
 1. `TypingLanguageDetector`: counts words that are common English
@@ -209,7 +219,14 @@ Letter keys stay a flat off-white tint with dark text. `KeyboardColors` keeps on
 
 The adaptive icon's foreground is transparent. `ui/brand/KeyLingoWordmark` shows the mark with "Key" and "Lingo" (the latter in the logo's gradient).
 
-**App theme.** `KeyLingoAppTheme` (Plus Jakarta Sans from `res/font`, app shapes, page colours) wraps the app screens. The keyboard keeps `KeyLingoTheme` with the system font, so keyboard rendering is independent of app typography.
+**App theme.** `KeyLingoAppTheme` (Plus Jakarta Sans from `res/font`, app shapes, page colours) wraps the app screens. The keyboard keeps `KeyLingoTheme` with the system font, so keyboard rendering is independent of app typography. With a keyboard accent, the app's `primary` is the accent and tonal containers are a tint of it (14% light, 24% dark).
+
+**App layout.** `ui/layout/AppLayout.kt` holds the measurements every companion-app screen shares:
+- `AppSpacing`: page margin 20 dp, card inset 18/16 dp, card gap 14 dp, section gap 28 dp, max content width 600 dp;
+- `Modifier.appContentWidth()`: full width up to 600 dp, centred beyond it;
+- `AppCard`: the rounded, bordered card.
+
+Alignment rule: section headers, card titles, radio circles and buttons start on the card text edge. Radio rows are pulled back 12 dp to cancel the RadioButton's touch-target inset. `AppLayoutAlignmentTest` measures this; `AppScreensRenderTest` renders all four screens in light and dark.
 
 ## 6. Translator design (`EnglishToSpanishTranslator`)
 

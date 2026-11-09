@@ -1,6 +1,6 @@
 # KeyLingo — Project State
 
-_Last updated: 2026-11-06. Describes the code on branch `claude/eager-dijkstra-jsufzj`._
+_Last updated: 2026-11-09 (end of Stage 7). Describes the code on branch `claude/eager-dijkstra-jsufzj`._
 
 Verification levels used in all KeyLingo docs:
 
@@ -21,8 +21,8 @@ English typing that teaches Spanish as you type. It is fully offline:
 ## 2. Current state in one paragraph
 
 The project **builds** (`assembleDebug`, minified `assembleRelease`,
-`lintDebug` with 0 errors) and has **216 passing tests**. What it has:
-- **Input:** a 111.8k-word English lexicon; keyboard-aware typo correction plus a curated misspelling list (`becuase`, `definately`, `teh`…); conservative autocorrect with one-tap undo; next-word prediction.
+`lintDebug` with 0 errors) and has **249 passing tests**. What it has:
+- **Input:** a 111.8k-word English lexicon ranked by real frequency (wordfreq + curated chat ranks) and a 50k-word Spanish lexicon; keyboard-aware typo correction (plus Spanish sound-alike spellings) and a curated misspelling list (`becuase`, `definately`, `teh`…); conservative autocorrect with one-tap undo; next-word prediction in both languages.
 - **Learning row:** an offline English→Spanish sentence translator, and now a Spanish→English one.
 - **Grammar:** suggestions are offered as a tappable chip and never applied automatically.
 - **Appearance:** six keyboard themes plus a custom colour.
@@ -35,11 +35,12 @@ The project **builds** (`assembleDebug`, minified `assembleRelease`,
 
 | Command | Result |
 |---|---|
-| `./gradlew :app:testDebugUnitTest` | ✅ 216 tests, 0 failures (27 suites, see TESTING.md) |
-| `tools/android-regex-check/run.sh` (ICU4C 74.2) | ✅ 31 production patterns compile; 283 match checks equal the JVM |
-| `./gradlew :app:assembleDebug` | ✅ `app-debug.apk` 18.6 MB |
-| `./gradlew :app:assembleRelease` | ✅ `app-release-unsigned.apk` 2.5 MB (R8 minified; never run) |
-| `./gradlew :app:lintDebug` | ✅ 0 errors, 21 warnings (almost all "newer dependency version available") |
+| `./gradlew :app:testDebugUnitTest` | ✅ 249 tests, 0 failures (34 suites, see TESTING.md) |
+| `tools/android-regex-check/run.sh` (ICU4C 74.2) | ✅ all 31 production patterns compile in ICU; all 283 match checks equal the JVM (the tool prints "314 patterns compiled" because each check compiles its pattern too) |
+| `./gradlew :app:assembleDebug` | ✅ `app-debug.apk` ≈19.5 MB (`com.keylingo.app.debug`) |
+| `./gradlew :app:assembleRelease` | ✅ `app-release-unsigned.apk` ≈3.2 MB (`com.keylingo.app`, R8 minified; never run on a device) |
+| `./gradlew :app:lintDebug --offline` | ✅ 0 errors, 1 warning (`ObsoleteSdkInt` on `mipmap-anydpi-v26`, the launcher-icon folder; cosmetic, left untouched). The "newer dependency version" checks need network and were not run offline. |
+| APK review | No INTERNET or other dangerous permission (only AndroidX's signature-level `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`); `allowBackup=false` with data-extraction rules; minSdk 26, targetSdk 34; no network or analytics libraries in the release classpath. |
 
 **Build environment caveat.** This cloud container has no Android SDK. The build used:
 - AGP/AndroidX from Google Maven and Maven Central;
@@ -72,10 +73,14 @@ Third round: the empty-field word row was blank (data still loading) and themes 
 
 Fourth round: five gradient themes, EN/ES starter phrases in empty fields, and a new logo. Fifth round: Spanish starter phrases, stronger Ocean Mist / Aqua Breeze / Slate Grey gradients (Golden Dune and Sunset Bloom unchanged), the approved supplied logo, and app typography and UI polish (see CHANGELOG). **On-device confirmation of this build is pending.**
 
+## 4c. 2026-11-08/09 quality round (Stages 1–7, details in CHANGELOG.md)
+
+Typing-language reliability tests on the real service; real-frequency vocabulary (EN ranks, 50k ES words); a cleaner suggestion strip and Spanish prediction; +611 translations (top-3,000 coverage 59% → 81%; everyday corpus 40/40 correct); faster cold load; aligned companion-app screens; licensing documentation. **All performance numbers are desktop-JVM; none is a phone measurement.** Device checklist: TESTING.md §5.
+
 ## 5. Decisions that need the owner's approval
 
 1. **Backups off.** `allowBackup="false"` plus data-extraction rules keep learned words off Google backup and device-to-device transfer. A side effect is that settings don't move to a new phone either. Revert if cross-device restore matters more.
-2. **Frequency data licence.** Ranking outside the ~1,900 curated words still uses SCOWL tiers, because no corpus licence was accepted (see KNOWN_ISSUES K6).
+2. **Frequency data licence.** English ranks and the Spanish word list now come from wordfreq (CC BY-SA 4.0). Attribution and the licence text are bundled, but the classification and ShareAlike scope **need legal review before any public release** (KNOWN_ISSUES K30, DATABASE_AND_DICTIONARY_INVENTORY.md §5).
 3. **Release build.** R8 output has never run; sign and test it in Android Studio before distributing.
 
 ## 6. Outstanding device verification (must happen next)
