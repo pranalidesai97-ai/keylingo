@@ -243,11 +243,20 @@ class KeyboardViewModelTest {
         assertNotNull(h.state.suggestions.firstOrNull()) // typing assistance is independent of the learning row
     }
 
-    @Test fun forcedSpanishModeSkipsDetection() = runTest {
+    @Test fun spanishModeCompletesSpanishTextButNeverEnglishText() = runTest {
+        // Spanish typed in Spanish mode is completed in Spanish, even mid-word.
         val h = harness(settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH))
         h.type("tambi")
         assertEquals("es", h.state.typingLanguage)
         assertTrue(h.state.suggestions.map { it.word }.toString(), h.state.suggestions.any { it.word.equals("también", ignoreCase = true) })
+        // The device bug: English typed with Spanish selected got Spanish words (tiene, tiempo, tus...) and "Hello" -> "Ello".
+        val e = harness(settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH))
+        e.type("Hello ")
+        assertEquals("Hello was autocorrected into Spanish", "Hello ", e.editor.text)
+        e.type("i am doing thi")
+        assertEquals("en", e.state.typingLanguage)
+        assertTrue(e.state.suggestions.map { it.word }.toString(), e.state.suggestions.any { it.word == "this" })
+        assertTrue(e.state.suggestions.map { it.word }.toString(), e.state.suggestions.none { it.word in setOf("tiene", "tiempo", "tus", "tienen") })
     }
 
     @Test fun grammarIsSuggestedNotAppliedAndTranslationKeepsTheIntendedTense() = runTest {
@@ -381,20 +390,28 @@ class KeyboardViewModelTest {
         assertTrue(en.none { it in setOf("Hi", "Him", "His", "High", "Hit") })
     }
 
-    @Test fun spanishModeShowsSpanishStarterPhrasesOnly() = runTest {
-        val h = harness(policy = chat, settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH))
-        assertEquals(es, h.state.starterPhrases)
+    @Test fun emptyFieldShowsEnglishOnTopAndSpanishBelowInEveryMode() = runTest {
         assertTrue(es.containsAll(listOf("Hola", "Buenos días", "¿Cómo estás?", "Sí", "No", "¿Qué tal?", "¿Cómo está usted?", "Que tengas un buen día", "Aprende español", "Más")))
-        // Never mixed: no phrase appears in both lists, and English mode shows none of the Spanish ones.
+        // Never mixed: no phrase appears in both lists.
         assertTrue(en.intersect(es.toSet()).isEmpty())
-        val english = harness(policy = chat, settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.ENGLISH))
-        assertTrue(english.state.starterPhrases.none { it in es })
+        for (option in com.keylingo.app.data.settings.TypingLanguageOption.entries) {
+            val h = harness(policy = chat, settings = KeyLingoSettings(typingLanguage = option))
+            assertEquals("$option top row", en, h.state.starterPhrases)
+            assertEquals("$option bottom row", es, h.state.learningStarterPhrases)
+            assertTrue(h.state.suggestions.isEmpty())
+        }
+        // Learning row turned off: no Spanish phrases, the English row is unchanged.
+        val off = harness(policy = chat, settings = KeyLingoSettings(learningEnabled = false))
+        assertEquals(en, off.state.starterPhrases)
+        assertTrue(off.state.learningStarterPhrases.isEmpty())
     }
 
     @Test fun spanishModeShowsTheRequestedSpanishPhrasesFirst() = runTest {
         assertEquals(listOf("Hola", "Gracias", "Buenos días", "Buenas noches", "¿Cómo estás?", "Por favor", "Sí", "No", "Hasta luego", "¿Qué tal?"), es.take(10))
         val h = harness(policy = chat, settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH))
-        assertEquals(es, h.state.starterPhrases)
+        assertEquals(es, h.state.learningStarterPhrases)
+        assertEquals(listOf("Hello", "Thanks", "Good morning", "Good night", "How are you?"), h.state.starterPhrases.take(5))
+        assertEquals(listOf("Hola", "Gracias", "Buenos días", "Buenas noches", "¿Cómo estás?"), h.state.learningStarterPhrases.take(5))
         assertTrue("no word suggestions beside them", h.state.suggestions.isEmpty())
         assertEquals("space bar reads Español", "es", h.state.typingLanguage)
     }
@@ -405,12 +422,16 @@ class KeyboardViewModelTest {
         assertEquals(en, h.state.starterPhrases)
         h.settingsFlow.value = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH)
         h.scope.testScheduler.advanceUntilIdle()
-        assertEquals(es, h.state.starterPhrases)
+        // The space bar follows the setting; the rows keep their languages (no contamination).
         assertEquals("es", h.state.typingLanguage)
+        assertEquals(en, h.state.starterPhrases)
+        assertEquals(es, h.state.learningStarterPhrases)
         // And back to English while the field is still empty.
         h.settingsFlow.value = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.ENGLISH)
         h.scope.testScheduler.advanceUntilIdle()
+        assertEquals("en", h.state.typingLanguage)
         assertEquals(en, h.state.starterPhrases)
+        assertEquals(es, h.state.learningStarterPhrases)
     }
 
     @Test fun anExplicitLanguageWinsOverTheLanguageLastTyped() = runTest {
@@ -418,25 +439,29 @@ class KeyboardViewModelTest {
         h.type("Estoy aprendiendo español ")
         repeat(h.editor.text.length) { h.backspace() }
         assertEquals("", h.editor.text)
-        assertEquals("English mode never shows Spanish phrases", en, h.state.starterPhrases)
+        assertEquals("English phrases on top after deleting Spanish text", en, h.state.starterPhrases)
+        assertEquals(es, h.state.learningStarterPhrases)
         val s = harness(policy = chat, settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH))
         s.type("I am drinking water ")
         repeat(s.editor.text.length) { s.backspace() }
-        assertEquals("Spanish mode never shows English phrases", es, s.state.starterPhrases)
+        assertEquals("both rows return in Spanish mode", en, s.state.starterPhrases)
+        assertEquals(es, s.state.learningStarterPhrases)
     }
 
     @Test fun spanishPhrasesInsertOnceThenTypingAndDeletingBehave() = runTest {
         val h = harness(policy = chat, settings = KeyLingoSettings(typingLanguage = com.keylingo.app.data.settings.TypingLanguageOption.SPANISH))
+        // A Spanish phrase from the bottom row inserts once.
         h.vm.onStarterPhraseSelected("¿Qué tal?"); h.scope.testScheduler.advanceUntilIdle()
         h.vm.onStarterPhraseSelected("¿Qué tal?"); h.scope.testScheduler.advanceUntilIdle()
         assertEquals("¿Qué tal? ", h.editor.text)
-        assertTrue(h.state.starterPhrases.isEmpty())
-        h.type("bie")
-        assertTrue("Spanish autocomplete after typing", h.state.suggestions.any { it.word.lowercase().startsWith("bie") })
+        assertTrue(h.state.starterPhrases.isEmpty() && h.state.learningStarterPhrases.isEmpty())
+        h.type("Estoy bie")
+        assertTrue("Spanish autocomplete after typing Spanish", h.state.suggestions.any { it.word.lowercase().startsWith("bie") })
         repeat(h.editor.text.length) { h.backspace() }
-        assertEquals(es, h.state.starterPhrases)
-        // An English phrase is not insertable in Spanish mode (it is not on screen).
-        h.vm.onStarterPhraseSelected("Hello")
+        assertEquals(en, h.state.starterPhrases)
+        assertEquals(es, h.state.learningStarterPhrases)
+        // Text that is not on screen is never inserted.
+        h.vm.onStarterPhraseSelected("Not a phrase")
         assertEquals("", h.editor.text)
         // Restricted fields stay empty in Spanish mode too.
         val pw = harness(policy = InputFieldPolicy.from(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD, EditorInfo.IME_ACTION_DONE),
@@ -454,7 +479,9 @@ class KeyboardViewModelTest {
         h.vm.onFinishInput()
         h.editor.text = ""; h.editor.moveCursor(0)
         h.vm.onStartInput(chat, restarting = false); h.scope.testScheduler.advanceUntilIdle()
-        assertEquals(es, h.state.starterPhrases)
+        assertEquals("space bar keeps the language last typed", "es", h.state.typingLanguage)
+        assertEquals(en, h.state.starterPhrases)
+        assertEquals(es, h.state.learningStarterPhrases)
     }
 
     @Test fun starterPhrasesAppearBeforeTheLanguageDataHasLoaded() = runTest {
@@ -597,7 +624,7 @@ class KeyboardViewModelTest {
             SpanishLanguagePack(), editor, CoroutineScope(StandardTestDispatcher(testScheduler) + Job()), diagnostics = { log += it })
         vm.onStartInput(chat, restarting = false); testScheduler.advanceUntilIdle()
         for (c in "secreto privado ") vm.onKeyAction(if (c == ' ') KeyAction.Space else KeyAction.Character(c.toString(), c.uppercase())).also { testScheduler.advanceUntilIdle() }
-        assertTrue(log.toString(), log.any { it.startsWith("starter phrases: es") })
+        assertTrue(log.toString(), log.any { it.startsWith("starter phrases: top en") && it.contains("bottom es") })
         assertTrue(log.toString(), log.any { it.startsWith("field empty=false") })
         assertTrue("typed text leaked into diagnostics: $log", log.none { it.contains("secreto") || it.contains("privado") })
         // Password fields: nothing about the field's contents is logged.

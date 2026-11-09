@@ -72,7 +72,8 @@ fun HintBar(
     showLearningRow: Boolean = true,
     onGrammarApplied: (GrammarSuggestion) -> Unit = {},
     starterPhrases: List<String> = emptyList(),
-    onStarterPhrase: (String) -> Unit = {}
+    onStarterPhrase: (String) -> Unit = {},
+    learningStarterPhrases: List<String> = emptyList()
 ) {
     Column(
         modifier = modifier
@@ -95,7 +96,12 @@ fun HintBar(
                 )
             }
         } }
-        if (showLearningRow) SuggestionRow(LEARNING_ROW_HEIGHT) {
+        // Empty field: the learning row shows Spanish starter phrases, independent of the top row.
+        if (showLearningRow && learningStarterPhrases.isNotEmpty()) key("learning-phrases") {
+            SuggestionRow(LEARNING_ROW_HEIGHT) {
+                learningStarterPhrases.forEach { phrase -> PhraseChip(phrase, hintSize, onStarterPhrase) }
+            }
+        } else if (showLearningRow) SuggestionRow(LEARNING_ROW_HEIGHT) {
             assistance.grammar?.let { grammar -> GrammarChip(grammar, hintSize, onGrammarApplied) }
             assistance.sentence?.let { sentence ->
                 SentenceChip(

@@ -1,6 +1,7 @@
 package com.keylingo.app.keyboard
 
 import com.keylingo.app.data.settings.KeyLingoSettings
+import com.keylingo.app.data.settings.TypingLanguageOption
 import com.keylingo.app.domain.model.SentenceStarters
 import com.keylingo.app.domain.model.StarterPhrases
 import com.keylingo.app.domain.model.AutocompleteSuggestion
@@ -34,8 +35,10 @@ data class KeyboardUiState(
     val autoCorrection: AutocompleteSuggestion? = null,
     val assistance: LearningAssistance = LearningAssistance.EMPTY,
     val typingLanguage: String = "en",
-    /** Everyday phrases shown instead of word suggestions while the field is empty. */
+    /** Everyday phrases for the TOP (typing, English) row while the field is empty. */
     val starterPhrases: List<String> = emptyList(),
+    /** Everyday Spanish phrases for the BOTTOM (learning) row while the field is empty; independent of [starterPhrases]. */
+    val learningStarterPhrases: List<String> = emptyList(),
     val policy: InputFieldPolicy = InputFieldPolicy.DEFAULT,
     val settings: KeyLingoSettings = KeyLingoSettings()
 ) {
@@ -143,7 +146,7 @@ class KeyboardViewModel(
         val mode = if (restarting) state.mode else if (newPolicy.startInSymbols) KeyboardMode.SYMBOLS_1 else KeyboardMode.LETTERS
         _uiState.update {
             it.copy(policy = newPolicy, mode = mode, shiftState = ShiftState.OFF, suggestions = emptyList(),
-                autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList())
+                autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList(), learningStarterPhrases = emptyList())
         }
         autoShifted = false
         updateAutoShift()
@@ -155,7 +158,7 @@ class KeyboardViewModel(
         suggestionJob?.cancel(); hintJob?.cancel()
         lastCorrection = null
         phantomSpace = false
-        _uiState.update { it.copy(suggestions = emptyList(), autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList()) }
+        _uiState.update { it.copy(suggestions = emptyList(), autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList(), learningStarterPhrases = emptyList()) }
     }
 
     /** The cursor/selection moved. Ignores the echo of our own edits; an external move cancels undo/space-swap state. */
@@ -324,10 +327,10 @@ class KeyboardViewModel(
      * or replace text. Phrases are curated, not the user's words: nothing is learned.
      */
     fun onStarterPhraseSelected(phrase: String) {
-        if (phrase !in state.starterPhrases || !isEmptyField(context())) return
+        if ((phrase !in state.starterPhrases && phrase !in state.learningStarterPhrases) || !isEmptyField(context())) return
         lastOwnEditAt = clock()
         textConnection.commitText("$phrase ")
-        _uiState.update { it.copy(starterPhrases = emptyList()) }
+        _uiState.update { it.copy(starterPhrases = emptyList(), learningStarterPhrases = emptyList()) }
         lastCorrection = null
         // "Hello" + "," -> "Hello, " (like a picked suggestion); not after "How are you?".
         phantomSpace = phrase.last().isLetterOrDigit()
@@ -341,8 +344,23 @@ class KeyboardViewModel(
     private fun isEmptyField(ctx: TextContext): Boolean =
         policy.showSuggestions && policy.allowLearningHints && ctx.before.isEmpty() && ctx.after.isEmpty() && !textConnection.hasSelection()
 
-    /** Typing language for starter phrases: the setting, or (Auto) the language last typed. */
+    /** Language shown on the space bar in an empty field: the setting, or (Auto) the language last typed. */
     private fun phraseLanguage(): String = state.settings.typingLanguage.code ?: state.typingLanguage
+
+    /**
+     * The language of the text actually being typed, which drives BOTH rows: the top row completes and
+     * corrects in it, and the bottom row teaches the other language. The Typing-language setting only
+     * biases the decision. English text is never completed as Spanish because Spanish was selected:
+     * - English: always English;
+     * - Auto: the detector (English unless the sentence is clearly Spanish);
+     * - Spanish: Spanish when the text shows any Spanish evidence; English text stays English; with no text
+     *   yet in the sentence, the language last typed carries over.
+     */
+    private suspend fun textLanguage(text: String): String = when (state.settings.typingLanguage) {
+        TypingLanguageOption.ENGLISH -> "en"
+        TypingLanguageOption.AUTO -> languageDetector.detect(text)
+        TypingLanguageOption.SPANISH -> if (text.isBlank()) state.typingLanguage else languageDetector.detect(text, preferSpanish = true)
+    }
 
     fun onAutocompleteSelected(suggestion: AutocompleteSuggestion) {
         lastOwnEditAt = clock()
@@ -483,34 +501,41 @@ class KeyboardViewModel(
         }
         if (isEmptyField(ctx)) {
             val language = phraseLanguage()
-            val phrases = StarterPhrases.forLanguage(language)
-            val tag = "$language/${state.settings.typingLanguage}/settingsLoaded=$settingsReceived"
+            // Two independent rows: English phrases on top, their Spanish counterparts in the learning row.
+            val phrases = StarterPhrases.ENGLISH
+            val learningPhrases = if (state.settings.learningEnabled) StarterPhrases.SPANISH else emptyList()
+            val tag = "$language/${state.settings.typingLanguage}/${learningPhrases.size}/settingsLoaded=$settingsReceived"
             if (tag != lastLoggedPhrases) {
-                diagnostics("starter phrases: $language (${phrases.size}) -- typing language ${state.settings.typingLanguage}, settings loaded=$settingsReceived")
+                diagnostics("starter phrases: top en (${phrases.size}), bottom es (${learningPhrases.size}) -- typing language ${state.settings.typingLanguage}, settings loaded=$settingsReceived")
                 lastLoggedPhrases = tag
             }
             suggestionsComputedFor = null
-            // Also record the language, so the space bar reads "Español" in an empty field in Spanish mode.
-            if (state.starterPhrases != phrases || state.suggestions.isNotEmpty() || state.autoCorrection != null || state.typingLanguage != language) {
-                _uiState.update { it.copy(starterPhrases = phrases, suggestions = emptyList(), autoCorrection = null, typingLanguage = language) }
+            // The space bar still shows the chosen typing language ("Español" in Spanish mode).
+            if (state.starterPhrases != phrases || state.learningStarterPhrases != learningPhrases || state.suggestions.isNotEmpty() ||
+                state.autoCorrection != null || state.typingLanguage != language) {
+                _uiState.update {
+                    it.copy(starterPhrases = phrases, learningStarterPhrases = learningPhrases, suggestions = emptyList(), autoCorrection = null, typingLanguage = language)
+                }
             }
             return
         }
-        if (state.starterPhrases.isNotEmpty()) _uiState.update { it.copy(starterPhrases = emptyList()) }
+        if (state.starterPhrases.isNotEmpty() || state.learningStarterPhrases.isNotEmpty()) {
+            _uiState.update { it.copy(starterPhrases = emptyList(), learningStarterPhrases = emptyList()) }
+        }
         val prefix = if (ctx.cursorInsideWord) "" else ctx.currentWord
         // Predict the next word only right after a space (not straight after "word," or mid-punctuation).
         val canPredict = prefix.isNotEmpty() || ctx.before.isEmpty() || ctx.before.last().isWhitespace()
         // A new sentence: show starter words right away. The computed predictions below need the
         // bundled data, which can still be loading for 1-3 s after the keyboard starts; they replace these
         // (same words) when ready.
+        val language = textLanguage(ctx.currentSentence.ifEmpty { ctx.currentWord })
         if (prefix.isEmpty() && canPredict && ctx.atSentenceStart && state.suggestions.isEmpty()) {
-            val starters = SentenceStarters.forLanguage(state.settings.typingLanguage.code).map { word ->
+            val starters = SentenceStarters.forLanguage(language).map { word ->
                 AutocompleteSuggestion(if (policy.autoCapitalize || word == "I") word.replaceFirstChar { it.titlecase() } else word,
-                    0, SuggestionKind.PREDICTION, state.settings.typingLanguage.code ?: "en")
+                    0, SuggestionKind.PREDICTION, language)
             }
             _uiState.update { it.copy(suggestions = starters, autoCorrection = null) }
         }
-        val language = state.settings.typingLanguage.code ?: languageDetector.detect(ctx.currentSentence.ifEmpty { ctx.currentWord })
         val result = if (!canPredict) com.keylingo.app.domain.model.SuggestionResult.EMPTY else generateSuggestions(
             SuggestionRequest(
                 prefix = prefix,
@@ -555,9 +580,11 @@ class KeyboardViewModel(
             if (s.assistance != LearningAssistance.EMPTY) _uiState.update { it.copy(assistance = LearningAssistance.EMPTY) }
             return
         }
+        // Same text-based language as the top row, so English text always gets Spanish learning content
+        // (previously the raw setting was passed and English typed in Spanish mode got an empty row).
         var assistance = generateHintsUseCase(
             sentence, languagePack.languageCode, s.settings.learningMode,
-            typingLanguage = s.settings.typingLanguage.code, checkGrammar = wantGrammar
+            typingLanguage = textLanguage(sentence), checkGrammar = wantGrammar
         )
         if (!wantLearning) assistance = assistance.copy(sentence = null, hints = emptyList())
         else if (!s.settings.sentenceTranslationEnabled) assistance = assistance.copy(sentence = null)

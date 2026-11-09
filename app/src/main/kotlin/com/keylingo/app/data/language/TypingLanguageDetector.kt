@@ -22,7 +22,12 @@ class TypingLanguageDetector(private val english: Lexicon, private val spanish: 
     private val wordRegex = Regex("[\\p{L}']+")
     private val spanishChars = Regex("[áéíóúñü¿¡]", RegexOption.IGNORE_CASE)
 
-    fun detect(sentence: String): String {
+    /**
+     * With [preferSpanish] (the user chose Spanish as typing language) a single piece of Spanish evidence
+     * is enough when it outweighs the English evidence -- text with no Spanish evidence, or as much English
+     * as Spanish, such as an English sentence, is still English. The setting is a preference, never a reason to treat English as Spanish.
+     */
+    fun detect(sentence: String, preferSpanish: Boolean = false): String {
         var es = 0.0
         var en = 0.0
         if (spanishChars.containsMatchIn(sentence)) es += 1.0 // the accented word itself also counts below
@@ -39,7 +44,18 @@ class TypingLanguageDetector(private val english: Lexicon, private val spanish: 
                 inEn && inEs && spanishRank!! <= COMMON_SPANISH_RANK && englishRank!! > VERY_COMMON_ENGLISH_RANK -> es += 1.0
             }
         }
-        return if (es > en && es >= 2.0) "es" else "en"
+        // Spanish mode, word still being typed: "tambi" starts only Spanish words, so it is Spanish evidence.
+        // A prefix shared with any common English word ("hel", "ho") is not, so English typing stays English.
+        if (preferSpanish && words.isNotEmpty() && sentence.lastOrNull()?.isLetter() == true) {
+            val last = words.last()
+            if (english.find(last) == null && spanish.findByKey(last).isEmpty() && last.length >= 2 &&
+                english.prefixMatches(last, 3).none { it.rank <= COMMON_ENGLISH_RANK } && spanish.prefixMatches(last, 1).isNotEmpty()
+            ) es += 1.0
+        }
+        // Spanish mode needs only one piece of Spanish evidence, but still more than the English evidence:
+        // "Thank yo" (yo is also Spanish) or "Good mor" is English being typed, not Spanish.
+        return if (preferSpanish) { if (es > en) "es" else "en" }
+        else if (es > en && es >= 2.0) "es" else "en"
     }
 
     private companion object {

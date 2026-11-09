@@ -21,7 +21,7 @@ English typing that teaches Spanish as you type. It is fully offline:
 ## 2. Current state in one paragraph
 
 The project **builds** (`assembleDebug`, minified `assembleRelease`,
-`lintDebug` with 0 errors) and has **249 passing tests**. What it has:
+`lintDebug` with 0 errors) and has **258 passing tests**. What it has:
 - **Input:** a 111.8k-word English lexicon ranked by real frequency (wordfreq + curated chat ranks) and a 50k-word Spanish lexicon; keyboard-aware typo correction (plus Spanish sound-alike spellings) and a curated misspelling list (`becuase`, `definately`, `teh`…); conservative autocorrect with one-tap undo; next-word prediction in both languages.
 - **Learning row:** an offline English→Spanish sentence translator, and now a Spanish→English one.
 - **Grammar:** suggestions are offered as a tappable chip and never applied automatically.
@@ -35,7 +35,7 @@ The project **builds** (`assembleDebug`, minified `assembleRelease`,
 
 | Command | Result |
 |---|---|
-| `./gradlew :app:testDebugUnitTest` | ✅ 249 tests, 0 failures (34 suites, see TESTING.md) |
+| `./gradlew :app:testDebugUnitTest` | ✅ 258 tests, 0 failures (35 suites, see TESTING.md) |
 | `tools/android-regex-check/run.sh` (ICU4C 74.2) | ✅ all 31 production patterns compile in ICU; all 283 match checks equal the JVM (the tool prints "314 patterns compiled" because each check compiles its pattern too) |
 | `./gradlew :app:assembleDebug` | ✅ `app-debug.apk` ≈19.5 MB (`com.keylingo.app.debug`) |
 | `./gradlew :app:assembleRelease` | ✅ `app-release-unsigned.apk` ≈3.2 MB (`com.keylingo.app`, R8 minified; never run on a device) |

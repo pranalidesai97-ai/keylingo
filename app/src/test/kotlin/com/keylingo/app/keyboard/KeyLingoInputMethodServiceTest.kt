@@ -25,6 +25,7 @@ import org.robolectric.annotation.Config
  * inputs. Covers the typing-language flow that failed on a phone: fresh
  * launches, settings that load before or after the field opens, live
  * switching, Learning vs Typing language, reopening and recreating the keyboard.
+ * Empty field: English phrases on top and Spanish phrases below, whatever the setting.
  * Robolectric has no app on the other end of the InputConnection, so the field
  * is empty; typing and deleting are covered in KeyboardViewModelTest.
  */
@@ -42,6 +43,11 @@ class KeyLingoInputMethodServiceTest {
 
     @After fun resetSettings() = runBlocking {
         store.setTypingLanguage(TypingLanguageOption.AUTO); store.setTargetLanguage("es")
+    }
+
+    /** Empty field: English phrases on top, Spanish phrases in the learning row -- in every typing-language mode. */
+    private fun bothRows(service: KeyLingoInputMethodService): Boolean = vm(service).uiState.value.let {
+        it.starterPhrases == StarterPhrases.ENGLISH && it.learningStarterPhrases == StarterPhrases.SPANISH
     }
 
     private fun vm(service: KeyLingoInputMethodService): KeyboardViewModel =
@@ -67,8 +73,8 @@ class KeyLingoInputMethodServiceTest {
         // (a) The field opens before the saved settings have been read.
         val (c1, s1) = start()
         s1.onStartInputView(chatField, false)
-        assertTrue("Spanish phrases after settings load", waitUntil { vm(s1).uiState.value.starterPhrases == StarterPhrases.SPANISH })
-        assertEquals("es", vm(s1).uiState.value.typingLanguage) // space bar reads "Español"
+        assertTrue("Spanish mode after settings load", waitUntil { vm(s1).uiState.value.typingLanguage == "es" }) // space bar reads "Español"
+        assertTrue("English top row + Spanish bottom row", bothRows(s1))
         assertTrue(vm(s1).uiState.value.suggestions.isEmpty())
         c1.destroy()
         // (b) Settings are already loaded when the field opens.
@@ -76,7 +82,8 @@ class KeyLingoInputMethodServiceTest {
         waitUntil { vm(s2).uiState.value.settings.typingLanguage == TypingLanguageOption.SPANISH }
         s2.onStartInputView(chatField, false)
         shadowOf(Looper.getMainLooper()).idle()
-        assertEquals(StarterPhrases.SPANISH, vm(s2).uiState.value.starterPhrases)
+        assertTrue(bothRows(s2))
+        assertEquals("es", vm(s2).uiState.value.typingLanguage)
         c2.destroy()
     }
 
@@ -84,16 +91,16 @@ class KeyLingoInputMethodServiceTest {
         runBlocking { store.setTypingLanguage(TypingLanguageOption.ENGLISH) }
         val (controller, service) = start()
         service.onStartInputView(chatField, false)
-        assertTrue(waitUntil { vm(service).uiState.value.starterPhrases == StarterPhrases.ENGLISH })
+        assertTrue(waitUntil { bothRows(service) })
         assertEquals("en", vm(service).uiState.value.typingLanguage)
 
         runBlocking { store.setTypingLanguage(TypingLanguageOption.SPANISH) }
-        assertTrue("switched to Spanish", waitUntil { vm(service).uiState.value.starterPhrases == StarterPhrases.SPANISH })
-        assertEquals("es", vm(service).uiState.value.typingLanguage)
+        assertTrue("space bar switched to Spanish", waitUntil { vm(service).uiState.value.typingLanguage == "es" })
+        assertTrue("rows unchanged: no contamination", bothRows(service))
 
         runBlocking { store.setTypingLanguage(TypingLanguageOption.ENGLISH) }
-        assertTrue("switched back to English", waitUntil { vm(service).uiState.value.starterPhrases == StarterPhrases.ENGLISH })
-        assertEquals("en", vm(service).uiState.value.typingLanguage)
+        assertTrue("switched back to English", waitUntil { vm(service).uiState.value.typingLanguage == "en" })
+        assertTrue(bothRows(service))
         controller.destroy()
     }
 
@@ -103,7 +110,8 @@ class KeyLingoInputMethodServiceTest {
         service.onStartInputView(chatField, false)
         assertTrue(waitUntil { vm(service).uiState.value.settings.typingLanguage == TypingLanguageOption.ENGLISH })
         shadowOf(Looper.getMainLooper()).idle()
-        assertEquals("Learning/translation language must not switch typing to Spanish", StarterPhrases.ENGLISH, vm(service).uiState.value.starterPhrases)
+        assertEquals("Learning/translation language must not switch typing to Spanish", "en", vm(service).uiState.value.typingLanguage)
+        assertTrue(bothRows(service))
         controller.destroy()
     }
 
@@ -112,16 +120,16 @@ class KeyLingoInputMethodServiceTest {
         repeat(25) { cycle ->
             val (controller, service) = start()
             service.onStartInputView(chatField, false)
-            assertTrue("cycle $cycle", waitUntil { vm(service).uiState.value.starterPhrases == StarterPhrases.SPANISH })
+            assertTrue("cycle $cycle", waitUntil { vm(service).uiState.value.typingLanguage == "es" && bothRows(service) })
             // Hide and show again (same field), then switch to another field.
             service.onFinishInputView(false)
             service.onStartInputView(chatField, true)
             shadowOf(Looper.getMainLooper()).idle()
-            assertEquals("cycle $cycle after reopen", StarterPhrases.SPANISH, vm(service).uiState.value.starterPhrases)
+            assertTrue("cycle $cycle after reopen", bothRows(service))
             service.onFinishInput()
             service.onStartInputView(chatField, false)
             shadowOf(Looper.getMainLooper()).idle()
-            assertEquals("cycle $cycle new field", StarterPhrases.SPANISH, vm(service).uiState.value.starterPhrases)
+            assertTrue("cycle $cycle new field", bothRows(service))
             controller.destroy()
         }
     }
@@ -133,6 +141,7 @@ class KeyLingoInputMethodServiceTest {
         service.onStartInputView(EditorInfo().apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }, false)
         shadowOf(Looper.getMainLooper()).idle()
         assertTrue(vm(service).uiState.value.starterPhrases.isEmpty())
+        assertTrue(vm(service).uiState.value.learningStarterPhrases.isEmpty())
         assertTrue(vm(service).uiState.value.suggestions.isEmpty())
         controller.destroy()
     }

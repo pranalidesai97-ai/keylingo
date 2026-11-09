@@ -18,7 +18,7 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 
 ## 2. Current results (2026-11-09)
 
-**249 tests, 0 failures, 34 suites** (end of the 2026-11-08/09 quality round, Stages 1–7).
+**258 tests, 0 failures, 35 suites** (2026-11-09, after the dual-row fix).
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -53,6 +53,7 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `SuggestionQualityTest` | 8 | Strip quality on sentences, search queries and typos, EN and ES: common before rare, 2-letter typo words never lead, no distant lookalikes, no echo, no duplicates, typo fixes, Spanish sound-alike spellings, accents, Spanish next-word prediction. |
 | `SuggestionLatencyTest` | 1 | Times one refresh per keystroke over typed messages, search queries and misspelled text in both languages; prints `LATENCY` lines; asserts p95 < 20 ms and median < 5 ms on the JVM. |
 | `EverydayTranslationTest` | 2 | 38 everyday messages must translate to exactly the expected correct Spanish at full coverage; top-3,000 English dictionary coverage ≥ 80%. |
+| `DualSuggestionRowsTest` (Robolectric Compose) | 9 | The device bug: production ViewModel → rendered KeyboardScreen, chips assigned to the top/bottom row by position, in Auto, English and Spanish mode. Covers empty field (both starter rows), Hello → hola, Thank you → Gracias, Good morning → Buenos días, "I am doing this" / "Hello i am doing this" → Spanish sentence below with English completions on top, unknown words, deleting text, switching typing/learning settings, and back to an empty field. No Spanish-only word may appear in the top row. Renders `dual-rows-*.png`. |
 | `AppLayoutAlignmentTest` (Robolectric Compose) | 3 | Measured geometry of setup, Settings and Theme screens: card margins, header/text and button/text alignment, equal theme cards, 600 dp cap centred on a 900 dp screen. |
 | `AppScreensRenderTest` (Robolectric Compose) | 1 | Full-page renders (`ui-*.png`) of setup, Settings incl. About, Theme picker and Learned words, light and dark, with the Ocean Mist accent as in the app. |
 | `AndroidRegexCompatibilityTest` | 3 | No Android-incompatible regex syntax in any production pattern. A checker self-test uses the exact pattern that crashed. Writes the cases for the ICU check. |

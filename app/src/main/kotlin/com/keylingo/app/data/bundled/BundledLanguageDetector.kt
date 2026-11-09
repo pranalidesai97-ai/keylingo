@@ -11,8 +11,10 @@ class BundledLanguageDetector @Inject constructor(
     private val source: BundledDataSupplier,
     private val dispatchers: AppDispatchers
 ) : LanguageDetector {
-    override suspend fun detect(sentence: String): String {
+    override suspend fun detect(sentence: String): String = detect(sentence, preferSpanish = false)
+
+    override suspend fun detect(sentence: String, preferSpanish: Boolean): String {
         val data = source.get() ?: return "en"
-        return withContext(dispatchers.compute) { data.languageDetector.detect(sentence) }
+        return withContext(dispatchers.compute) { data.languageDetector.detect(sentence, preferSpanish) }
     }
 }

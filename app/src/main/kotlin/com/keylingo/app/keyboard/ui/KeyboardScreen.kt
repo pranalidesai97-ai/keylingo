@@ -101,7 +101,8 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
                         showLearningRow = uiState.showLearningRow,
                         onGrammarApplied = onGrammar,
                         starterPhrases = uiState.starterPhrases,
-                        onStarterPhrase = onPhrase
+                        onStarterPhrase = onPhrase,
+                        learningStarterPhrases = uiState.learningStarterPhrases
                     )
                     val rows = remember(uiState.mode, uiState.settings.showNumberRow) {
                         KeyboardLayoutProvider.rowsFor(uiState.mode, uiState.settings.showNumberRow)

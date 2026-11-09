@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-11-09 — Fix: English and Spanish suggestion rows (device report)
+
+**Symptom (vivo phone):** typing "Hello i am doing this" showed Spanish words (tiene, tiempo, tus, tienen) in the top (English) row; the bottom (Spanish) row stayed blank.
+
+**Root cause (reproduced through the production ViewModel with Typing language = Spanish):**
+1. The top row's language came from the Typing-language setting alone (`settings.typingLanguage.code ?: detect(...)`). With Spanish selected, every word, English included, was completed and autocorrected in Spanish ("Hello" became "Ello" on space).
+2. The same raw setting was passed to the learning row, which then treated English text as Spanish. Its Spanish→English pass found nothing, so the bottom row was blank.
+3. In every mode, "Hello" had no translation and "Thanks" was read as the verb *agradecer*. One untranslatable "Hello" also hid the whole sentence translation.
+4. An empty field had only one phrase row (Spanish phrases replaced the English ones in Spanish mode).
+
+**Fix:**
+- One function (`KeyboardViewModel.textLanguage`) decides the language from the text being typed, and drives both rows. The setting is only a bias:
+  - English: always English.
+  - Auto: unchanged.
+  - Spanish: Spanish only when the text shows more Spanish than English evidence, including a half-typed word that only Spanish words start with ("tambi").
+  - So English text is always completed in English, with Spanish learning content below.
+- An empty field shows English phrases on top (Hello · Thanks · Good morning · Good night · How are you?) and Spanish phrases in the learning row (Hola · Gracias · Buenos días · Buenas noches · ¿Cómo estás?), in every mode. The space bar still shows the chosen typing language.
+- Idioms: hello/hi → hola, thanks → gracias.
+
+**Tests:**
+- New `DualSuggestionRowsTest` drives the production ViewModel through the rendered `KeyboardScreen` and assigns chips to rows by on-screen position. It runs the 9 required scenarios in Auto, English and Spanish.
+- Tests that encoded the old Spanish-mode contract (Spanish phrases/words in the top row) were updated to the new one.
+
+**Not yet verified on a phone.**
+
 ## 2026-11-08/09 — Keyboard quality, vocabulary and UI round (Stages 1–7)
 
 Commits `3ed158b` … this commit on `claude/eager-dijkstra-jsufzj` (baseline `015f63f`).
