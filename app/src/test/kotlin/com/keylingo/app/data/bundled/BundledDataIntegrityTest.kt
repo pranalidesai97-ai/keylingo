@@ -62,10 +62,10 @@ class BundledDataIntegrityTest {
         val keys = lines.map { it.substringBefore('\t').lowercase() }
         assertEquals("duplicate words", keys.size, keys.toSet().size)
         assertTrue(lines.all { it.split('\t')[1].toIntOrNull()?.let { r -> r > 0 } == true })
-        // Ranked by real frequency: the most common words lead, ranks are unique and increasing.
-        assertTrue(lines.take(5).map { it.substringBefore('\t') }.containsAll(listOf("I", "you", "the")))
-        val ranks = lines.map { it.split('\t')[1].toInt() }
-        assertEquals("ranks must be strictly increasing", ranks.indices.map { it + 1 }, ranks)
+        // Ranked by real frequency: the most common words lead, and ranks are exactly 1..n (no ties, no gaps).
+        val byRank = lines.sortedBy { it.split('\t')[1].toInt() }
+        assertTrue(byRank.take(5).map { it.substringBefore('\t') }.containsAll(listOf("I", "you", "the")))
+        assertEquals("ranks must be 1..n", lines.indices.map { it + 1 }, byRank.map { it.split('\t')[1].toInt() })
         // Misspelled forms are not words (autocorrect must be able to fix them).
         assertTrue(listOf("agreeed", "disagreeed", "understanded").none { it in keys })
         // Conversational words keep their curated chat ranks; common written words rise to their real frequency.
@@ -97,6 +97,17 @@ class BundledDataIntegrityTest {
                 val entry = data.spanishLexicon.find(w)
                 assertTrue("'$w' after '${row[0]}' is not a suggestable Spanish word", entry != null && entry.suggestable && entry.display == w)
             }
+        }
+    }
+
+    @Test fun lexiconAssetsAreStoredInMatchKeyOrder() {
+        // Startup cost: Lexicon sorts its words by match key once per process. Stored in that order, the sort is a
+        // single linear pass (tools/sort_lexicon_by_key.py); a regenerated file in another order would still work, slower.
+        for ((asset, lexicon) in listOf(BundledLanguageData.ENGLISH_LEXICON to TestData.bundled.englishLexicon,
+                BundledLanguageData.SPANISH_LEXICON to TestData.bundled.spanishLexicon)) {
+            val keys = TestData.assetLines(asset).filter { !it.startsWith("#") && it.isNotBlank() }.map { lexicon.matchKey(it.substringBefore('\t')) }
+            val firstOutOfOrder = (1 until keys.size).firstOrNull { keys[it - 1] > keys[it] }
+            assertEquals("$asset out of order at ${firstOutOfOrder?.let { keys[it - 1] + " > " + keys[it] }}", null, firstOutOfOrder)
         }
     }
 }

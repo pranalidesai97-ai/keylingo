@@ -41,14 +41,30 @@ class Lexicon(
             val existing = dedup[k]
             if (existing == null || w.rank < existing.rank) dedup[k] = w
         }
-        val pairs = dedup.values.map { matchKey(it.display) to it }.sortedWith(compareBy({ it.first }, { it.second.rank }))
+        // Load-time hot path (runs once per process, ~110k words): a primitive comparator and hand-built
+        // index arrays instead of compareBy/groupBy, which box every rank and index.
+        val pairs = dedup.values.map { matchKey(it.display) to it }.toTypedArray()
+        java.util.Arrays.sort(pairs) { a, b ->
+            val c = a.first.compareTo(b.first)
+            if (c != 0) c else Integer.compare(a.second.rank, b.second.rank)
+        }
         keys = Array(pairs.size) { pairs[it].first }
         sorted = Array(pairs.size) { pairs[it].second }
         exact = dedup
-        val suggestable = keys.indices.filter { sorted[it].suggestable && keys[it].length >= 2 }
-        byLetterAndLength = suggestable.groupBy { bucket(keys[it][0], keys[it].length) }.mapValues { (_, l) -> l.toIntArray() }
-        completionsByLetter = suggestable.filter { sorted[it].rank <= MAX_COMPLETION_RANK }
-            .groupBy { keys[it][0] }.mapValues { (_, l) -> l.toIntArray() }
+        byLetterAndLength = index { i -> if (sorted[i].suggestable && keys[i].length >= 2) bucket(keys[i][0], keys[i].length) else null }
+        completionsByLetter = index { i ->
+            if (sorted[i].suggestable && keys[i].length >= 2 && sorted[i].rank <= MAX_COMPLETION_RANK) keys[i][0] else null
+        }
+    }
+
+    /** Groups word indices (in key order) by [keyOf]; null leaves a word out. */
+    private inline fun <K : Any> index(keyOf: (Int) -> K?): Map<K, IntArray> {
+        val counts = HashMap<K, IntArray>() // [count, fill position]
+        for (i in keys.indices) keyOf(i)?.let { counts.getOrPut(it) { IntArray(2) }[0]++ }
+        val out = HashMap<K, IntArray>(counts.size * 2)
+        for ((k, c) in counts) out[k] = IntArray(c[0])
+        for (i in keys.indices) keyOf(i)?.let { k -> val c = counts.getValue(k); out.getValue(k)[c[1]++] = i }
+        return out
     }
 
     val size: Int get() = sorted.size

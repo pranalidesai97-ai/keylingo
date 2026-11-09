@@ -74,7 +74,7 @@ class EverydayTranslationTest {
     @Test fun frequentEnglishContentWordsHaveTranslations() {
         // Top suggestable English words by real frequency; function words are handled by grammar rules, not the dictionary.
         val words = TestData.assetLines(BundledLanguageData.ENGLISH_LEXICON).filter { !it.startsWith("#") }
-            .map { it.split('\t') }.filter { it.getOrElse(2) { "" } != "n" }.map { it[0] }
+            .map { it.split('\t') }.filter { it.getOrElse(2) { "" } != "n" }.sortedBy { it[1].toInt() }.map { it[0] }
         fun coverage(n: Int) = words.take(n).count { data.dictionary.resolveEnglish(it).isNotEmpty() } * 100 / n
         println("EN_ES_COVERAGE top2000=${coverage(2000)}% top3000=${coverage(3000)}% top5000=${coverage(5000)}%")
         assertTrue("top 3000: ${coverage(3000)}%", coverage(3000) >= 80) // was 59% before the audit
