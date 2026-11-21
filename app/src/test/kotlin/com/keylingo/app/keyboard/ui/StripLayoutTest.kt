@@ -50,6 +50,8 @@ import java.io.File
  * Height of the suggestion strip on the real KeyboardScreen:
  * - fields that can show language help reserve the word row (40 dp) and the learning row (46 dp);
  * - other fields (e-mail, password, numbers) or learning + grammar turned off get only the word row;
+ * - fields that can show language help also reserve the emoji suggestion row (36 dp), whatever the
+ *   learning settings; e-mail, password and number fields never get it;
  * - within a field the height never changes while typing, whatever chips appear.
  * Previously the strip was always 92 dp, so fields without language help kept an empty row.
  * Also renders PNGs to build/keyboard-screenshots/ for review (JVM renders, not device screenshots).
@@ -105,7 +107,7 @@ class StripLayoutTest {
     @Test fun assistedFieldReservesBothRowsAndNeverMovesWhileTyping() {
         val kb = show(chat)
         val empty = height()
-        assertDp(WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT + keys, empty)
+        assertDp(WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT + EMOJI_ROW_HEIGHT + keys, empty)
         kb.type("I am drinking water")
         assertNotNull(kb.vm.uiState.value.assistance.sentence)
         snapshot("chat-translation")
@@ -117,7 +119,7 @@ class StripLayoutTest {
         kb.type("She is working today")
         assertEquals("Ella está trabajando hoy", kb.vm.uiState.value.assistance.sentence?.translatedText)
         snapshot("address-bar-translation")
-        assertDp(WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT + keys, height())
+        assertDp(WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT + EMOJI_ROW_HEIGHT + keys, height())
     }
 
     @Test fun fieldsWithoutLanguageHelpGetOnlyTheWordRow() {
@@ -136,14 +138,14 @@ class StripLayoutTest {
         val kb = show(chat, KeyLingoSettings(learningEnabled = false, grammarEnabled = false))
         kb.type("hello the")
         snapshot("chat-learning-off")
-        assertDp(WORD_ROW_HEIGHT + keys, height())
+        assertDp(WORD_ROW_HEIGHT + EMOJI_ROW_HEIGHT + keys, height())
     }
 
     @Test fun largeHintSizeStillFitsTheRows() {
         val kb = show(chat, KeyLingoSettings(hintSize = HintSizeOption.LARGE))
         kb.type("Yesterday I go to the market. ")
         snapshot("chat-large-grammar")
-        assertDp(WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT + keys, height())
+        assertDp(WORD_ROW_HEIGHT + LEARNING_ROW_HEIGHT + EMOJI_ROW_HEIGHT + keys, height())
     }
 
     @Test fun emptyFieldShowsStarterPhrasesWithoutChangingTheHeight() {

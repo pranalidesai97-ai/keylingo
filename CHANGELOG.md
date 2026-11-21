@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-21 — Emoji panel, search, recents and emoji suggestions
+
+- **Emoji panel**: the existing emoji key now opens 1,906 emoji in tabs: Recently used, Smileys, People, Animals, Food, Travel, Activities, Objects, Symbols, Flags. The panel has a search button and keeps the ABC / space / backspace row. It fills the same key area as before, so the keyboard does not resize.
+- **Search**: KeyLingo's own letter keys type the query, and nothing reaches the text field. English and Spanish keywords work, with or without accents ("corazon"). Matches are ranked by the emoji's name ("red hea" → ❤️), and everyday words lead with their curated list. Back, Enter, ABC or the emoji key leaves search.
+- **Insertion**: emoji go in at the cursor (start, middle or end), and multi-codepoint emoji go in whole.
+- **Recently used**: stored on the device in a separate DataStore file, most used first, at most 40 entries. Nothing is recorded in password or incognito fields.
+- **Emoji suggestions**: typed words get their own emoji row below the English and Spanish rows (heart → ❤️ 💕 💖, love → ❤️ 🥰 😘, gracias → 🙏). Tapping adds the emoji after the word ("happy 😊"). With no match, the row shows the most used emoji. The row is 36 dp, reserved per field, and appears only in fields with language help.
+- **Data**: `assets/emoji/emoji.tsv` from emojibase-data 16.0.3 (MIT) and Unicode CLDR annotations (Unicode License v3), with notices bundled. No images; emoji are drawn by the phone's font. Emoji the phone cannot draw are hidden.
+- **Unchanged**: English/Spanish suggestion, translation, autocomplete, grammar, settings, key layout, themes and logo. A test shows both language rows are identical with and without emoji. No new permission and no network access.
+
 ## 2026-11-09 — Fix: English and Spanish suggestion rows (device report)
 
 **Symptom (vivo phone):** typing "Hello i am doing this" showed Spanish words (tiene, tiempo, tus, tienen) in the top (English) row; the bottom (Spanish) row stayed blank.

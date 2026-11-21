@@ -228,6 +228,21 @@ The adaptive icon's foreground is transparent. `ui/brand/KeyLingoWordmark` shows
 
 Alignment rule: section headers, card titles, radio circles and buttons start on the card text edge. Radio rows are pulled back 12 dp to cancel the RadioButton's touch-target inset. `AppLayoutAlignmentTest` measures this; `AppScreensRenderTest` renders all four screens in light and dark.
 
+## 5f. Emoji (`data/emoji`, `keyboard/ui/EmojiPanel.kt`)
+
+- `EmojiCatalog` (pure Kotlin) is built once from `assets/emoji/emoji.tsv` on the compute dispatcher by `BundledEmojiProvider` (Hilt `EmojiProvider`). It drops emoji the device cannot draw: the Android release's emoji version, refined by `Paint.hasGlyph` when that works. It serves:
+  - category lists;
+  - prefix search over folded English and Spanish keywords, ranked by keyword position;
+  - suggestions: a curated list for everyday words first, then exact keywords, never for function words.
+- `EmojiUsageStore`: its own DataStore file (`keylingo_emoji_usage`), max 40 entries, ranked by count then recency.
+- `KeyboardViewModel` (optional `emojiProvider`, default `NONE`) keeps emoji state apart from the language rows. Fields: `emojiSuggestions`, `recentEmojis`, `emojiCategories`, `emojiSearchQuery`, `emojiSearchResults`.
+  - A separate `emojiJob` refreshes suggestions; the suggestion, hint and autocorrect paths are unchanged.
+  - While `emojiSearchQuery != null` in EMOJI mode, key actions edit the query (first branch of `onKeyAction`) and never reach the text field.
+- Layout, all inside the fixed key area:
+  - Emoji row: `EMOJI_ROW_HEIGHT` 36 dp, shown when `showEmojiRow` (language-help fields; fixed per field).
+  - Panel: header (search + 10 equal-width tabs) plus an 8-column grid, in the 4 row-weights the old grid used.
+  - Search: results row plus the four letter rows, the same 5 weights as letters with the number row.
+
 ## 6. Translator design (`EnglishToSpanishTranslator`)
 
 Deterministic recursive-descent over tokens (contractions expanded):

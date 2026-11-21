@@ -2,6 +2,8 @@ package com.keylingo.app.keyboard
 
 import com.keylingo.app.data.settings.KeyLingoSettings
 import com.keylingo.app.data.settings.TypingLanguageOption
+import com.keylingo.app.domain.model.EmojiCategory
+import com.keylingo.app.domain.repository.EmojiProvider
 import com.keylingo.app.domain.model.SentenceStarters
 import com.keylingo.app.domain.model.StarterPhrases
 import com.keylingo.app.domain.model.AutocompleteSuggestion
@@ -40,7 +42,16 @@ data class KeyboardUiState(
     /** Everyday Spanish phrases for the BOTTOM (learning) row while the field is empty; independent of [starterPhrases]. */
     val learningStarterPhrases: List<String> = emptyList(),
     val policy: InputFieldPolicy = InputFieldPolicy.DEFAULT,
-    val settings: KeyLingoSettings = KeyLingoSettings()
+    val settings: KeyLingoSettings = KeyLingoSettings(),
+    /** Emoji for the word just typed (or recent emoji): its own row, independent of the English and Spanish rows. */
+    val emojiSuggestions: List<String> = emptyList(),
+    /** Used emoji, most frequently used first. */
+    val recentEmojis: List<String> = emptyList(),
+    /** Emoji panel categories (empty until the catalogue has loaded; the panel then shows the built-in list). */
+    val emojiCategories: Map<EmojiCategory, List<String>> = emptyMap(),
+    /** Non-null while the emoji search box is open: the keys type into this query, not into the text field. */
+    val emojiSearchQuery: String? = null,
+    val emojiSearchResults: List<String> = emptyList(),
 ) {
     val autocompleteSuggestions: List<AutocompleteSuggestion> get() = suggestions
     val hints: List<HintWord> get() = assistance.hints
@@ -50,6 +61,9 @@ data class KeyboardUiState(
      * settings, never on the current chips, so the keys do not move while typing.
      */
     val showLearningRow: Boolean get() = policy.allowLearningHints && (settings.learningEnabled || settings.grammarEnabled)
+
+    /** The emoji suggestion row is reserved in fields that allow language help (never passwords, e-mail, numbers). Fixed per field. */
+    val showEmojiRow: Boolean get() = policy.showSuggestions && policy.allowLearningHints
 }
 
 /** Punctuation that ends a word (triggers learning and autocorrect) and is followed by a space after a picked suggestion. */
@@ -79,13 +93,17 @@ class KeyboardViewModel(
      * which phrase list is shown and character counts are reported -- never typed text -- and only in
      * fields that allow language help (never passwords).
      */
-    private val diagnostics: (String) -> Unit = {}
+    private val diagnostics: (String) -> Unit = {},
+    /** Emoji catalogue, search, suggestions and usage history (offline). NONE keeps the built-in static emoji list. */
+    private val emojiProvider: EmojiProvider = EmojiProvider.NONE,
 ) {
     private val _uiState = MutableStateFlow(KeyboardUiState())
     val uiState: StateFlow<KeyboardUiState> = _uiState.asStateFlow()
 
     private var suggestionJob: Job? = null
     private var hintJob: Job? = null
+    private var emojiJob: Job? = null
+    private var emojiSearchJob: Job? = null
 
     /** The word the cached suggestions/autocorrection were computed for; autocorrect only applies if it still matches. */
     private var suggestionsComputedFor: String? = null
@@ -109,6 +127,11 @@ class KeyboardViewModel(
                 learnedVocabularyProvider.pruneStale(clock())
                 contextPredictionProvider.pruneStale(clock())
             }
+        }
+        scope.launch { runCatching { emojiProvider.usage.collect { used -> _uiState.update { it.copy(recentEmojis = used) } } } }
+        scope.launch {
+            val categories = runCatching { emojiProvider.categories() }.getOrDefault(emptyMap())
+            if (categories.isNotEmpty()) _uiState.update { it.copy(emojiCategories = categories) }
         }
         scope.launch {
             settingsFlow.collect { settings ->
@@ -146,7 +169,8 @@ class KeyboardViewModel(
         val mode = if (restarting) state.mode else if (newPolicy.startInSymbols) KeyboardMode.SYMBOLS_1 else KeyboardMode.LETTERS
         _uiState.update {
             it.copy(policy = newPolicy, mode = mode, shiftState = ShiftState.OFF, suggestions = emptyList(),
-                autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList(), learningStarterPhrases = emptyList())
+                autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList(), learningStarterPhrases = emptyList(),
+                emojiSuggestions = emptyList(), emojiSearchQuery = null, emojiSearchResults = emptyList())
         }
         autoShifted = false
         updateAutoShift()
@@ -155,10 +179,13 @@ class KeyboardViewModel(
 
     /** The field lost focus: forget everything derived from its text. */
     fun onFinishInput() {
-        suggestionJob?.cancel(); hintJob?.cancel()
+        suggestionJob?.cancel(); hintJob?.cancel(); emojiJob?.cancel(); emojiSearchJob?.cancel()
         lastCorrection = null
         phantomSpace = false
-        _uiState.update { it.copy(suggestions = emptyList(), autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList(), learningStarterPhrases = emptyList()) }
+        _uiState.update {
+            it.copy(suggestions = emptyList(), autoCorrection = null, assistance = LearningAssistance.EMPTY, starterPhrases = emptyList(),
+                learningStarterPhrases = emptyList(), emojiSuggestions = emptyList(), emojiSearchQuery = null, emojiSearchResults = emptyList())
+        }
     }
 
     /** The cursor/selection moved. Ignores the echo of our own edits; an external move cancels undo/space-swap state. */
@@ -177,6 +204,8 @@ class KeyboardViewModel(
     // ------------------------------------------------------------ key input
 
     fun onKeyAction(action: KeyAction) {
+        // Emoji search open: the keys edit the search query; nothing reaches the text field.
+        if (state.mode == KeyboardMode.EMOJI && state.emojiSearchQuery != null) { onEmojiSearchKey(action); return }
         val wasSpace = lastKeyWasSpace
         lastKeyWasSpace = false
         lastOwnEditAt = clock()
@@ -422,7 +451,87 @@ class KeyboardViewModel(
 
     // ------------------------------------------------------------ shift / mode
 
-    private fun setMode(mode: KeyboardMode) = _uiState.update { it.copy(mode = mode) }
+    private fun setMode(mode: KeyboardMode) = _uiState.update { it.copy(mode = mode, emojiSearchQuery = null, emojiSearchResults = emptyList()) }
+
+    // ------------------------------------------------------------ emoji
+
+    /** An emoji tapped in the panel or search results: inserted at the cursor, exactly as is. */
+    fun onEmojiSelected(emoji: String) {
+        insertEmoji(emoji)
+    }
+
+    /**
+     * An emoji tapped in the suggestion row: added after the word just typed, never replacing it
+     * ("happy" -> "happy 😊"), so the word is still there.
+     */
+    fun onEmojiSuggestionSelected(emoji: String) {
+        if (emoji !in state.emojiSuggestions) return
+        val before = context().before
+        val separator = if (before.isNotEmpty() && (before.last().isLetterOrDigit() || before.last() in ".,!?")) " " else ""
+        insertEmoji(separator + emoji, recordAs = emoji)
+    }
+
+    private fun insertEmoji(text: String, recordAs: String = text) {
+        lastOwnEditAt = clock()
+        lastCorrection = null
+        phantomSpace = false
+        lastKeyWasSpace = false
+        textConnection.commitText(text)
+        // Private fields (passwords, incognito) never add to the history.
+        if (policy.allowLearning) scope.launch { runCatching { emojiProvider.recordUse(recordAs) } }
+        updateAutoShift()
+        scheduleRefresh()
+    }
+
+    /** Opens the search box in the emoji panel; the letter keys now type the query. */
+    fun startEmojiSearch() {
+        if (state.mode != KeyboardMode.EMOJI) return
+        _uiState.update { it.copy(emojiSearchQuery = "", emojiSearchResults = emptyList(), shiftState = ShiftState.OFF) }
+    }
+
+    /** Back from search to the emoji categories. */
+    fun stopEmojiSearch() {
+        emojiSearchJob?.cancel()
+        _uiState.update { it.copy(emojiSearchQuery = null, emojiSearchResults = emptyList()) }
+    }
+
+    private fun onEmojiSearchKey(action: KeyAction) {
+        val query = state.emojiSearchQuery ?: return
+        val next = when (action) {
+            is KeyAction.Character -> query + action.lower
+            is KeyAction.Symbol -> if (action.value.all { it.isLetterOrDigit() || it == '\'' }) query + action.value else query
+            KeyAction.Space -> if (query.isEmpty() || query.endsWith(" ")) query else "$query "
+            KeyAction.Backspace -> query.dropLast(1)
+            KeyAction.Shift -> { handleShiftPress(); return }
+            KeyAction.Enter, KeyAction.SwitchToLetters, KeyAction.Emoji -> { stopEmojiSearch(); return }
+            KeyAction.SwitchToNumbers, KeyAction.SwitchToSymbols -> return
+        }
+        if (state.shiftState == ShiftState.SHIFTED_ONCE) _uiState.update { it.copy(shiftState = ShiftState.OFF) }
+        _uiState.update { it.copy(emojiSearchQuery = next) }
+        emojiSearchJob?.cancel()
+        emojiSearchJob = scope.launch {
+            val results = if (next.isBlank()) emptyList() else runCatching { emojiProvider.search(next) }.getOrDefault(emptyList())
+            if (state.emojiSearchQuery == next) _uiState.update { it.copy(emojiSearchResults = results) }
+        }
+    }
+
+    /**
+     * Emoji for the word being typed, or the word just finished ("happy " still offers 😊). Separate job,
+     * separate state: it never touches the English/Spanish suggestions. With no match, the most used emoji
+     * (or, before any use, a few everyday ones that every supported Android version draws).
+     */
+    private suspend fun refreshEmojiSuggestions() {
+        if (!state.showEmojiRow) {
+            if (state.emojiSuggestions.isNotEmpty()) _uiState.update { it.copy(emojiSuggestions = emptyList()) }
+            return
+        }
+        val ctx = context()
+        val word = ctx.currentWord.ifEmpty { if (ctx.before.endsWith(" ")) ctx.previousWord.orEmpty() else "" }
+        val matches = if (word.isEmpty()) emptyList() else
+            runCatching { emojiProvider.suggestionsFor(word, state.typingLanguage, MAX_EMOJI_SUGGESTIONS) }.getOrDefault(emptyList())
+        val shown = matches.ifEmpty { state.recentEmojis.ifEmpty { DEFAULT_EMOJI }.take(MAX_EMOJI_SUGGESTIONS) }
+        if (state.emojiSuggestions != shown) _uiState.update { it.copy(emojiSuggestions = shown) }
+    }
 
     private fun handleShiftPress() {
         val now = clock()
@@ -472,6 +581,11 @@ class KeyboardViewModel(
     // ------------------------------------------------------------ refresh
 
     private fun scheduleRefresh(immediate: Boolean = false) {
+        emojiJob?.cancel()
+        emojiJob = scope.launch {
+            if (!immediate) delay(SUGGESTION_DEBOUNCE_MILLIS)
+            refreshEmojiSuggestions()
+        }
         suggestionJob?.cancel()
         suggestionJob = scope.launch {
             if (!immediate) delay(SUGGESTION_DEBOUNCE_MILLIS)
@@ -594,6 +708,9 @@ class KeyboardViewModel(
     companion object {
         const val CONTEXT_WINDOW = 240
         const val MAX_SUGGESTIONS = 5
+        const val MAX_EMOJI_SUGGESTIONS = 8
+        /** Emoji 1.0 or older, so they render on Android 8 too. */
+        val DEFAULT_EMOJI = listOf("😂", "❤️", "😊", "👍", "🙏", "😍", "🎉", "🔥")
         const val SUGGESTION_DEBOUNCE_MILLIS = 20L
         const val HINT_DEBOUNCE_MILLIS = 220L
         const val DOUBLE_SPACE_WINDOW_MILLIS = 500L

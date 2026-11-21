@@ -6,7 +6,9 @@ import com.keylingo.app.data.bundled.BundledLanguageDataSource
 import com.keylingo.app.data.bundled.BundledLanguageDetector
 import com.keylingo.app.data.hint.LearningAssistant
 import com.keylingo.app.data.language.SpanishLanguagePack
+import com.keylingo.app.data.emoji.BundledEmojiProvider
 import com.keylingo.app.domain.repository.AutocompleteProvider
+import com.keylingo.app.domain.repository.EmojiProvider
 import com.keylingo.app.domain.repository.HintProvider
 import com.keylingo.app.domain.repository.LanguageDetector
 import com.keylingo.app.domain.repository.LanguagePack
@@ -39,4 +41,7 @@ abstract class AppModule {
 
     @Binds @Singleton
     abstract fun bindLanguagePack(impl: SpanishLanguagePack): LanguagePack
+
+    @Binds @Singleton
+    abstract fun bindEmojiProvider(impl: BundledEmojiProvider): EmojiProvider
 }

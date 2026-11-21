@@ -20,7 +20,8 @@ Vibration was on by default; there was no sound toggle; backspace repeat relied 
 | K8 | CEFR | CEFR bands are derived from English frequency rank, not curated. Re-ranking by wordfreq moved 426 of 1,325 original entries by one band (e.g. kitchen A1→A2, fruit A2→B1), because written-text frequency differs from learner level. | Advanced-mode hint selection is approximate |
 | K9 | Input | Commit-based editing (no composing region/underline); autocorrect undo works only immediately after the correction. | UX polish |
 | K10 | Layout | Keys 260 dp; strip 86 dp (40 + 46) in assisted fields, 40 dp elsewhere. Not adapted for landscape/tablets/foldables. | Landscape usability |
-| K11 | Layout | No globe/language key, swipe typing, space-bar cursor control, clipboard, emoji search, voice input. | Feature gaps vs. Gboard |
+| K11 | Layout | No globe/language key, swipe typing, space-bar cursor control, clipboard, voice input. (Emoji search added 2026-11-21.) | Feature gaps vs. Gboard |
+| K32 | Emoji | The emoji suggestion row adds 36 dp to the keyboard in fields with language help (fixed per field, never changes while typing). No skin-tone picker (base emoji only). Which newer emoji show depends on the phone's font: hidden when `Paint.hasGlyph` says the font lacks them; JVM renders in this repo show a few empty boxes because the build machine's font is older. | Confirm on device |
 | K12 | Deps | AGP 8.5.2, Kotlin 1.9.24, Compose BOM 2024.06 — 19 lint "newer version" warnings. | Maintenance |
 | K13 | Timing | Bundled data loads asynchronously when the keyboard service is created: median 208 ms cold on the **desktop JVM** (5 runs, 182–267 ms). **Not measured on a phone**; expect several times slower. Starter phrases need no data; word suggestions are empty until the load finishes. | First-keystroke experience — measure on device |
 | K14 | Tests | No instrumented tests. Compose UI is covered only by Robolectric (gestures, settings, PNG renders). | Device-only UI regressions not caught |
@@ -68,6 +69,6 @@ Vibration was on by default; there was no sound toggle; backspace repeat relied 
 17. CEFR curation (K8).
 
 ### P3 — Keyboard feature parity
-18. Globe key / language toggle, space-bar cursor slide, clipboard strip, emoji search.
+18. Globe key / language toggle, space-bar cursor slide, clipboard strip; emoji skin tones.
 19. Swipe (gesture) typing.
 20. Dependency upgrades (AGP/Kotlin 2.x/Compose BOM) with full regression run (K12).

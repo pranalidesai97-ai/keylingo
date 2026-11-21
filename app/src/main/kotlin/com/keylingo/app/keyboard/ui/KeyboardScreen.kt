@@ -1,21 +1,15 @@
 package com.keylingo.app.keyboard.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -104,17 +98,34 @@ fun KeyboardScreen(viewModel: KeyboardViewModel) {
                         onStarterPhrase = onPhrase,
                         learningStarterPhrases = uiState.learningStarterPhrases
                     )
-                    val rows = remember(uiState.mode, uiState.settings.showNumberRow) {
-                        KeyboardLayoutProvider.rowsFor(uiState.mode, uiState.settings.showNumberRow)
+                    // Emoji suggestions: their own fixed row below the English and Spanish rows.
+                    if (uiState.showEmojiRow) {
+                        val onEmojiSuggestion = remember(viewModel) { viewModel::onEmojiSuggestionSelected }
+                        EmojiSuggestionRow(uiState.emojiSuggestions, onEmojiSuggestion)
                     }
+                    val searchingEmoji = uiState.mode == KeyboardMode.EMOJI && uiState.emojiSearchQuery != null
+                    val rows = remember(uiState.mode, uiState.settings.showNumberRow, searchingEmoji) {
+                        // Emoji search types with the letter keys; with the results row that is five rows, like letters + numbers.
+                        if (searchingEmoji) KeyboardLayoutProvider.rowsFor(KeyboardMode.LETTERS, showNumberRow = false)
+                        else KeyboardLayoutProvider.rowsFor(uiState.mode, uiState.settings.showNumberRow)
+                    }
+                    val onEmoji = remember(viewModel) { viewModel::onEmojiSelected }
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(KEY_ROWS_HEIGHT)
                             .padding(horizontal = 4.dp, vertical = 4.dp)
                     ) {
-                        if (uiState.mode == KeyboardMode.EMOJI) {
-                            EmojiGrid(onEmoji = { onKeyAction(KeyAction.Symbol(it)) }, modifier = Modifier.weight(4f))
+                        if (searchingEmoji) {
+                            EmojiSearchBar(
+                                query = uiState.emojiSearchQuery.orEmpty(), results = uiState.emojiSearchResults, recent = uiState.recentEmojis,
+                                onEmoji = onEmoji, onClose = viewModel::stopEmojiSearch, modifier = Modifier.weight(1f)
+                            )
+                        } else if (uiState.mode == KeyboardMode.EMOJI) {
+                            EmojiPanel(
+                                categories = uiState.emojiCategories, recent = uiState.recentEmojis,
+                                onEmoji = onEmoji, onSearch = viewModel::startEmojiSearch, modifier = Modifier.weight(4f)
+                            )
                         }
                         rows.forEach { row ->
                             KeyRow(row, uiState, onKeyAction, popupController, feedback, Modifier.weight(1f))
@@ -149,20 +160,6 @@ private fun KeyRow(
                 feedback = feedback,
                 accentPopup = popupController
             )
-        }
-    }
-}
-
-@Composable
-private fun EmojiGrid(onEmoji: (String) -> Unit, modifier: Modifier) {
-    LazyVerticalGrid(columns = GridCells.Fixed(8), modifier = modifier.fillMaxWidth()) {
-        items(KeyboardLayoutProvider.EMOJI) { emoji ->
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .clickable { onEmoji(emoji) },
-                contentAlignment = Alignment.Center
-            ) { Text(emoji, fontSize = 24.sp, color = LocalKeyboardColors.current.keyText) }
         }
     }
 }

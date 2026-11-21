@@ -22,6 +22,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import android.util.Log
 import com.keylingo.app.data.bundled.BundledLanguageDataSource
+import com.keylingo.app.domain.repository.EmojiProvider
 import com.keylingo.app.data.settings.SettingsDataStore
 import com.keylingo.app.domain.repository.ContextPredictionProvider
 import com.keylingo.app.domain.repository.LanguageDetector
@@ -88,6 +89,7 @@ class KeyLingoInputMethodService :
     @Inject lateinit var settingsDataStore: SettingsDataStore
     @Inject lateinit var languagePack: LanguagePack
     @Inject lateinit var bundledData: BundledLanguageDataSource
+    @Inject lateinit var emojiProvider: EmojiProvider
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
@@ -130,7 +132,8 @@ class KeyLingoInputMethodService :
             languagePack = languagePack,
             textConnection = this,
             scope = serviceScope,
-            diagnostics = { Log.i(LANGUAGE_TAG, it) }
+            diagnostics = { Log.i(LANGUAGE_TAG, it) },
+            emojiProvider = emojiProvider
         )
 
         // Parse the bundled lexicons/dictionary in the background right away,

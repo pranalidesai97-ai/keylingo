@@ -18,7 +18,8 @@ Legend: **✅ Built + tested** (compiles, covered by passing unit tests) ·
 | Cursor-relative editing (moved cursor, mid-text) | ✅ | `pickingASuggestionReplacesOnlyTheWordAtTheCursor` |
 | `onUpdateSelection` refresh; external cursor moves cancel undo state | ✅ / 🟨 | ViewModel logic tested; IME callback untested |
 | Symbols (2 pages), number row setting | 🟨 | pre-existing layouts kept |
-| Emoji: 250+ in a scrollable grid | 🟨 | |
+| Emoji panel: 1,906 emoji in 9 categories + Recently used (most used first), tabs always visible, search typed with KeyLingo's own keys (English and Spanish keywords), insertion at the cursor, same size as the letter keyboard | ✅ / 🖼 | `EmojiKeyboardTest`, `EmojiPanelUiTest`, `EmojiCatalogTest`, `EmojiUsageStoreTest` |
+| Emoji suggestions for typed words (heart → ❤️ 💕 💖, gracias → 🙏) in their own fixed row below the English and Spanish rows; tapping adds the emoji after the word | ✅ / 🖼 | `EmojiKeyboardTest` (rows identical with and without emoji), `EmojiPanelUiTest` |
 | Long-press accents / ñ / ¿ ¡ / punctuation (slide to select) | 🟨 | in-layout overlay; needs device check |
 | Vibration on key press: **off by default**, setting persists | ✅ | `KeyFeedbackTest`, `SettingsPersistenceTest`; `KeyFeedback` is the only haptic call site; no `VIBRATE` permission |
 | Key sound: separate setting, off by default, system volume | ✅ | `KeyFeedbackTest` (Delete/Space/Return/standard effects) |

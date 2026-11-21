@@ -18,7 +18,7 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 
 ## 2. Current results (2026-11-09)
 
-**258 tests, 0 failures, 35 suites** (2026-11-09, after the dual-row fix).
+**278 tests, 0 failures, 39 suites** (2026-11-21, after emoji support).
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -46,7 +46,7 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `AssistanceLatencyTest` | 1 | Per-sentence grammar / EN→ES / ES→EN / full analysis under budget (measured < 1 ms each). |
 | `VocabularyMetricsTest` | 1 | Prints vocabulary counts (`VOCAB …` lines). |
 | `SentenceStartersTest` | 1 | Immediate starter words equal the bundled sentence-start row (EN and ES). |
-| `StripLayoutTest` (Robolectric Compose) | 7 | Strip height per field and setting (86 dp assisted, 40 dp otherwise); unchanged while typing; Large hint size; renders `strip-*.png`. |
+| `StripLayoutTest` (Robolectric Compose) | 7 | Strip height per field and setting (86 dp assisted + 36 dp emoji row, 40 dp otherwise); unchanged while typing; Large hint size; renders `strip-*.png`. |
 | `SpanishGrammarNotesTest` | 8 | Production Spanish note patterns: progressive constructions, accents, capitals, NFD, punctuation, word boundaries, English, empty input, all ten rules, and the real `LearningAssistant` path. |
 | `KeyLingoInputMethodServiceTest` (Robolectric, real Hilt service) | 5 | The real keyboard service with real DataStore settings: Spanish phrases on a fresh launch whichever loads first, live EN↔ES switching of phrases and space-bar language, Translate-into does not change the typing language, 25 create/start/finish/destroy cycles, no phrases or suggestions in password fields. |
 | `SpanishVocabularyTest` | 5 | 50k Spanish words: everyday accented words known and suggestable, frequency ordering, completions, typos and accent restoration, profanity never suggested, proper nouns. |
@@ -54,6 +54,10 @@ Maven Central. Reports: `app/build/reports/tests/testDebugUnitTest/index.html`.
 | `SuggestionLatencyTest` | 1 | Times one refresh per keystroke over typed messages, search queries and misspelled text in both languages; prints `LATENCY` lines; asserts p95 < 20 ms and median < 5 ms on the JVM. |
 | `EverydayTranslationTest` | 2 | 38 everyday messages must translate to exactly the expected correct Spanish at full coverage; top-3,000 English dictionary coverage ≥ 80%. |
 | `DualSuggestionRowsTest` (Robolectric Compose) | 9 | The device bug: production ViewModel → rendered KeyboardScreen, chips assigned to the top/bottom row by position, in Auto, English and Spanish mode. Covers empty field (both starter rows), Hello → hola, Thank you → Gracias, Good morning → Buenos días, "I am doing this" / "Hello i am doing this" → Spanish sentence below with English completions on top, unknown words, deleting text, switching typing/learning settings, and back to an empty field. No Spanish-only word may appear in the top row. Renders `dual-rows-*.png`. |
+| `EmojiCatalogTest` | 6 | Categories filled and unique; older Android versions only get emoji their font draws; search by English/Spanish keyword (accent-insensitive, name-ranked); suggestions for heart, love, smile, happy, birthday, laugh, sad, thanks (+ Spanish); no suggestions for function words; curated lists reference real emoji; per-keystroke cost (≈0.7 ms, desktop JVM). |
+| `EmojiUsageStoreTest` (Robolectric DataStore) | 3 | Most used first, then most recent; survives a new store instance; bounded history that never drops the emoji just used. |
+| `EmojiKeyboardTest` | 8 | Production ViewModel: insertion at start, middle and end (and ZWJ/flag emoji); emoji row for typed words (EN and ES) without touching the English row; tapping keeps the word; search typed with the keys never reaches the field; recents ordering and persistence; password fields; **English/Spanish rows, autocorrect and learning row identical with and without emoji**. |
+| `EmojiPanelUiTest` (Robolectric Compose) | 3 | Real KeyboardScreen: same height for letters, emoji panel and emoji search in every theme, light and dark; every category tab; insertion at the cursor; search via the search button; emoji row below the language rows. Renders `emoji-*.png`. |
 | `AppLayoutAlignmentTest` (Robolectric Compose) | 3 | Measured geometry of setup, Settings and Theme screens: card margins, header/text and button/text alignment, equal theme cards, 600 dp cap centred on a 900 dp screen. |
 | `AppScreensRenderTest` (Robolectric Compose) | 1 | Full-page renders (`ui-*.png`) of setup, Settings incl. About, Theme picker and Learned words, light and dark, with the Ocean Mist accent as in the app. |
 | `AndroidRegexCompatibilityTest` | 3 | No Android-incompatible regex syntax in any production pattern. A checker self-test uses the exact pattern that crashed. Writes the cases for the ICU check. |
@@ -157,4 +161,13 @@ Useful while testing: `adb logcat -s KeyLingoLang KeyLingoData KeyLingoIME`.
 **Privacy**
 - [ ] Airplane mode on: everything above still works (offline).
 - [ ] Password field: no suggestions, no phrases.
+
+**Emoji (2026-11-21 build)**
+- [ ] Emoji key opens the panel without the keyboard changing height; all ten tabs are visible; ABC returns to letters.
+- [ ] Tap an emoji with the cursor at the start, in the middle and at the end of existing text: it appears exactly there.
+- [ ] Search (magnifier): type "heart", "pizza", "corazon" with the keyboard keys; nothing is typed into the app's field; back arrow returns.
+- [ ] Type "happy", "birthday", "gracias": the emoji row (below the English and Spanish rows) shows matching emoji; the English row still shows English words; tapping adds the emoji after the word.
+- [ ] Use a few emoji, close and reopen the keyboard (and restart the phone): Recently used keeps them, most used first.
+- [ ] No empty boxes in the grid (newer emoji the phone cannot draw should be hidden).
+- [ ] Check Golden Dune, Ocean Mist and one more theme in light and dark.
 
